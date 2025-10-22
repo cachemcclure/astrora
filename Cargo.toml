@@ -1,0 +1,68 @@
+[package]
+name = "poliastro_core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["Cache McClure <cache.mcclure@gmail.com>"]
+description = "Rust-backed astrodynamics library - core computational components"
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/cachemcclure/rustpoliastro"
+keywords = ["astrodynamics", "orbital-mechanics", "aerospace", "space", "python"]
+categories = ["science", "simulation"]
+
+[lib]
+name = "poliastro_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+# PyO3 and Python integration
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"] }
+numpy = "0.22"
+
+# Mathematical and scientific computing
+ndarray = "0.16"
+nalgebra = "0.33"
+num-traits = "0.2"
+
+# Parallelization
+rayon = "1.10"
+
+# High-precision time handling
+hifitime = "4"
+
+# Error handling
+thiserror = "1.0"
+
+# Serialization (optional, useful for data interchange)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+# Testing
+approx = "0.5"
+proptest = "1.0"
+criterion = "0.5"
+
+[[bench]]
+name = "propagators"
+harness = false
+
+[[bench]]
+name = "transformations"
+harness = false
+
+[profile.release]
+# Optimization settings for performance
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+
+[profile.dev]
+# Faster compilation during development
+opt-level = 0
+
+[profile.bench]
+# Benchmark-specific optimizations
+inherits = "release"
+strip = false
