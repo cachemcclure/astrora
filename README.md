@@ -57,12 +57,6 @@ import poliastro
 # Basic usage examples coming soon
 ```
 
-## Development Status
-
-This project is currently in **early development** (Phase 1: Project Setup).
-
-See [PROJECT_CHECKLIST.md](PROJECT_CHECKLIST.md) for detailed development progress.
-
 ## Performance Goals
 
 - Numerical propagation: 10-50x faster
