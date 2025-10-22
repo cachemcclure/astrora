@@ -13,7 +13,7 @@ categories = ["science", "simulation"]
 
 [lib]
 name = "astrora_core"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]  # rlib needed for benchmarks and tests
 
 [dependencies]
 # PyO3 and Python integration
@@ -31,11 +31,18 @@ rayon = "1.10"
 # High-precision time handling
 hifitime = "4"
 
+# SGP4/SDP4 satellite propagation (TLE-based)
+sgp4 = { version = "2.3", features = ["std", "serde"] }
+
+# Precession and nutation will use pure-Rust implementation
+# (ERFA C library has build dependency issues - pure Rust is cleaner)
+
 # Error handling
 thiserror = "1.0"
 
 # Serialization (optional, useful for data interchange)
 serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = "1.0"  # For OMM JSON parsing
 
 [dev-dependencies]
 # Testing

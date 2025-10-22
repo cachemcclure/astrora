@@ -12,6 +12,7 @@ use crate::core::elements::{coe_to_rv, rv_to_coe, OrbitalElements};
 use crate::core::error::{PoliastroError, PoliastroResult};
 use crate::core::linalg::Vector3;
 use crate::core::time::Duration;
+use rayon::prelude::*;
 use std::f64::consts::PI;
 
 /// Propagate orbital elements forward in time using mean anomaly propagation
@@ -437,31 +438,31 @@ pub fn batch_propagate_states(
         });
     };
 
-    // Allocate result array
-    let mut result = Array2::zeros((n_states, 6));
+    // Parallel propagation using rayon
+    // Process all states in parallel, collecting results as rows
+    let result_rows: Vec<[f64; 6]> = (0..n_states)
+        .into_par_iter()
+        .map(|i| {
+            let state_row = states.row(i);
+            let r0 = Vector3::new(state_row[0], state_row[1], state_row[2]);
+            let v0 = Vector3::new(state_row[3], state_row[4], state_row[5]);
+            let dt = dt_vec[i];
 
-    // Propagate each state
-    for (i, state_row) in states.rows().into_iter().enumerate() {
-        let r0 = Vector3::new(state_row[0], state_row[1], state_row[2]);
-        let v0 = Vector3::new(state_row[3], state_row[4], state_row[5]);
-        let dt = dt_vec[i];
+            // Propagate this state
+            let (r, v) = propagate_state_keplerian(&r0, &v0, dt, mu).map_err(|e| {
+                PoliastroError::PropagationFailed {
+                    context: format!("batch propagation at index {}", i),
+                    source: Box::new(e),
+                }
+            })?;
 
-        // Propagate this state
-        let (r, v) = propagate_state_keplerian(&r0, &v0, dt, mu).map_err(|e| {
-            PoliastroError::PropagationFailed {
-                context: format!("batch propagation at index {}", i),
-                source: Box::new(e),
-            }
-        })?;
+            // Return as row array
+            Ok([r.x, r.y, r.z, v.x, v.y, v.z])
+        })
+        .collect::<PoliastroResult<Vec<[f64; 6]>>>()?;
 
-        // Store result
-        result[[i, 0]] = r.x;
-        result[[i, 1]] = r.y;
-        result[[i, 2]] = r.z;
-        result[[i, 3]] = v.x;
-        result[[i, 4]] = v.y;
-        result[[i, 5]] = v.z;
-    }
+    // Convert Vec of rows to Array2
+    let result = Array2::from_shape_fn((n_states, 6), |(i, j)| result_rows[i][j]);
 
     Ok(result)
 }
@@ -510,27 +511,28 @@ pub fn batch_propagate_lagrange(
         });
     };
 
-    let mut result = Array2::zeros((n_states, 6));
+    // Parallel propagation using rayon (Lagrange method)
+    let result_rows: Vec<[f64; 6]> = (0..n_states)
+        .into_par_iter()
+        .map(|i| {
+            let state_row = states.row(i);
+            let r0 = Vector3::new(state_row[0], state_row[1], state_row[2]);
+            let v0 = Vector3::new(state_row[3], state_row[4], state_row[5]);
+            let dt = dt_vec[i];
 
-    for (i, state_row) in states.rows().into_iter().enumerate() {
-        let r0 = Vector3::new(state_row[0], state_row[1], state_row[2]);
-        let v0 = Vector3::new(state_row[3], state_row[4], state_row[5]);
-        let dt = dt_vec[i];
+            let (r, v) = propagate_lagrange(&r0, &v0, dt, mu).map_err(|e| {
+                PoliastroError::PropagationFailed {
+                    context: format!("batch lagrange propagation at index {}", i),
+                    source: Box::new(e),
+                }
+            })?;
 
-        let (r, v) = propagate_lagrange(&r0, &v0, dt, mu).map_err(|e| {
-            PoliastroError::PropagationFailed {
-                context: format!("batch lagrange propagation at index {}", i),
-                source: Box::new(e),
-            }
-        })?;
+            Ok([r.x, r.y, r.z, v.x, v.y, v.z])
+        })
+        .collect::<PoliastroResult<Vec<[f64; 6]>>>()?;
 
-        result[[i, 0]] = r.x;
-        result[[i, 1]] = r.y;
-        result[[i, 2]] = r.z;
-        result[[i, 3]] = v.x;
-        result[[i, 4]] = v.y;
-        result[[i, 5]] = v.z;
-    }
+    // Convert Vec of rows to Array2
+    let result = Array2::from_shape_fn((n_states, 6), |(i, j)| result_rows[i][j]);
 
     Ok(result)
 }

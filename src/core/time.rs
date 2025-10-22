@@ -208,6 +208,36 @@ impl Epoch {
         self.inner.to_jde_utc_days()
     }
 
+    /// Get Julian Date in TT as a two-part value for maximum precision
+    ///
+    /// Returns (jd1, jd2) where the full Julian Date is jd1 + jd2.
+    /// This format is used by ERFA/SOFA functions for precession/nutation calculations
+    /// to maintain numerical precision (avoiding loss of precision in floating point arithmetic).
+    ///
+    /// Typically:
+    /// - jd1 = 2451545.0 (integer part, often the J2000 epoch constant)
+    /// - jd2 = fractional days from jd1
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (jd1, jd2) representing the two-part Julian Date in TT
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// let epoch = Epoch::from_gregorian_utc(2025, 10, 22, 0, 0, 0, 0);
+    /// let (jd1, jd2) = epoch.to_jd_tt_two_part();
+    /// // Use with ERFA functions
+    /// let prec = iau2006_precession(jd1, jd2);
+    /// ```
+    pub fn to_jd_tt_two_part(&self) -> (f64, f64) {
+        let jd_tt = self.to_jd_tt();
+        // Use J2000 epoch (2451545.0) as the integer part for best precision
+        let jd1 = 2451545.0;
+        let jd2 = jd_tt - jd1;
+        (jd1, jd2)
+    }
+
     /// Get seconds since J2000 epoch in TT
     pub fn to_tt_seconds_since_j2000(&self) -> f64 {
         let j2000 = Epoch::j2000();

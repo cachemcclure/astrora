@@ -23,6 +23,7 @@
 
 use crate::core::error::{PoliastroError, PoliastroResult};
 use crate::core::numerical::{newton_raphson_ratio, DEFAULT_TOL, DEFAULT_MAX_ITER};
+use rayon::prelude::*;
 use std::f64::consts::PI;
 
 /// Tolerance for determining orbit type
@@ -611,15 +612,15 @@ pub fn batch_mean_to_eccentric_anomaly(
     let single_ecc = eccentricities.len() == 1;
     let ecc_value = if single_ecc { eccentricities[0] } else { 0.0 };
 
-    // Pre-allocate result vector
-    let mut results = Vec::with_capacity(mean_anomalies.len());
-
-    // Process each orbit
-    for (i, &M) in mean_anomalies.iter().enumerate() {
-        let e = if single_ecc { ecc_value } else { eccentricities[i] };
-        let E = mean_to_eccentric_anomaly(M, e, tol, max_iter)?;
-        results.push(E);
-    }
+    // Parallel processing using rayon
+    let results: Vec<f64> = mean_anomalies
+        .par_iter()
+        .enumerate()
+        .map(|(i, &M)| {
+            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            mean_to_eccentric_anomaly(M, e, tol, max_iter)
+        })
+        .collect::<PoliastroResult<Vec<f64>>>()?;
 
     Ok(results)
 }
@@ -645,16 +646,18 @@ pub fn batch_mean_to_true_anomaly(
     // First convert to eccentric anomalies
     let eccentric_anomalies = batch_mean_to_eccentric_anomaly(mean_anomalies, eccentricities, tol, max_iter)?;
 
-    // Then convert to true anomalies
+    // Then convert to true anomalies in parallel
     let single_ecc = eccentricities.len() == 1;
     let ecc_value = if single_ecc { eccentricities[0] } else { 0.0 };
 
-    let mut results = Vec::with_capacity(eccentric_anomalies.len());
-    for (i, &E) in eccentric_anomalies.iter().enumerate() {
-        let e = if single_ecc { ecc_value } else { eccentricities[i] };
-        let nu = eccentric_to_true_anomaly(E, e)?;
-        results.push(nu);
-    }
+    let results: Vec<f64> = eccentric_anomalies
+        .par_iter()
+        .enumerate()
+        .map(|(i, &E)| {
+            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            eccentric_to_true_anomaly(E, e)
+        })
+        .collect::<PoliastroResult<Vec<f64>>>()?;
 
     Ok(results)
 }
@@ -685,12 +688,15 @@ pub fn batch_true_to_mean_anomaly(
     let single_ecc = eccentricities.len() == 1;
     let ecc_value = if single_ecc { eccentricities[0] } else { 0.0 };
 
-    let mut results = Vec::with_capacity(true_anomalies.len());
-    for (i, &nu) in true_anomalies.iter().enumerate() {
-        let e = if single_ecc { ecc_value } else { eccentricities[i] };
-        let M = true_to_mean_anomaly(nu, e)?;
-        results.push(M);
-    }
+    // Parallel processing using rayon
+    let results: Vec<f64> = true_anomalies
+        .par_iter()
+        .enumerate()
+        .map(|(i, &nu)| {
+            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            true_to_mean_anomaly(nu, e)
+        })
+        .collect::<PoliastroResult<Vec<f64>>>()?;
 
     Ok(results)
 }
@@ -725,12 +731,15 @@ pub fn batch_mean_to_hyperbolic_anomaly(
     let single_ecc = eccentricities.len() == 1;
     let ecc_value = if single_ecc { eccentricities[0] } else { 0.0 };
 
-    let mut results = Vec::with_capacity(mean_anomalies.len());
-    for (i, &M) in mean_anomalies.iter().enumerate() {
-        let e = if single_ecc { ecc_value } else { eccentricities[i] };
-        let H = mean_to_hyperbolic_anomaly(M, e, tol, max_iter)?;
-        results.push(H);
-    }
+    // Parallel processing using rayon
+    let results: Vec<f64> = mean_anomalies
+        .par_iter()
+        .enumerate()
+        .map(|(i, &M)| {
+            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            mean_to_hyperbolic_anomaly(M, e, tol, max_iter)
+        })
+        .collect::<PoliastroResult<Vec<f64>>>()?;
 
     Ok(results)
 }
@@ -756,12 +765,15 @@ pub fn batch_mean_to_true_anomaly_hyperbolic(
     let single_ecc = eccentricities.len() == 1;
     let ecc_value = if single_ecc { eccentricities[0] } else { 0.0 };
 
-    let mut results = Vec::with_capacity(hyperbolic_anomalies.len());
-    for (i, &H) in hyperbolic_anomalies.iter().enumerate() {
-        let e = if single_ecc { ecc_value } else { eccentricities[i] };
-        let nu = hyperbolic_to_true_anomaly(H, e)?;
-        results.push(nu);
-    }
+    // Parallel processing using rayon
+    let results: Vec<f64> = hyperbolic_anomalies
+        .par_iter()
+        .enumerate()
+        .map(|(i, &H)| {
+            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            hyperbolic_to_true_anomaly(H, e)
+        })
+        .collect::<PoliastroResult<Vec<f64>>>()?;
 
     Ok(results)
 }
@@ -778,11 +790,12 @@ pub fn batch_mean_to_true_anomaly_hyperbolic(
 pub fn batch_mean_to_true_anomaly_parabolic(
     mean_anomalies: &[f64],
 ) -> PoliastroResult<Vec<f64>> {
-    let mut results = Vec::with_capacity(mean_anomalies.len());
-    for &M in mean_anomalies.iter() {
-        let nu = mean_to_true_anomaly_parabolic(M)?;
-        results.push(nu);
-    }
+    // Parallel processing using rayon
+    let results: Vec<f64> = mean_anomalies
+        .par_iter()
+        .map(|&M| mean_to_true_anomaly_parabolic(M))
+        .collect::<PoliastroResult<Vec<f64>>>()?;
+
     Ok(results)
 }
 
