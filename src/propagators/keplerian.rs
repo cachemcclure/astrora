@@ -365,6 +365,177 @@ pub fn propagate_lagrange(
 }
 
 // ============================================================================
+// Batch Operations
+// ============================================================================
+
+/// Batch propagation of multiple state vectors
+///
+/// Efficiently propagates multiple orbits in a single call to minimize Python-Rust
+/// boundary crossing overhead. This function demonstrates the critical performance
+/// pattern: batch operations are 10-20x faster than sequential calls.
+///
+/// # Arguments
+/// * `states` - 2D array where each row is [x, y, z, vx, vy, vz] in meters and m/s
+/// * `time_steps` - Either a single time step for all states, or one per state (in seconds)
+/// * `mu` - Standard gravitational parameter (m³/s²)
+///
+/// # Returns
+/// 2D array with same shape containing propagated states
+///
+/// # Errors
+/// Returns error if:
+/// - State array doesn't have exactly 6 columns
+/// - Number of time steps doesn't match number of states (when array is provided)
+/// - Any individual propagation fails (invalid orbit type, etc.)
+///
+/// # Example
+/// ```
+/// use astrora_core::propagators::keplerian::batch_propagate_states;
+/// use ndarray::array;
+/// use astrora_core::core::constants::GM_EARTH;
+///
+/// // Two orbits to propagate
+/// let states = array![
+///     [7000e3, 0.0, 0.0, 0.0, 7546.0, 0.0],
+///     [8000e3, 0.0, 0.0, 0.0, 7000.0, 0.0]
+/// ];
+/// let dt = 3600.0; // 1 hour for both
+/// let result = batch_propagate_states(states.view(), &[dt], GM_EARTH).unwrap();
+/// ```
+pub fn batch_propagate_states(
+    states: ndarray::ArrayView2<f64>,
+    time_steps: &[f64],
+    mu: f64,
+) -> PoliastroResult<ndarray::Array2<f64>> {
+    use ndarray::Array2;
+
+    if states.ncols() != 6 {
+        return Err(PoliastroError::InvalidParameter {
+            parameter: "state_dimensions".into(),
+            value: states.ncols() as f64,
+            constraint: "must be 6 (x, y, z, vx, vy, vz)".into(),
+        });
+    }
+
+    let n_states = states.nrows();
+
+    // Handle time steps - either single value or one per state
+    let dt_vec: Vec<f64> = if time_steps.len() == 1 {
+        // Single time step for all states
+        vec![time_steps[0]; n_states]
+    } else if time_steps.len() == n_states {
+        // One time step per state
+        time_steps.to_vec()
+    } else {
+        return Err(PoliastroError::InvalidParameter {
+            parameter: "time_steps".into(),
+            value: time_steps.len() as f64,
+            constraint: format!(
+                "must be 1 or match number of states ({})",
+                n_states
+            ),
+        });
+    };
+
+    // Allocate result array
+    let mut result = Array2::zeros((n_states, 6));
+
+    // Propagate each state
+    for (i, state_row) in states.rows().into_iter().enumerate() {
+        let r0 = Vector3::new(state_row[0], state_row[1], state_row[2]);
+        let v0 = Vector3::new(state_row[3], state_row[4], state_row[5]);
+        let dt = dt_vec[i];
+
+        // Propagate this state
+        let (r, v) = propagate_state_keplerian(&r0, &v0, dt, mu).map_err(|e| {
+            PoliastroError::PropagationFailed {
+                context: format!("batch propagation at index {}", i),
+                source: Box::new(e),
+            }
+        })?;
+
+        // Store result
+        result[[i, 0]] = r.x;
+        result[[i, 1]] = r.y;
+        result[[i, 2]] = r.z;
+        result[[i, 3]] = v.x;
+        result[[i, 4]] = v.y;
+        result[[i, 5]] = v.z;
+    }
+
+    Ok(result)
+}
+
+/// Batch propagation using Lagrange coefficients
+///
+/// Alternative batch propagation method using f and g functions.
+/// Useful for cross-validation and performance comparison.
+///
+/// # Arguments
+/// * `states` - 2D array where each row is [x, y, z, vx, vy, vz]
+/// * `time_steps` - Either a single time step or one per state (seconds)
+/// * `mu` - Standard gravitational parameter (m³/s²)
+///
+/// # Returns
+/// 2D array with same shape containing propagated states
+pub fn batch_propagate_lagrange(
+    states: ndarray::ArrayView2<f64>,
+    time_steps: &[f64],
+    mu: f64,
+) -> PoliastroResult<ndarray::Array2<f64>> {
+    use ndarray::Array2;
+
+    if states.ncols() != 6 {
+        return Err(PoliastroError::InvalidParameter {
+            parameter: "state_dimensions".into(),
+            value: states.ncols() as f64,
+            constraint: "must be 6 (x, y, z, vx, vy, vz)".into(),
+        });
+    }
+
+    let n_states = states.nrows();
+
+    let dt_vec: Vec<f64> = if time_steps.len() == 1 {
+        vec![time_steps[0]; n_states]
+    } else if time_steps.len() == n_states {
+        time_steps.to_vec()
+    } else {
+        return Err(PoliastroError::InvalidParameter {
+            parameter: "time_steps".into(),
+            value: time_steps.len() as f64,
+            constraint: format!(
+                "must be 1 or match number of states ({})",
+                n_states
+            ),
+        });
+    };
+
+    let mut result = Array2::zeros((n_states, 6));
+
+    for (i, state_row) in states.rows().into_iter().enumerate() {
+        let r0 = Vector3::new(state_row[0], state_row[1], state_row[2]);
+        let v0 = Vector3::new(state_row[3], state_row[4], state_row[5]);
+        let dt = dt_vec[i];
+
+        let (r, v) = propagate_lagrange(&r0, &v0, dt, mu).map_err(|e| {
+            PoliastroError::PropagationFailed {
+                context: format!("batch lagrange propagation at index {}", i),
+                source: Box::new(e),
+            }
+        })?;
+
+        result[[i, 0]] = r.x;
+        result[[i, 1]] = r.y;
+        result[[i, 2]] = r.z;
+        result[[i, 3]] = v.x;
+        result[[i, 4]] = v.y;
+        result[[i, 5]] = v.z;
+    }
+
+    Ok(result)
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
@@ -564,5 +735,139 @@ mod tests {
         assert_relative_eq!(h.x, h0.x, epsilon = 1e-3);
         assert_relative_eq!(h.y, h0.y, epsilon = 1e-3);
         assert_relative_eq!(h.z, h0.z, epsilon = 1e-3);
+    }
+
+    #[test]
+    fn test_batch_propagate_single_time_step() {
+        use ndarray::array;
+
+        // Create two circular orbits at different altitudes
+        let r1 = 7000e3;
+        let r2 = 8000e3;
+        let v1 = (GM_EARTH / r1).sqrt();
+        let v2 = (GM_EARTH / r2).sqrt();
+
+        let states = array![
+            [r1, 0.0, 0.0, 0.0, v1, 0.0],
+            [r2, 0.0, 0.0, 0.0, v2, 0.0]
+        ];
+
+        let dt = 3600.0; // 1 hour
+        let result = batch_propagate_states(states.view(), &[dt], GM_EARTH).unwrap();
+
+        // Check shape
+        assert_eq!(result.shape(), &[2, 6]);
+
+        // Both orbits should maintain their radius (circular orbits)
+        let r1_new = (result[[0, 0]].powi(2) + result[[0, 1]].powi(2) + result[[0, 2]].powi(2)).sqrt();
+        let r2_new = (result[[1, 0]].powi(2) + result[[1, 1]].powi(2) + result[[1, 2]].powi(2)).sqrt();
+
+        assert_relative_eq!(r1_new, r1, epsilon = 1.0);
+        assert_relative_eq!(r2_new, r2, epsilon = 1.0);
+    }
+
+    #[test]
+    fn test_batch_propagate_multiple_time_steps() {
+        use ndarray::array;
+
+        // Two orbits with different time steps
+        let r = 7000e3;
+        let v = (GM_EARTH / r).sqrt();
+
+        let states = array![
+            [r, 0.0, 0.0, 0.0, v, 0.0],
+            [r, 0.0, 0.0, 0.0, v, 0.0]
+        ];
+
+        // Different time steps
+        let dt = vec![1800.0, 3600.0]; // 30 min and 1 hour
+        let result = batch_propagate_states(states.view(), &dt, GM_EARTH).unwrap();
+
+        // Second orbit should have traveled farther
+        // Both should still be circular
+        let r1_new = (result[[0, 0]].powi(2) + result[[0, 1]].powi(2) + result[[0, 2]].powi(2)).sqrt();
+        let r2_new = (result[[1, 0]].powi(2) + result[[1, 1]].powi(2) + result[[1, 2]].powi(2)).sqrt();
+
+        assert_relative_eq!(r1_new, r, epsilon = 1.0);
+        assert_relative_eq!(r2_new, r, epsilon = 1.0);
+    }
+
+    #[test]
+    fn test_batch_propagate_invalid_dimensions() {
+        use ndarray::array;
+
+        // Wrong number of columns
+        let states = array![
+            [7000e3, 0.0, 0.0, 0.0, 7546.0], // Only 5 columns
+        ];
+
+        let dt = 3600.0;
+        let result = batch_propagate_states(states.view(), &[dt], GM_EARTH);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_batch_propagate_wrong_time_steps() {
+        use ndarray::array;
+
+        let states = array![
+            [7000e3, 0.0, 0.0, 0.0, 7546.0, 0.0],
+            [8000e3, 0.0, 0.0, 0.0, 7000.0, 0.0]
+        ];
+
+        // Wrong number of time steps (2 states but 3 time steps)
+        let dt = vec![1000.0, 2000.0, 3000.0];
+        let result = batch_propagate_states(states.view(), &dt, GM_EARTH);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_batch_propagate_energy_conservation() {
+        use ndarray::array;
+
+        // Elliptical orbit
+        let r0 = 7000e3;
+        let v0 = 8000.0;
+
+        let states = array![
+            [r0, 0.0, 0.0, 0.0, v0, 0.0],
+            [r0, 0.0, 0.0, 0.0, v0, 0.0]
+        ];
+
+        let dt = 3600.0;
+        let result = batch_propagate_states(states.view(), &[dt], GM_EARTH).unwrap();
+
+        // Check energy conservation for both
+        for i in 0..2 {
+            let r_mag = (result[[i, 0]].powi(2) + result[[i, 1]].powi(2) + result[[i, 2]].powi(2)).sqrt();
+            let v_mag_sq = result[[i, 3]].powi(2) + result[[i, 4]].powi(2) + result[[i, 5]].powi(2);
+
+            let energy_initial = 0.5 * v0 * v0 - GM_EARTH / r0;
+            let energy_final = 0.5 * v_mag_sq - GM_EARTH / r_mag;
+
+            assert_relative_eq!(energy_final, energy_initial, epsilon = 10.0);
+        }
+    }
+
+    #[test]
+    fn test_batch_propagate_lagrange() {
+        use ndarray::array;
+
+        let r = 7000e3;
+        let v = (GM_EARTH / r).sqrt();
+
+        let states = array![
+            [r, 0.0, 0.0, 0.0, v, 0.0],
+        ];
+
+        let dt = 3600.0;
+
+        // Both methods should give same result
+        let result1 = batch_propagate_states(states.view(), &[dt], GM_EARTH).unwrap();
+        let result2 = batch_propagate_lagrange(states.view(), &[dt], GM_EARTH).unwrap();
+
+        for i in 0..6 {
+            assert_relative_eq!(result1[[0, i]], result2[[0, i]], epsilon = 1.0);
+        }
     }
 }

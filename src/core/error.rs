@@ -1,4 +1,4 @@
-//! Error types for poliastro astrodynamics calculations
+//! Error types for astrora astrodynamics calculations
 //!
 //! This module defines a comprehensive error hierarchy for orbital mechanics
 //! computations, including numerical failures, physical constraint violations,
@@ -9,7 +9,7 @@ use pyo3::exceptions::{PyRuntimeError, PyValueError, PyTypeError, PyArithmeticEr
 use pyo3::PyErr;
 use thiserror::Error;
 
-/// Main error type for poliastro operations
+/// Main error type for astrora operations
 ///
 /// This enum covers all error cases that can occur during astrodynamics
 /// calculations, from numerical convergence failures to physical constraint
@@ -174,6 +174,13 @@ pub enum PoliastroError {
         reason: String,
     },
 
+    /// Propagation failed for a specific context
+    #[error("Propagation failed in {context}: {source}")]
+    PropagationFailed {
+        context: String,
+        source: Box<PoliastroError>,
+    },
+
     // ========================================================================
     // Input Validation Errors
     // ========================================================================
@@ -243,10 +250,13 @@ pub enum PoliastroError {
     },
 }
 
-/// Result type alias for poliastro operations
+/// Result type alias for astrora operations
 ///
 /// This is a convenience alias for `Result<T, PoliastroError>` that should
 /// be used throughout the library for consistency.
+///
+/// Note: The type is still called PoliastroError/PoliastroResult internally
+/// for backward compatibility, but represents astrora's error handling.
 pub type PoliastroResult<T> = Result<T, PoliastroError>;
 
 // ============================================================================
@@ -294,7 +304,8 @@ impl From<PoliastroError> for PyErr {
 
             // Integration errors → RuntimeError
             IntegrationFailure { .. }
-            | PropagationDivergence { .. } => PyRuntimeError::new_err(err.to_string()),
+            | PropagationDivergence { .. }
+            | PropagationFailed { .. } => PyRuntimeError::new_err(err.to_string()),
 
             // Validation errors → ValueError
             OutOfRange { .. }

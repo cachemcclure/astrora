@@ -248,6 +248,23 @@ struct DopriCoefficients {
     b_star: [f64; 7],
 }
 
+/// Dormand-Prince 8(5,3) coefficients
+///
+/// These are the Butcher tableau coefficients for the DOP853 method,
+/// an 8th-order embedded Runge-Kutta method with 5th-order error estimation.
+/// This method has 12 stages and provides higher accuracy than DOPRI5.
+#[allow(dead_code)]
+struct Dop853Coefficients {
+    // Time step fractions (c_i) - 12 stages
+    c: [f64; 12],
+    // RK matrix coefficients (a_ij) - sparse matrix stored efficiently
+    a: [[f64; 11]; 12],
+    // 8th order solution weights (b_i)
+    b: [f64; 12],
+    // 5th order solution weights for error estimation
+    b_star: [f64; 12],
+}
+
 impl DopriCoefficients {
     fn new() -> Self {
         Self {
@@ -301,6 +318,74 @@ impl DopriCoefficients {
                 -92097.0 / 339200.0,
                 187.0 / 2100.0,
                 1.0 / 40.0,
+            ],
+        }
+    }
+}
+
+impl Dop853Coefficients {
+    fn new() -> Self {
+        Self {
+            // Time step fractions (c_i) for 12 stages
+            c: [
+                0.0,
+                5.26001519587677318785587544488e-2,
+                7.89002279381515978178381316732e-2,
+                1.18350341907227396726757197510e-1,
+                2.81649658092772603273242802490e-1,
+                3.33333333333333333333333333333e-1,
+                2.5e-1,
+                3.07692307692307692307692307692e-1,
+                6.51282051282051282051282051282e-1,
+                6.0e-1,
+                8.57142857142857142857142857142e-1,
+                1.0,
+            ],
+            // Butcher tableau A matrix (sparse, stored row by row)
+            a: [
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [5.26001519587677318785587544488e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [1.97250569845378994544595329183e-2, 5.91751709536136983633785987549e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [2.95875854768068491816892993775e-2, 0.0, 8.87627564304205475450678981324e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [2.41365134159266685502369798665e-1, 0.0, -8.84549479328286085344864962717e-1, 9.24834003261792003115737966543e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [3.7037037037037037037037037037e-2, 0.0, 0.0, 1.70828608729473871279604482173e-1, 1.25467687566822425016691814123e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [3.7109375e-2, 0.0, 0.0, 1.70252211019544039314978060272e-1, 6.02165389804559606850219397283e-2, -1.7578125e-2, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [3.70920001185047927108779319836e-2, 0.0, 0.0, 1.70383925712239993810214054705e-1, 1.07262030446373284651809199168e-1, -1.53194377486244017527936158236e-2, 8.27378916381402288758473766002e-3, 0.0, 0.0, 0.0, 0.0],
+                [6.24110958716075717114429577812e-1, 0.0, 0.0, -3.36089262944694129406857109825, -8.68219346841726006818189891453e-1, 2.75920996994467083049415600797e1, 2.01540675504778934086186788979e1, -4.34898841810699588477366255144e1, 0.0, 0.0, 0.0],
+                [4.77662536438264365890433908527e-1, 0.0, 0.0, -2.48811461997166764192642586468, -5.90290826836842996371446475743e-1, 2.12300514481811942347288949897e1, 1.52792336328824235832596922938e1, -3.32882109689848629194453265587e1, -2.03312017085086261358222928593e-2, 0.0, 0.0],
+                [-9.3714243008598732571704021658e-1, 0.0, 0.0, 5.18637242884406370830023853209, 1.09143734899672957818500254654, -8.14978701074692612513997267357, -1.85200656599969598641566180701e1, 2.27394870993505042818970056734e1, 2.49360555267965238987089396762, -3.0467644718982195003823669022, 0.0],
+                [2.27331014751653820792359768449, 0.0, 0.0, -1.05344954667372501984066689879e1, -2.00087205822486249909675718444, -1.79589318631187989172765950534e1, 2.79488845294199600508499808837e1, -2.85899827713502369474065508674, -8.87285693353062954433549289258, 1.23605671757943030647266201528e1, 6.43392746015763530355970484046e-1],
+            ],
+            // 8th order solution weights (b_i)
+            b: [
+                5.42937341165687622380535766363e-2,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                4.45031289275240888144113950566,
+                1.89151789931450038304281599044,
+                -5.8012039600105847814672114227,
+                3.1116436695781989440891606237e-1,
+                -1.52160949662516078556178806805e-1,
+                2.01365400804030348374776537501e-1,
+                4.47106157277725905176885569043e-2,
+            ],
+            // 5th order solution weights for error estimation (b*_i)
+            // Note: b_star = b - error_coefficients
+            b_star: [
+                5.42937341165687622380535766363e-2 - 1.312004499419488073250102996e-2,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                4.45031289275240888144113950566 - (-1.225156446376204440720569753),
+                1.89151789931450038304281599044 - (-4.957589496572501915214079952e-1),
+                -5.8012039600105847814672114227 - 1.664377182454986536961530415,
+                3.1116436695781989440891606237e-1 - (-3.503288487499736816886487290e-1),
+                -1.52160949662516078556178806805e-1 - 3.341791187130174790297318841e-1,
+                2.01365400804030348374776537501e-1 - 8.192320648511571246570742613e-2,
+                4.47106157277725905176885569043e-2 - (-2.235530786388629525884427845e-2),
             ],
         }
     }
@@ -463,6 +548,176 @@ where
     ))
 }
 
+/// Dormand-Prince 8(5,3) adaptive step integrator (single step)
+///
+/// Performs one adaptive step of DOP853 integration with error control.
+/// This is an 8th-order method with embedded 5th-order error estimation,
+/// providing higher accuracy than DOPRI5 for smooth problems.
+///
+/// # Arguments
+/// * `f` - Right-hand side function dy/dt = f(t, y)
+/// * `t0` - Initial time
+/// * `y0` - Initial state vector
+/// * `h` - Initial step size (will be adapted)
+/// * `tol` - Error tolerance (controls step size adaptation)
+///
+/// # Returns
+/// Tuple of (new_time, new_state, new_step_size, error_estimate)
+///
+/// # Example
+/// ```ignore
+/// let f = |_t: f64, y: &na::DVector<f64>| -y.clone();
+/// let y0 = na::DVector::from_vec(vec![1.0]);
+/// let (t1, y1, h_new, error) = dop853_step(f, 0.0, &y0, 0.1, 1e-10);
+/// ```
+pub fn dop853_step<F>(
+    f: F,
+    t0: f64,
+    y0: &na::DVector<f64>,
+    h: f64,
+    tol: f64,
+) -> (f64, na::DVector<f64>, f64, f64)
+where
+    F: Fn(f64, &na::DVector<f64>) -> na::DVector<f64>,
+{
+    let coeff = Dop853Coefficients::new();
+
+    // Compute the 12 stages (k_i)
+    let mut k = Vec::with_capacity(12);
+
+    // k1 = f(t0, y0)
+    k.push(f(t0, y0));
+
+    // Compute remaining stages (i = 1 to 11)
+    for i in 1..12 {
+        let mut y_temp = y0.clone();
+        for j in 0..i {
+            y_temp += &k[j] * (h * coeff.a[i][j]);
+        }
+        k.push(f(t0 + coeff.c[i] * h, &y_temp));
+    }
+
+    // Compute 8th order solution
+    let mut y_new = y0.clone();
+    for i in 0..12 {
+        y_new += &k[i] * (h * coeff.b[i]);
+    }
+
+    // Compute 5th order solution for error estimation
+    let mut y_star = y0.clone();
+    for i in 0..12 {
+        y_star += &k[i] * (h * coeff.b_star[i]);
+    }
+
+    // Error estimate (difference between 8th and 5th order solutions)
+    let error_vec = &y_new - &y_star;
+    let error_norm = error_vec.norm() / (1.0 + y0.norm()); // Relative error
+
+    // Adaptive step size calculation (PI controller)
+    // For DOP853: 8th order solution with 5th order error estimate
+    // Step size control exponent: 1/(error_order + 1) = 1/6
+    let safety_factor = 0.9;
+    let min_factor = 0.2;
+    let max_factor = 10.0;
+
+    let factor = if error_norm > 0.0 {
+        safety_factor * (tol / error_norm).powf(1.0 / 6.0) // 1/6 for 5th order error estimate
+    } else {
+        max_factor
+    };
+
+    let h_new = h * factor.clamp(min_factor, max_factor);
+
+    (t0 + h, y_new, h_new, error_norm)
+}
+
+/// Integrate ODE from t0 to tf using Dormand-Prince 8(5,3) with adaptive stepping
+///
+/// This method provides higher accuracy than DOPRI5 and is recommended for
+/// problems requiring tight error tolerances (e.g., tol < 1e-10).
+///
+/// # Arguments
+/// * `f` - Right-hand side function dy/dt = f(t, y)
+/// * `t0` - Initial time
+/// * `y0` - Initial state
+/// * `tf` - Final time
+/// * `h0` - Initial step size
+/// * `tol` - Error tolerance
+/// * `max_steps` - Maximum number of steps (prevents infinite loops)
+///
+/// # Returns
+/// Final state vector at time tf
+///
+/// # Errors
+/// Returns error if integration fails or exceeds max_steps
+///
+/// # Example
+/// ```ignore
+/// let f = |_t: f64, y: &na::DVector<f64>| -y.clone();
+/// let y0 = na::DVector::from_vec(vec![1.0]);
+/// let y_final = dop853_integrate(f, 0.0, &y0, 1.0, 0.1, 1e-10, None).unwrap();
+/// ```
+pub fn dop853_integrate<F>(
+    f: F,
+    t0: f64,
+    y0: &na::DVector<f64>,
+    tf: f64,
+    h0: f64,
+    tol: f64,
+    max_steps: Option<usize>,
+) -> PoliastroResult<na::DVector<f64>>
+where
+    F: Fn(f64, &na::DVector<f64>) -> na::DVector<f64>,
+{
+    let max_steps = max_steps.unwrap_or(100000);
+    let mut t = t0;
+    let mut y = y0.clone();
+    let mut h = h0.abs() * (tf - t0).signum();
+    let min_step_size = 1e-14;
+
+    for _step in 0..max_steps {
+        // Check if we've reached the final time
+        if (t - tf).abs() < min_step_size {
+            return Ok(y);
+        }
+
+        // Don't overshoot the final time
+        if (tf - t0).signum() * (t + h - tf) > 0.0 {
+            h = tf - t;
+        }
+
+        // Check for tiny step size before taking step
+        if h.abs() < min_step_size {
+            // If we're very close to the end, just return current state
+            if (t - tf).abs() < 1e-10 {
+                return Ok(y);
+            }
+            return Err(PoliastroError::NumericalInstability {
+                operation: "DOP853 integration".to_string(),
+                details: format!("Step size became too small at t = {} (h = {})", t, h),
+            });
+        }
+
+        let (t_new, y_new, h_new, error) = dop853_step(&f, t, &y, h, tol);
+
+        // Accept step if error is acceptable
+        if error <= tol {
+            t = t_new;
+            y = y_new;
+            h = h_new;
+        } else {
+            // Reject step and retry with smaller step size
+            h = h_new;
+        }
+    }
+
+    Err(PoliastroError::convergence_failure(
+        "DOP853 integration",
+        max_steps,
+        tol,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -608,5 +863,127 @@ mod tests {
         // New step size should be reasonable
         assert!(h_new > 0.0);
         assert!(h_new < 10.0);
+    }
+
+    #[test]
+    fn test_dop853_exponential_decay() {
+        // dy/dt = -y, y(0) = 1
+        // Exact solution: y(t) = exp(-t)
+        let f = |_t: f64, y: &na::DVector<f64>| -y;
+
+        let y0 = na::DVector::from_vec(vec![1.0]);
+        let y_final = dop853_integrate(f, 0.0, &y0, 1.0, 0.1, 1e-10, None).unwrap();
+
+        let exact = (-1.0_f64).exp();
+        // DOP853 should achieve much higher accuracy than DOPRI5
+        assert_relative_eq!(y_final[0], exact, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_dop853_harmonic_oscillator() {
+        // d²x/dt² = -x (harmonic oscillator)
+        // Convert to system: dy1/dt = y2, dy2/dt = -y1
+        // Initial: y1(0) = 1, y2(0) = 0
+        // Exact: y1(t) = cos(t), y2(t) = -sin(t)
+
+        let f = |_t: f64, y: &na::DVector<f64>| na::DVector::from_vec(vec![y[1], -y[0]]);
+
+        let y0 = na::DVector::from_vec(vec![1.0, 0.0]);
+        let y_final =
+            dop853_integrate(f, 0.0, &y0, std::f64::consts::FRAC_PI_2, 0.1, 1e-10, None).unwrap();
+
+        // At t = π/2: y1 ≈ 0, y2 ≈ -1
+        // DOP853 should achieve very high accuracy
+        assert_relative_eq!(y_final[0], 0.0, epsilon = 1e-8);
+        assert_relative_eq!(y_final[1], -1.0, epsilon = 1e-8);
+    }
+
+    #[test]
+    fn test_dop853_step_size_adaptation() {
+        // Test that step size adapts correctly with DOP853
+        let f = |_t: f64, y: &na::DVector<f64>| -y;
+        let y0 = na::DVector::from_vec(vec![1.0]);
+
+        let (_, _, h_new, error) = dop853_step(&f, 0.0, &y0, 0.1, 1e-10);
+
+        // Error should be within tolerance or step should be reduced
+        assert!(error < 1e-10 || h_new < 0.1);
+
+        // New step size should be reasonable
+        assert!(h_new > 0.0);
+        assert!(h_new < 10.0);
+    }
+
+    #[test]
+    fn test_dop853_vs_dopri5_accuracy() {
+        // Compare accuracy of DOP853 vs DOPRI5 for the same problem
+        // dy/dt = -y, y(0) = 1, integrate to t = 5.0
+        let f = |_t: f64, y: &na::DVector<f64>| -y;
+        let y0 = na::DVector::from_vec(vec![1.0]);
+        let tf = 5.0;
+        let tol = 1e-10;
+
+        // Integrate with both methods
+        let y_dopri5 = dopri5_integrate(&f, 0.0, &y0, tf, 0.1, tol, None).unwrap();
+        let y_dop853 = dop853_integrate(&f, 0.0, &y0, tf, 0.1, tol, None).unwrap();
+
+        let exact = (-tf).exp();
+
+        // DOP853 should be more accurate than DOPRI5
+        let error_dopri5 = (y_dopri5[0] - exact).abs();
+        let error_dop853 = (y_dop853[0] - exact).abs();
+
+        // DOP853 should have significantly better accuracy
+        assert!(error_dop853 < error_dopri5);
+        assert_relative_eq!(y_dop853[0], exact, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_dop853_stiff_problem() {
+        // Test DOP853 on a mildly stiff problem
+        // dy/dt = -10*y, y(0) = 1
+        // Exact solution: y(t) = exp(-10*t)
+        let f = |_t: f64, y: &na::DVector<f64>| y * -10.0;
+
+        let y0 = na::DVector::from_vec(vec![1.0]);
+        let y_final = dop853_integrate(f, 0.0, &y0, 0.5, 0.01, 1e-8, None).unwrap();
+
+        let exact = (-5.0_f64).exp();
+        assert_relative_eq!(y_final[0], exact, epsilon = 1e-7);
+    }
+
+    #[test]
+    fn test_dop853_backward_integration() {
+        // Test backward integration (negative time direction)
+        // dy/dt = -y, y(1) = exp(-1), integrate back to t = 0
+        let f = |_t: f64, y: &na::DVector<f64>| -y;
+
+        let y0 = na::DVector::from_vec(vec![(-1.0_f64).exp()]);
+        let y_final = dop853_integrate(f, 1.0, &y0, 0.0, -0.1, 1e-10, None).unwrap();
+
+        // Should get back to y ≈ 1.0
+        assert_relative_eq!(y_final[0], 1.0, epsilon = 1e-8);
+    }
+
+    #[test]
+    fn test_dop853_multidimensional() {
+        // Test with a 3D system
+        // dy1/dt = -y1, dy2/dt = -2*y2, dy3/dt = -3*y3
+        let f = |_t: f64, y: &na::DVector<f64>| {
+            na::DVector::from_vec(vec![-y[0], -2.0 * y[1], -3.0 * y[2]])
+        };
+
+        let y0 = na::DVector::from_vec(vec![1.0, 1.0, 1.0]);
+        let t_final = 0.5;
+        let y_final = dop853_integrate(f, 0.0, &y0, t_final, 0.1, 1e-10, None).unwrap();
+
+        // Exact solutions
+        let exact1 = (-t_final).exp();
+        let exact2 = (-2.0 * t_final).exp();
+        let exact3 = (-3.0 * t_final).exp();
+
+        assert_relative_eq!(y_final[0], exact1, epsilon = 1e-9);
+        assert_relative_eq!(y_final[1], exact2, epsilon = 1e-9);
+        assert_relative_eq!(y_final[2], exact3, epsilon = 1e-9);
     }
 }
