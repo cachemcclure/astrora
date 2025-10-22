@@ -32,9 +32,44 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add core classes
     m.add_class::<core::state::CartesianState>()?;
+    m.add_class::<core::time::Epoch>()?;
+    m.add_class::<core::time::Duration>()?;
+    m.add_class::<core::elements::OrbitalElements>()?;
+    m.add_class::<core::elements::EquinoctialElements>()?;
 
-    // Add submodules as they are implemented
-    // m.add_function(wrap_pyfunction!(propagate_orbit, m)?)?;
+    // Add orbital element conversion functions
+    m.add_function(wrap_pyfunction!(py_rv_to_coe, m)?)?;
+    m.add_function(wrap_pyfunction!(py_coe_to_rv, m)?)?;
+    m.add_function(wrap_pyfunction!(py_coe_to_equinoctial, m)?)?;
+    m.add_function(wrap_pyfunction!(py_equinoctial_to_coe, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rv_to_equinoctial, m)?)?;
+    m.add_function(wrap_pyfunction!(py_equinoctial_to_rv, m)?)?;
+
+    // Add anomaly conversion functions - Elliptical orbits
+    m.add_function(wrap_pyfunction!(py_mean_to_eccentric_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_eccentric_to_mean_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_eccentric_to_true_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_true_to_eccentric_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mean_to_true_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_true_to_mean_anomaly, m)?)?;
+
+    // Add anomaly conversion functions - Hyperbolic orbits
+    m.add_function(wrap_pyfunction!(py_mean_to_hyperbolic_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_hyperbolic_to_mean_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_hyperbolic_to_true_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_true_to_hyperbolic_anomaly, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mean_to_true_anomaly_hyperbolic, m)?)?;
+    m.add_function(wrap_pyfunction!(py_true_to_mean_anomaly_hyperbolic, m)?)?;
+
+    // Add anomaly conversion functions - Parabolic orbits
+    m.add_function(wrap_pyfunction!(py_mean_to_true_anomaly_parabolic, m)?)?;
+    m.add_function(wrap_pyfunction!(py_true_to_mean_anomaly_parabolic, m)?)?;
+
+    // Add propagator functions
+    m.add_function(wrap_pyfunction!(py_propagate_keplerian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_propagate_keplerian_duration, m)?)?;
+    m.add_function(wrap_pyfunction!(py_propagate_state_keplerian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_propagate_lagrange, m)?)?;
 
     Ok(())
 }
@@ -380,4 +415,463 @@ fn py_batch_normalize_vectors<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let result = core::numpy_integration::batch_normalize_vectors(vectors.as_array())?;
     Ok(PyArray2::from_owned_array_bound(py, result))
+}
+
+// ============================================================================
+// Orbital Element Conversion Functions
+// ============================================================================
+
+/// Convert Cartesian state vectors to classical orbital elements
+///
+/// # Arguments
+/// * `r` - Position vector [x, y, z] in meters (NumPy array)
+/// * `v` - Velocity vector [vx, vy, vz] in m/s (NumPy array)
+/// * `mu` - Standard gravitational parameter in m³/s²
+/// * `tol` - Tolerance for singularity checks (default: 1e-8)
+///
+/// # Returns
+/// OrbitalElements object
+#[pyfunction]
+#[pyo3(name = "rv_to_coe", signature = (r, v, mu, tol=1e-8))]
+fn py_rv_to_coe(
+    r: PyReadonlyArray1<f64>,
+    v: PyReadonlyArray1<f64>,
+    mu: f64,
+    tol: f64,
+) -> PyResult<core::elements::OrbitalElements> {
+    // Convert NumPy arrays to Vector3
+    let r_array = r.as_array();
+    let v_array = v.as_array();
+
+    if r_array.len() != 3 || v_array.len() != 3 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Position and velocity vectors must have exactly 3 components"
+        ));
+    }
+
+    let r_vec = core::linalg::Vector3::new(r_array[0], r_array[1], r_array[2]);
+    let v_vec = core::linalg::Vector3::new(v_array[0], v_array[1], v_array[2]);
+
+    // Call the Rust function
+    core::elements::rv_to_coe(&r_vec, &v_vec, mu, tol).map_err(|e| e.into())
+}
+
+/// Convert classical orbital elements to Cartesian state vectors
+///
+/// # Arguments
+/// * `elements` - OrbitalElements object
+/// * `mu` - Standard gravitational parameter in m³/s²
+///
+/// # Returns
+/// Tuple of (position, velocity) as NumPy arrays
+#[pyfunction]
+#[pyo3(name = "coe_to_rv")]
+fn py_coe_to_rv<'py>(
+    py: Python<'py>,
+    elements: &core::elements::OrbitalElements,
+    mu: f64,
+) -> (Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>) {
+    // Call the Rust function
+    let (r_vec, v_vec) = core::elements::coe_to_rv(elements, mu);
+
+    // Convert Vector3 to NumPy arrays
+    let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
+    let v_array = ndarray::arr1(&[v_vec.x, v_vec.y, v_vec.z]);
+
+    (
+        PyArray1::from_owned_array_bound(py, r_array),
+        PyArray1::from_owned_array_bound(py, v_array),
+    )
+}
+
+/// Convert classical orbital elements to modified equinoctial elements
+///
+/// # Arguments
+/// * `elements` - OrbitalElements object
+///
+/// # Returns
+/// EquinoctialElements object
+#[pyfunction]
+#[pyo3(name = "coe_to_equinoctial")]
+fn py_coe_to_equinoctial(
+    elements: &core::elements::OrbitalElements,
+) -> core::elements::EquinoctialElements {
+    core::elements::coe_to_equinoctial(elements)
+}
+
+/// Convert modified equinoctial elements to classical orbital elements
+///
+/// # Arguments
+/// * `elements` - EquinoctialElements object
+/// * `tol` - Tolerance for singularity checks (default: 1e-8)
+///
+/// # Returns
+/// OrbitalElements object
+#[pyfunction]
+#[pyo3(name = "equinoctial_to_coe", signature = (elements, tol=1e-8))]
+fn py_equinoctial_to_coe(
+    elements: &core::elements::EquinoctialElements,
+    tol: f64,
+) -> PyResult<core::elements::OrbitalElements> {
+    core::elements::equinoctial_to_coe(elements, tol).map_err(|e| e.into())
+}
+
+/// Convert Cartesian state vectors to modified equinoctial elements
+///
+/// # Arguments
+/// * `r` - Position vector [x, y, z] in meters (NumPy array)
+/// * `v` - Velocity vector [vx, vy, vz] in m/s (NumPy array)
+/// * `mu` - Standard gravitational parameter in m³/s²
+/// * `tol` - Tolerance for singularity checks (default: 1e-8)
+///
+/// # Returns
+/// EquinoctialElements object
+#[pyfunction]
+#[pyo3(name = "rv_to_equinoctial", signature = (r, v, mu, tol=1e-8))]
+fn py_rv_to_equinoctial(
+    r: PyReadonlyArray1<f64>,
+    v: PyReadonlyArray1<f64>,
+    mu: f64,
+    tol: f64,
+) -> PyResult<core::elements::EquinoctialElements> {
+    // Convert NumPy arrays to Vector3
+    let r_array = r.as_array();
+    let v_array = v.as_array();
+
+    if r_array.len() != 3 || v_array.len() != 3 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Position and velocity vectors must have exactly 3 components"
+        ));
+    }
+
+    let r_vec = core::linalg::Vector3::new(r_array[0], r_array[1], r_array[2]);
+    let v_vec = core::linalg::Vector3::new(v_array[0], v_array[1], v_array[2]);
+
+    // Call the Rust function
+    core::elements::rv_to_equinoctial(&r_vec, &v_vec, mu, tol).map_err(|e| e.into())
+}
+
+/// Convert modified equinoctial elements to Cartesian state vectors
+///
+/// # Arguments
+/// * `elements` - EquinoctialElements object
+/// * `mu` - Standard gravitational parameter in m³/s²
+/// * `tol` - Tolerance for singularity checks (default: 1e-8)
+///
+/// # Returns
+/// Tuple of (position, velocity) as NumPy arrays
+#[pyfunction]
+#[pyo3(name = "equinoctial_to_rv", signature = (elements, mu, tol=1e-8))]
+fn py_equinoctial_to_rv<'py>(
+    py: Python<'py>,
+    elements: &core::elements::EquinoctialElements,
+    mu: f64,
+    tol: f64,
+) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
+    // Call the Rust function
+    let (r_vec, v_vec) = core::elements::equinoctial_to_rv(elements, mu, tol)?;
+
+    // Convert Vector3 to NumPy arrays
+    let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
+    let v_array = ndarray::arr1(&[v_vec.x, v_vec.y, v_vec.z]);
+
+    Ok((
+        PyArray1::from_owned_array_bound(py, r_array),
+        PyArray1::from_owned_array_bound(py, v_array),
+    ))
+}
+
+// ============================================================================
+// Anomaly Conversion Functions - Elliptical Orbits
+// ============================================================================
+
+/// Convert mean anomaly to eccentric anomaly for elliptical orbits
+///
+/// # Arguments
+/// * `mean_anomaly` - Mean anomaly M (radians)
+/// * `eccentricity` - Orbital eccentricity e (must be < 1)
+/// * `tol` - Convergence tolerance (optional, default: 1e-12)
+/// * `max_iter` - Maximum iterations (optional, default: 50)
+///
+/// # Returns
+/// Eccentric anomaly E (radians)
+#[pyfunction]
+#[pyo3(name = "mean_to_eccentric_anomaly", signature = (mean_anomaly, eccentricity, tol=None, max_iter=None))]
+fn py_mean_to_eccentric_anomaly(
+    mean_anomaly: f64,
+    eccentricity: f64,
+    tol: Option<f64>,
+    max_iter: Option<usize>,
+) -> PyResult<f64> {
+    core::anomaly::mean_to_eccentric_anomaly(mean_anomaly, eccentricity, tol, max_iter)
+        .map_err(|e| e.into())
+}
+
+/// Convert eccentric anomaly to mean anomaly for elliptical orbits
+#[pyfunction]
+#[pyo3(name = "eccentric_to_mean_anomaly")]
+fn py_eccentric_to_mean_anomaly(eccentric_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::eccentric_to_mean_anomaly(eccentric_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+/// Convert eccentric anomaly to true anomaly for elliptical orbits
+#[pyfunction]
+#[pyo3(name = "eccentric_to_true_anomaly")]
+fn py_eccentric_to_true_anomaly(eccentric_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::eccentric_to_true_anomaly(eccentric_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+/// Convert true anomaly to eccentric anomaly for elliptical orbits
+#[pyfunction]
+#[pyo3(name = "true_to_eccentric_anomaly")]
+fn py_true_to_eccentric_anomaly(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::true_to_eccentric_anomaly(true_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+/// Convert mean anomaly to true anomaly for elliptical orbits
+#[pyfunction]
+#[pyo3(name = "mean_to_true_anomaly", signature = (mean_anomaly, eccentricity, tol=None, max_iter=None))]
+fn py_mean_to_true_anomaly(
+    mean_anomaly: f64,
+    eccentricity: f64,
+    tol: Option<f64>,
+    max_iter: Option<usize>,
+) -> PyResult<f64> {
+    core::anomaly::mean_to_true_anomaly(mean_anomaly, eccentricity, tol, max_iter)
+        .map_err(|e| e.into())
+}
+
+/// Convert true anomaly to mean anomaly for elliptical orbits
+#[pyfunction]
+#[pyo3(name = "true_to_mean_anomaly")]
+fn py_true_to_mean_anomaly(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::true_to_mean_anomaly(true_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+// ============================================================================
+// Anomaly Conversion Functions - Hyperbolic Orbits
+// ============================================================================
+
+/// Convert mean anomaly to hyperbolic anomaly for hyperbolic orbits
+#[pyfunction]
+#[pyo3(name = "mean_to_hyperbolic_anomaly", signature = (mean_anomaly, eccentricity, tol=None, max_iter=None))]
+fn py_mean_to_hyperbolic_anomaly(
+    mean_anomaly: f64,
+    eccentricity: f64,
+    tol: Option<f64>,
+    max_iter: Option<usize>,
+) -> PyResult<f64> {
+    core::anomaly::mean_to_hyperbolic_anomaly(mean_anomaly, eccentricity, tol, max_iter)
+        .map_err(|e| e.into())
+}
+
+/// Convert hyperbolic anomaly to mean anomaly for hyperbolic orbits
+#[pyfunction]
+#[pyo3(name = "hyperbolic_to_mean_anomaly")]
+fn py_hyperbolic_to_mean_anomaly(hyperbolic_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::hyperbolic_to_mean_anomaly(hyperbolic_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+/// Convert hyperbolic anomaly to true anomaly for hyperbolic orbits
+#[pyfunction]
+#[pyo3(name = "hyperbolic_to_true_anomaly")]
+fn py_hyperbolic_to_true_anomaly(hyperbolic_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::hyperbolic_to_true_anomaly(hyperbolic_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+/// Convert true anomaly to hyperbolic anomaly for hyperbolic orbits
+#[pyfunction]
+#[pyo3(name = "true_to_hyperbolic_anomaly")]
+fn py_true_to_hyperbolic_anomaly(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::true_to_hyperbolic_anomaly(true_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+/// Convert mean anomaly to true anomaly for hyperbolic orbits
+#[pyfunction]
+#[pyo3(name = "mean_to_true_anomaly_hyperbolic", signature = (mean_anomaly, eccentricity, tol=None, max_iter=None))]
+fn py_mean_to_true_anomaly_hyperbolic(
+    mean_anomaly: f64,
+    eccentricity: f64,
+    tol: Option<f64>,
+    max_iter: Option<usize>,
+) -> PyResult<f64> {
+    core::anomaly::mean_to_true_anomaly_hyperbolic(mean_anomaly, eccentricity, tol, max_iter)
+        .map_err(|e| e.into())
+}
+
+/// Convert true anomaly to mean anomaly for hyperbolic orbits
+#[pyfunction]
+#[pyo3(name = "true_to_mean_anomaly_hyperbolic")]
+fn py_true_to_mean_anomaly_hyperbolic(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
+    core::anomaly::true_to_mean_anomaly_hyperbolic(true_anomaly, eccentricity)
+        .map_err(|e| e.into())
+}
+
+// ============================================================================
+// Anomaly Conversion Functions - Parabolic Orbits
+// ============================================================================
+
+/// Convert mean anomaly to true anomaly for parabolic orbits
+#[pyfunction]
+#[pyo3(name = "mean_to_true_anomaly_parabolic")]
+fn py_mean_to_true_anomaly_parabolic(mean_anomaly: f64) -> PyResult<f64> {
+    core::anomaly::mean_to_true_anomaly_parabolic(mean_anomaly)
+        .map_err(|e| e.into())
+}
+
+/// Convert true anomaly to mean anomaly for parabolic orbits
+#[pyfunction]
+#[pyo3(name = "true_to_mean_anomaly_parabolic")]
+fn py_true_to_mean_anomaly_parabolic(true_anomaly: f64) -> PyResult<f64> {
+    core::anomaly::true_to_mean_anomaly_parabolic(true_anomaly)
+        .map_err(|e| e.into())
+}
+
+// ============================================================================
+// Orbit Propagation Functions
+// ============================================================================
+
+/// Propagate orbital elements forward in time using Keplerian (two-body) propagation
+///
+/// # Arguments
+/// * `elements` - Initial orbital elements (OrbitalElements object)
+/// * `dt` - Time step in seconds
+/// * `mu` - Standard gravitational parameter (m³/s²)
+///
+/// # Returns
+/// New OrbitalElements at time t₀ + Δt
+///
+/// # Note
+/// Only elliptical orbits (e < 1) are currently supported.
+#[pyfunction]
+#[pyo3(name = "propagate_keplerian")]
+fn py_propagate_keplerian(
+    elements: &core::elements::OrbitalElements,
+    dt: f64,
+    mu: f64,
+) -> PyResult<core::elements::OrbitalElements> {
+    propagators::keplerian::propagate_keplerian(elements, dt, mu)
+        .map_err(|e| e.into())
+}
+
+/// Propagate orbital elements using Duration object
+///
+/// # Arguments
+/// * `elements` - Initial orbital elements
+/// * `duration` - Time duration to propagate (Duration object)
+/// * `mu` - Standard gravitational parameter (m³/s²)
+///
+/// # Returns
+/// New OrbitalElements at time t₀ + duration
+#[pyfunction]
+#[pyo3(name = "propagate_keplerian_duration")]
+fn py_propagate_keplerian_duration(
+    elements: &core::elements::OrbitalElements,
+    duration: &core::time::Duration,
+    mu: f64,
+) -> PyResult<core::elements::OrbitalElements> {
+    propagators::keplerian::propagate_keplerian_duration(elements, duration, mu)
+        .map_err(|e| e.into())
+}
+
+/// Propagate Cartesian state vectors forward in time
+///
+/// # Arguments
+/// * `r0` - Initial position vector [x, y, z] in meters (NumPy array)
+/// * `v0` - Initial velocity vector [vx, vy, vz] in m/s (NumPy array)
+/// * `dt` - Time step in seconds
+/// * `mu` - Standard gravitational parameter (m³/s²)
+///
+/// # Returns
+/// Tuple of (position, velocity) NumPy arrays at time t₀ + Δt
+#[pyfunction]
+#[pyo3(name = "propagate_state_keplerian")]
+fn py_propagate_state_keplerian<'py>(
+    py: Python<'py>,
+    r0: PyReadonlyArray1<f64>,
+    v0: PyReadonlyArray1<f64>,
+    dt: f64,
+    mu: f64,
+) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
+    // Convert NumPy arrays to Vector3
+    let r0_array = r0.as_array();
+    let v0_array = v0.as_array();
+
+    if r0_array.len() != 3 || v0_array.len() != 3 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Position and velocity vectors must have exactly 3 components"
+        ));
+    }
+
+    let r0_vec = core::linalg::Vector3::new(r0_array[0], r0_array[1], r0_array[2]);
+    let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
+
+    // Call propagator
+    let (r_vec, v_vec) = propagators::keplerian::propagate_state_keplerian(&r0_vec, &v0_vec, dt, mu)?;
+
+    // Convert back to NumPy arrays
+    let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
+    let v_array = ndarray::arr1(&[v_vec.x, v_vec.y, v_vec.z]);
+
+    Ok((
+        PyArray1::from_owned_array_bound(py, r_array),
+        PyArray1::from_owned_array_bound(py, v_array),
+    ))
+}
+
+/// Propagate orbit using Lagrange coefficients (f and g functions)
+///
+/// # Arguments
+/// * `r0` - Initial position vector [x, y, z] in meters (NumPy array)
+/// * `v0` - Initial velocity vector [vx, vy, vz] in m/s (NumPy array)
+/// * `dt` - Time step in seconds
+/// * `mu` - Standard gravitational parameter (m³/s²)
+///
+/// # Returns
+/// Tuple of (position, velocity) NumPy arrays at time t₀ + Δt
+///
+/// # Note
+/// This is an alternative propagation method that uses Lagrange coefficients
+/// directly without converting to orbital elements. Results are identical to
+/// propagate_state_keplerian but the algorithm is different.
+#[pyfunction]
+#[pyo3(name = "propagate_lagrange")]
+fn py_propagate_lagrange<'py>(
+    py: Python<'py>,
+    r0: PyReadonlyArray1<f64>,
+    v0: PyReadonlyArray1<f64>,
+    dt: f64,
+    mu: f64,
+) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
+    // Convert NumPy arrays to Vector3
+    let r0_array = r0.as_array();
+    let v0_array = v0.as_array();
+
+    if r0_array.len() != 3 || v0_array.len() != 3 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Position and velocity vectors must have exactly 3 components"
+        ));
+    }
+
+    let r0_vec = core::linalg::Vector3::new(r0_array[0], r0_array[1], r0_array[2]);
+    let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
+
+    // Call propagator
+    let (r_vec, v_vec) = propagators::keplerian::propagate_lagrange(&r0_vec, &v0_vec, dt, mu)?;
+
+    // Convert back to NumPy arrays
+    let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
+    let v_array = ndarray::arr1(&[v_vec.x, v_vec.y, v_vec.z]);
+
+    Ok((
+        PyArray1::from_owned_array_bound(py, r_array),
+        PyArray1::from_owned_array_bound(py, v_array),
+    ))
 }

@@ -1,7 +1,7 @@
 """Tests for CartesianState class and orbital property calculations."""
 
 import pytest
-import poliastro._core as core
+import astrora._core as core
 
 # Import constants
 GM_EARTH = core.constants.GM_EARTH

@@ -3,9 +3,9 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "poliastro"
+name = "astrora"
 version = "0.1.0"
-description = "Rust-backed astrodynamics library for Python"
+description = "Astrora - Rust-backed astrodynamics library for Python"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
@@ -63,19 +63,19 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cachemcclure/rustpoliastro"
-Documentation = "https://github.com/cachemcclure/rustpoliastro#readme"
-Repository = "https://github.com/cachemcclure/rustpoliastro"
-"Bug Tracker" = "https://github.com/cachemcclure/rustpoliastro/issues"
+Homepage = "https://github.com/cachemcclure/astrora"
+Documentation = "https://github.com/cachemcclure/astrora#readme"
+Repository = "https://github.com/cachemcclure/astrora"
+"Bug Tracker" = "https://github.com/cachemcclure/astrora/issues"
 
 [tool.maturin]
 python-source = "python"
-module-name = "poliastro._core"
+module-name = "astrora._core"
 features = ["pyo3/extension-module"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --cov=poliastro --cov-report=term-missing"
+addopts = "-ra -q --strict-markers --cov=astrora --cov-report=term-missing"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -143,7 +143,7 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 branch = true
-source = ["poliastro"]
+source = ["astrora"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

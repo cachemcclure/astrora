@@ -8,7 +8,7 @@ use crate::core::error::{PoliastroError, PoliastroResult};
 use pyo3::prelude::*;
 
 /// Cartesian state vector (position and velocity)
-#[pyclass(name = "CartesianState", module = "poliastro._core")]
+#[pyclass(name = "CartesianState", module = "astrora._core")]
 #[derive(Debug, Clone, Copy)]
 pub struct CartesianState {
     /// Position vector [x, y, z] in meters
@@ -144,7 +144,7 @@ impl CartesianState {
     ///
     /// # Example
     /// ```
-    /// use poliastro_core::core::{state::CartesianState, linalg::Vector3};
+    /// use astrora_core::core::{state::CartesianState, linalg::Vector3};
     ///
     /// // Circular orbit example
     /// let pos = Vector3::new(7000e3, 0.0, 0.0);  // 7000 km altitude
@@ -184,7 +184,7 @@ impl CartesianState {
     ///
     /// # Example
     /// ```
-    /// use poliastro_core::core::{state::CartesianState, linalg::Vector3};
+    /// use astrora_core::core::{state::CartesianState, linalg::Vector3};
     ///
     /// let pos = Vector3::new(7000e3, 0.0, 0.0);
     /// let vel = Vector3::new(0.0, 7546.0, 0.0);

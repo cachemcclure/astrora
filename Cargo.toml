@@ -1,18 +1,18 @@
 [package]
-name = "poliastro_core"
+name = "astrora_core"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.70"
 authors = ["Cache McClure <cache.mcclure@gmail.com>"]
-description = "Rust-backed astrodynamics library - core computational components"
+description = "Astrora - Rust-backed astrodynamics library - core computational components"
 readme = "README.md"
 license = "MIT"
-repository = "https://github.com/cachemcclure/rustpoliastro"
+repository = "https://github.com/cachemcclure/astrora"
 keywords = ["astrodynamics", "orbital-mechanics", "aerospace", "space", "python"]
 categories = ["science", "simulation"]
 
 [lib]
-name = "poliastro_core"
+name = "astrora_core"
 crate-type = ["cdylib"]
 
 [dependencies]

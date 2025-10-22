@@ -1,6 +1,6 @@
 """Tests for the constants module."""
 import pytest
-import poliastro._core as core
+import astrora._core as core
 
 
 class TestPhysicalConstants:

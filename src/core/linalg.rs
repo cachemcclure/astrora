@@ -6,7 +6,7 @@
 //! # Examples
 //!
 //! ```
-//! use poliastro_core::core::linalg::{Vector3, Matrix3};
+//! use astrora_core::core::linalg::{Vector3, Matrix3};
 //!
 //! // Create a position vector (in meters)
 //! let position = Vector3::new(7000_000.0, 0.0, 0.0);

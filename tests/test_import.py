@@ -3,15 +3,15 @@
 import pytest
 
 
-def test_import_poliastro():
-    """Test that poliastro can be imported"""
-    import poliastro
-    assert hasattr(poliastro, "__version__")
+def test_import_astrora():
+    """Test that astrora can be imported"""
+    import astrora
+    assert hasattr(astrora, "__version__")
 
 
 def test_version():
     """Test version string format"""
-    import poliastro
-    version = poliastro.__version__
+    import astrora
+    version = astrora.__version__
     assert isinstance(version, str)
     assert len(version.split(".")) >= 2  # At least major.minor

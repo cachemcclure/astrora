@@ -1,5 +1,5 @@
 """
-Poliastro - Rust-backed astrodynamics library
+Astrora - Rust-backed astrodynamics library
 
 A modern, high-performance orbital mechanics library combining Python's
 ease of use with Rust's computational performance.
@@ -9,7 +9,7 @@ __version__ = "0.1.0"
 
 # Import Rust core module
 try:
-    from poliastro._core import __version__ as _core_version
+    from astrora._core import __version__ as _core_version
 
     # Verify core module version matches
     if _core_version != __version__:

@@ -1,7 +1,16 @@
 //! Orbit propagators and numerical integrators
+//!
+//! This module provides various orbit propagation methods:
+//! - Keplerian (two-body) propagator for unperturbed motion
+//! - Numerical integrators (RK4, Dormand-Prince) - coming soon
+//! - Perturbation models (J2, drag, SRP, third-body) - coming soon
 
-// Placeholder for future implementation
-// Will include:
-// - Keplerian propagator
-// - Numerical integrators (RK4, Dormand-Prince)
-// - Perturbation models
+pub mod keplerian;
+
+// Re-export commonly used functions
+pub use keplerian::{
+    propagate_keplerian,
+    propagate_keplerian_duration,
+    propagate_state_keplerian,
+    propagate_lagrange,
+};

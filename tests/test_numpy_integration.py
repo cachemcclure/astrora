@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from poliastro._core import numpy_ops
+from astrora._core import numpy_ops
 
 
 class TestBasicArrayOperations:

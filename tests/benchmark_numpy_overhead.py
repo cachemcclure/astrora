@@ -23,7 +23,7 @@ To compare against saved results:
 
 import numpy as np
 import pytest
-from poliastro._core import numpy_ops
+from astrora._core import numpy_ops
 
 
 # Array sizes for scaling tests
