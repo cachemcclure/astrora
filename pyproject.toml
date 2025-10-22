@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
 authors = [
-    { name = "Cache McClure", email = "cache.mcclure@gmail.com", organization = "Horizon Analytic Studios, LLC" }
+    { name = "Cache McClure", email = "cache.mcclure@gmail.com" }
 ]
 keywords = ["astrodynamics", "orbital-mechanics", "aerospace", "space", "orbit", "kepler"]
 classifiers = [
