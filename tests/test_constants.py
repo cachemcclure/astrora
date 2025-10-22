@@ -77,6 +77,43 @@ class TestPlanetaryConstants:
         """Test Earth's J3 coefficient."""
         assert core.constants.J3_EARTH == pytest.approx(-2.532435346e-6, rel=1e-8)
 
+    def test_j4_earth(self):
+        """Test Earth's J4 coefficient."""
+        # Value from satellite observations
+        assert core.constants.J4_EARTH == pytest.approx(-1.649e-6, rel=1e-3)
+
+    def test_j5_earth(self):
+        """Test Earth's J5 coefficient."""
+        # Value from satellite observations
+        # Note: This is zero for WGS84 reference ellipsoid but non-zero for actual Earth
+        assert core.constants.J5_EARTH == pytest.approx(-0.21e-6, rel=1e-2)
+
+    def test_j6_earth(self):
+        """Test Earth's J6 coefficient."""
+        # Value from satellite observations
+        assert core.constants.J6_EARTH == pytest.approx(0.646e-6, rel=1e-3)
+
+    def test_j_coefficients_relative_magnitudes(self):
+        """Test that Earth's J coefficients follow expected magnitude hierarchy."""
+        # J2 should be the dominant term (about 1000x larger than others)
+        assert abs(core.constants.J2_EARTH) > abs(core.constants.J3_EARTH) * 400
+        assert abs(core.constants.J2_EARTH) > abs(core.constants.J4_EARTH) * 600
+        assert abs(core.constants.J2_EARTH) > abs(core.constants.J5_EARTH) * 5000
+        assert abs(core.constants.J2_EARTH) > abs(core.constants.J6_EARTH) * 1500
+
+    def test_j_coefficients_signs(self):
+        """Test the signs of Earth's J coefficients."""
+        # J2 is positive (oblate Earth - equatorial bulge)
+        assert core.constants.J2_EARTH > 0
+        # J3 is negative (pear-shaped - Northern hemisphere slightly larger)
+        assert core.constants.J3_EARTH < 0
+        # J4 is negative
+        assert core.constants.J4_EARTH < 0
+        # J5 is negative
+        assert core.constants.J5_EARTH < 0
+        # J6 is positive
+        assert core.constants.J6_EARTH > 0
+
     def test_gm_mars(self):
         """Test Mars's gravitational parameter."""
         # JPL DE440: 42,828.38 km³/s²

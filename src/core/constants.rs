@@ -156,6 +156,35 @@ pub const J2_EARTH: f64 = 1.082_626_683e-3;
 /// Pear-shaped distortion term.
 pub const J3_EARTH: f64 = -2.532_435_346e-6;
 
+/// Earth's J4 gravitational coefficient (dimensionless)
+///
+/// Higher-order oblateness term. Represents the fourth zonal harmonic
+/// in Earth's gravity field expansion. This coefficient is about 650× smaller
+/// than J2 but becomes important for high-precision orbit propagation.
+///
+/// Value from satellite observations. Note: WGS84 reference ellipsoid gives
+/// a different value (-2.37×10⁻⁶), but this observed value better represents
+/// the actual gravitational field for orbit propagation.
+pub const J4_EARTH: f64 = -1.649e-6;
+
+/// Earth's J5 gravitational coefficient (dimensionless)
+///
+/// Odd zonal harmonic representing asymmetry about the equator.
+/// This coefficient is non-zero for the actual Earth due to mass distribution
+/// irregularities, though it is zero for the idealized WGS84 reference ellipsoid.
+///
+/// Value from satellite observations.
+pub const J5_EARTH: f64 = -0.21e-6;
+
+/// Earth's J6 gravitational coefficient (dimensionless)
+///
+/// Higher-order even zonal harmonic. This coefficient is about 1,800× smaller
+/// than J2 and is used in high-precision orbit propagation over extended periods.
+///
+/// Value from satellite observations. Note: WGS84 reference ellipsoid gives
+/// a different value (6.08×10⁻⁹).
+pub const J6_EARTH: f64 = 0.646e-6;
+
 /// Earth's atmospheric scale height at sea level (m)
 ///
 /// Reference height for exponential atmosphere model.

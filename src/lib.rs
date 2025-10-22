@@ -77,6 +77,9 @@ fn add_constants(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("R_MEAN_EARTH", R_MEAN_EARTH)?;
     m.add("J2_EARTH", J2_EARTH)?;
     m.add("J3_EARTH", J3_EARTH)?;
+    m.add("J4_EARTH", J4_EARTH)?;
+    m.add("J5_EARTH", J5_EARTH)?;
+    m.add("J6_EARTH", J6_EARTH)?;
     m.add("H0_EARTH", H0_EARTH)?;
     m.add("RHO0_EARTH", RHO0_EARTH)?;
 
