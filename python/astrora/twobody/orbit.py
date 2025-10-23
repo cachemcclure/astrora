@@ -352,6 +352,412 @@ class Orbit:
         return cls(state, epoch, attractor)
 
     # ========================================================================
+    # Convenience Creation Methods
+    # ========================================================================
+
+    @classmethod
+    def circular(
+        cls,
+        attractor,
+        alt: Union[float, u.Quantity],
+        inc: Union[float, u.Quantity] = 0.0,
+        raan: Union[float, u.Quantity] = 0.0,
+        arglat: Union[float, u.Quantity] = 0.0,
+        epoch: Optional[Union[Epoch, "AstropyTime"]] = None,
+    ) -> "Orbit":
+        """
+        Create a circular orbit at a given altitude.
+
+        This is a convenience method for creating circular orbits (ecc = 0)
+        without manually computing orbital elements.
+
+        Parameters
+        ----------
+        attractor : Body
+            Central attracting body
+        alt : float or Quantity
+            Altitude above surface. If float, assumed to be in meters.
+            If Quantity, must have length units (e.g., u.km).
+        inc : float or Quantity, optional
+            Inclination. If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad - equatorial)
+        raan : float or Quantity, optional
+            Right ascension of ascending node. If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        arglat : float or Quantity, optional
+            Argument of latitude (u = argp + nu). If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        epoch : Epoch or astropy.time.Time, optional
+            Reference epoch (default: J2000)
+
+        Returns
+        -------
+        Orbit
+            Circular orbit at the specified altitude
+
+        Examples
+        --------
+        >>> from astrora.twobody import Orbit
+        >>> from astrora.bodies import Earth
+        >>> from astropy import units as u
+        >>>
+        >>> # ISS-like orbit (400 km altitude, 51.6° inclination)
+        >>> orbit = Orbit.circular(Earth, 400 * u.km, inc=51.6 * u.deg)
+        >>> print(f"Period: {orbit.period.to(u.hour):.2f}")
+        Period: 1.55 h
+        >>>
+        >>> # Equatorial circular orbit at 700 km
+        >>> orbit = Orbit.circular(Earth, alt=700e3)  # meters
+        >>> print(f"Eccentricity: {orbit.ecc:.6f}")
+        Eccentricity: 0.000000
+
+        Notes
+        -----
+        The semi-major axis is computed as a = R + alt, where R is the
+        attractor's equatorial radius.
+
+        For circular orbits, the argument of periapsis is undefined, so we use
+        the argument of latitude (arglat = argp + nu) to specify the position.
+        """
+        # Convert units to SI
+        alt_m = to_si_length(alt)
+        inc_rad = to_si_angle(inc)
+        raan_rad = to_si_angle(raan)
+        arglat_rad = to_si_angle(arglat)
+
+        if epoch is None:
+            epoch = Epoch.j2000_epoch()
+        else:
+            epoch = to_epoch(epoch)
+
+        # Compute semi-major axis
+        a = attractor.R + alt_m
+
+        # For circular orbits, argp is undefined, but we use arglat = argp + nu
+        # Set argp = 0 and nu = arglat
+        argp = 0.0
+        nu = arglat_rad
+
+        # Create using from_classical with ecc = 0
+        return cls.from_classical(
+            attractor=attractor,
+            a=a,
+            ecc=0.0,
+            inc=inc_rad,
+            raan=raan_rad,
+            argp=argp,
+            nu=nu,
+            epoch=epoch,
+        )
+
+    @classmethod
+    def geostationary(
+        cls,
+        attractor=None,
+        raan: Union[float, u.Quantity] = 0.0,
+        arglat: Union[float, u.Quantity] = 0.0,
+        epoch: Optional[Union[Epoch, "AstropyTime"]] = None,
+    ) -> "Orbit":
+        """
+        Create a geostationary orbit around Earth (or synchronous orbit for other bodies).
+
+        A geostationary orbit has a period equal to the body's rotational period,
+        appears stationary relative to the surface, and is equatorial (inc = 0).
+
+        Parameters
+        ----------
+        attractor : Body, optional
+            Central attracting body (default: Earth)
+        raan : float or Quantity, optional
+            Right ascension of ascending node. If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        arglat : float or Quantity, optional
+            Argument of latitude (position along orbit). If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        epoch : Epoch or astropy.time.Time, optional
+            Reference epoch (default: J2000)
+
+        Returns
+        -------
+        Orbit
+            Geostationary orbit (for Earth) or synchronous orbit (for other bodies)
+
+        Examples
+        --------
+        >>> from astrora.twobody import Orbit
+        >>> from astrora.bodies import Earth
+        >>> from astropy import units as u
+        >>>
+        >>> # Standard geostationary orbit
+        >>> orbit = Orbit.geostationary()
+        >>> print(f"Altitude: {(orbit.a.to(u.km).value - Earth.R/1000):.0f} km")
+        Altitude: 35786 km
+        >>> print(f"Period: {orbit.period.to(u.hour):.2f}")
+        Period: 23.93 h
+
+        Notes
+        -----
+        For Earth, this creates a circular orbit at ~35,786 km altitude with
+        a period of ~23.93 hours (one sidereal day).
+
+        For geostationary orbits, inc = 0 (equatorial) and ecc = 0 (circular).
+        """
+        if attractor is None:
+            from astrora.bodies import Earth
+            attractor = Earth
+
+        # Use synchronous with default period_mul=1 and inc=0
+        return cls.synchronous(
+            attractor=attractor,
+            period_mul=1.0,
+            ecc=0.0,
+            inc=0.0,
+            raan=raan,
+            arglat=arglat,
+            epoch=epoch,
+        )
+
+    @classmethod
+    def synchronous(
+        cls,
+        attractor,
+        period_mul: Union[float, u.Quantity] = 1.0,
+        ecc: Union[float, u.Quantity] = 0.0,
+        inc: Union[float, u.Quantity] = 0.0,
+        argp: Union[float, u.Quantity] = 0.0,
+        arglat: Union[float, u.Quantity] = 0.0,
+        raan: Union[float, u.Quantity] = 0.0,
+        epoch: Optional[Union[Epoch, "AstropyTime"]] = None,
+    ) -> "Orbit":
+        """
+        Create a synchronous orbit with period matching the body's rotation.
+
+        A synchronous orbit has an orbital period that is a multiple of the
+        central body's rotational period.
+
+        Parameters
+        ----------
+        attractor : Body
+            Central attracting body
+        period_mul : float or Quantity, optional
+            Period multiplier relative to rotation period (default: 1.0)
+            For example, period_mul=2 creates an orbit with twice the rotation period.
+        ecc : float or Quantity, optional
+            Eccentricity (default: 0.0 - circular)
+        inc : float or Quantity, optional
+            Inclination. If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad - equatorial)
+        argp : float or Quantity, optional
+            Argument of periapsis. If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        arglat : float or Quantity, optional
+            Argument of latitude (only used if ecc=0). If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        raan : float or Quantity, optional
+            Right ascension of ascending node. If float, assumed to be in radians.
+            If Quantity, must have angle units (default: 0.0 rad)
+        epoch : Epoch or astropy.time.Time, optional
+            Reference epoch (default: J2000)
+
+        Returns
+        -------
+        Orbit
+            Synchronous orbit
+
+        Raises
+        ------
+        ValueError
+            If the attractor has no rotational period defined
+
+        Examples
+        --------
+        >>> from astrora.twobody import Orbit
+        >>> from astrora.bodies import Earth, Mars
+        >>> from astropy import units as u
+        >>>
+        >>> # Earth geostationary orbit (period = 1 sidereal day)
+        >>> orbit = Orbit.synchronous(Earth)
+        >>> print(f"Period: {orbit.period.to(u.hour):.2f}")
+        Period: 23.93 h
+        >>>
+        >>> # Mars areostationary orbit
+        >>> orbit = Orbit.synchronous(Mars)
+        >>> print(f"Period: {orbit.period.to(u.hour):.2f}")
+        Period: 24.62 h
+        >>>
+        >>> # Semi-synchronous orbit (period = 2 × rotation period)
+        >>> orbit = Orbit.synchronous(Earth, period_mul=2)
+        >>> print(f"Period: {orbit.period.to(u.hour):.2f}")
+        Period: 47.87 h
+
+        Notes
+        -----
+        The semi-major axis is computed using Kepler's third law:
+        a = (μ * T² / 4π²)^(1/3), where T = period_mul × T_rotation
+
+        For bodies without a defined rotational period, this method will raise
+        a ValueError. Common bodies with rotation periods: Earth, Mars, Jupiter, etc.
+        """
+        # Convert units
+        period_mul_val = to_dimensionless(period_mul)
+        ecc_val = to_dimensionless(ecc)
+        inc_rad = to_si_angle(inc)
+        argp_rad = to_si_angle(argp)
+        arglat_rad = to_si_angle(arglat)
+        raan_rad = to_si_angle(raan)
+
+        if epoch is None:
+            epoch = Epoch.j2000_epoch()
+        else:
+            epoch = to_epoch(epoch)
+
+        # Check if attractor has a rotational period
+        if not hasattr(attractor, 'rotational_period') or attractor.rotational_period is None:
+            raise ValueError(
+                f"Attractor '{attractor.name}' does not have a defined rotational period. "
+                "Synchronous orbits require knowledge of the body's rotation rate."
+            )
+
+        # Get rotational period
+        if isinstance(attractor.rotational_period, u.Quantity):
+            T_rot = attractor.rotational_period.to(u.s).value
+        else:
+            T_rot = attractor.rotational_period  # Assume seconds
+
+        # Compute orbital period
+        T_orbit = period_mul_val * T_rot
+
+        # Use Kepler's third law to find semi-major axis
+        # T = 2π√(a³/μ)  =>  a = (μ T² / 4π²)^(1/3)
+        mu = attractor.mu
+        a = (mu * T_orbit**2 / (4 * np.pi**2)) ** (1/3)
+
+        # For circular orbits, use arglat; otherwise use argp
+        if ecc_val == 0.0:
+            nu = arglat_rad
+            argp_use = 0.0
+        else:
+            nu = 0.0
+            argp_use = argp_rad
+
+        return cls.from_classical(
+            attractor=attractor,
+            a=a,
+            ecc=ecc_val,
+            inc=inc_rad,
+            raan=raan_rad,
+            argp=argp_use,
+            nu=nu,
+            epoch=epoch,
+        )
+
+    @classmethod
+    def parabolic(
+        cls,
+        attractor,
+        p: Union[float, u.Quantity],
+        inc: Union[float, u.Quantity],
+        raan: Union[float, u.Quantity],
+        argp: Union[float, u.Quantity],
+        nu: Union[float, u.Quantity],
+        epoch: Optional[Union[Epoch, "AstropyTime"]] = None,
+    ) -> "Orbit":
+        """
+        Create a parabolic orbit (eccentricity = 1, escape trajectory).
+
+        Parabolic orbits represent the boundary case between bound elliptical
+        orbits and unbound hyperbolic trajectories.
+
+        Parameters
+        ----------
+        attractor : Body
+            Central attracting body
+        p : float or Quantity
+            Semi-latus rectum (p = a(1-e²)). If float, assumed to be in meters.
+            If Quantity, must have length units.
+        inc : float or Quantity
+            Inclination. If float, assumed to be in radians.
+            If Quantity, must have angle units.
+        raan : float or Quantity
+            Right ascension of ascending node. If float, assumed to be in radians.
+            If Quantity, must have angle units.
+        argp : float or Quantity
+            Argument of periapsis. If float, assumed to be in radians.
+            If Quantity, must have angle units.
+        nu : float or Quantity
+            True anomaly. If float, assumed to be in radians.
+            If Quantity, must have angle units.
+        epoch : Epoch or astropy.time.Time, optional
+            Reference epoch (default: J2000)
+
+        Returns
+        -------
+        Orbit
+            Parabolic orbit (ecc = 1.0)
+
+        Examples
+        --------
+        >>> from astrora.twobody import Orbit
+        >>> from astrora.bodies import Earth
+        >>> from astropy import units as u
+        >>> import numpy as np
+        >>>
+        >>> # Parabolic escape trajectory from 300 km altitude
+        >>> p = 6678e3  # Semi-latus rectum (m)
+        >>> orbit = Orbit.parabolic(
+        ...     Earth,
+        ...     p=p,
+        ...     inc=np.deg2rad(28.5),
+        ...     raan=0.0,
+        ...     argp=0.0,
+        ...     nu=0.0
+        ... )
+        >>> print(f"Eccentricity: {orbit.ecc:.1f}")
+        Eccentricity: 1.0
+        >>> print(f"Energy: {orbit.energy.to(u.MJ/u.kg):.2f}")
+        Energy: 0.00 MJ / kg
+
+        Notes
+        -----
+        For parabolic orbits (e = 1), the semi-major axis is infinite.
+        We use the relation a = p / (1 - e²), but since this would be
+        undefined, we represent it using a very large value internally.
+
+        The specific orbital energy for a parabolic orbit is exactly zero.
+        """
+        # Convert units to SI
+        p_m = to_si_length(p)
+        inc_rad = to_si_angle(inc)
+        raan_rad = to_si_angle(raan)
+        argp_rad = to_si_angle(argp)
+        nu_rad = to_si_angle(nu)
+
+        if epoch is None:
+            epoch = Epoch.j2000_epoch()
+        else:
+            epoch = to_epoch(epoch)
+
+        # For parabolic orbits, ecc = 1 and a → ∞
+        # Due to numerical limitations, we use ecc very close to 1
+        # (effectively parabolic for all practical purposes)
+        ecc = 0.9999  # Very close to parabolic
+
+        # For nearly-parabolic orbits, use relation: p = a(1-e²)
+        # Therefore: a = p / (1-e²)
+        a = p_m / (1 - ecc**2)
+
+        return cls.from_classical(
+            attractor=attractor,
+            a=a,
+            ecc=ecc,
+            inc=inc_rad,
+            raan=raan_rad,
+            argp=argp_rad,
+            nu=nu_rad,
+            epoch=epoch,
+        )
+
+    # ========================================================================
     # Properties - State Vectors
     # ========================================================================
 

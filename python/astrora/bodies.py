@@ -28,12 +28,15 @@ class Body:
         J2 gravitational coefficient (dimensionless)
     J3 : float, optional
         J3 gravitational coefficient (dimensionless)
+    rotational_period : float, optional
+        Rotational period in seconds (for synchronous orbit calculations)
 
     Examples
     --------
     >>> from astrora.bodies import Earth
     >>> print(f"Earth's GM: {Earth.mu:.3e} m³/s²")
     >>> print(f"Earth's radius: {Earth.R / 1e3:.1f} km")
+    >>> print(f"Earth's rotational period: {Earth.rotational_period / 3600:.2f} hours")
     """
 
     def __init__(
@@ -45,6 +48,7 @@ class Body:
         R_mean: float = None,
         J2: float = None,
         J3: float = None,
+        rotational_period: float = None,
     ):
         """
         Initialize a celestial body.
@@ -65,6 +69,8 @@ class Body:
             J2 gravitational coefficient
         J3 : float, optional
             J3 gravitational coefficient
+        rotational_period : float, optional
+            Rotational period in seconds (sidereal rotation period)
         """
         self.name = name
         self.mu = mu
@@ -73,6 +79,7 @@ class Body:
         self.R_mean = R_mean if R_mean is not None else R
         self.J2 = J2
         self.J3 = J3
+        self.rotational_period = rotational_period
 
     def __repr__(self):
         return f"Body({self.name}, R={self.R/1e3:.1f} km, μ={self.mu:.3e} m³/s²)"
@@ -89,6 +96,7 @@ Sun = Body(
     R_polar=_core.constants.R_SUN,  # Sun is assumed spherical
     R_mean=_core.constants.R_MEAN_SUN,
     J2=_core.constants.J2_SUN,
+    rotational_period=2192832.0,  # 25.38 days at equator (differential rotation)
 )
 
 Mercury = Body(
@@ -117,6 +125,7 @@ Earth = Body(
     R_mean=_core.constants.R_MEAN_EARTH,
     J2=_core.constants.J2_EARTH,
     J3=_core.constants.J3_EARTH,
+    rotational_period=86164.0905,  # Sidereal day: 23h 56m 4.0905s
 )
 
 Moon = Body(
@@ -134,6 +143,7 @@ Mars = Body(
     R_polar=_core.constants.R_POLAR_MARS,
     R_mean=_core.constants.R_MEAN_MARS,
     J2=_core.constants.J2_MARS,
+    rotational_period=88642.66,  # Martian sol: 24.6229 hours
 )
 
 Jupiter = Body(
@@ -142,6 +152,7 @@ Jupiter = Body(
     R=_core.constants.R_JUPITER,
     R_polar=_core.constants.R_POLAR_JUPITER,
     R_mean=_core.constants.R_MEAN_JUPITER,
+    rotational_period=35730.0,  # 9.925 hours
 )
 
 Saturn = Body(
@@ -150,6 +161,7 @@ Saturn = Body(
     R=_core.constants.R_SATURN,
     R_polar=_core.constants.R_POLAR_SATURN,
     R_mean=_core.constants.R_MEAN_SATURN,
+    rotational_period=38361.6,  # 10.656 hours (equatorial)
 )
 
 Uranus = Body(
