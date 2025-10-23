@@ -356,36 +356,117 @@ fn add_constants(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 // Python-facing conversion functions
+
+/// Convert kilometers to meters
+///
+/// # Arguments
+/// * `km` - Distance in kilometers
+///
+/// # Returns
+/// Distance in meters
+///
+/// # Example
+/// ```python
+/// from astrora import km_to_m
+/// meters = km_to_m(1.0)  # Returns 1000.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "km_to_m")]
 fn py_km_to_m(km: f64) -> f64 {
     core::constants::km_to_m(km)
 }
 
+/// Convert meters to kilometers
+///
+/// # Arguments
+/// * `m` - Distance in meters
+///
+/// # Returns
+/// Distance in kilometers
+///
+/// # Example
+/// ```python
+/// from astrora import m_to_km
+/// km = m_to_km(1000.0)  # Returns 1.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "m_to_km")]
 fn py_m_to_km(m: f64) -> f64 {
     core::constants::m_to_km(m)
 }
 
+/// Convert degrees to radians
+///
+/// # Arguments
+/// * `deg` - Angle in degrees
+///
+/// # Returns
+/// Angle in radians
+///
+/// # Example
+/// ```python
+/// from astrora import deg_to_rad
+/// import math
+/// rad = deg_to_rad(180.0)  # Returns π (3.14159...)
+/// ```
 #[pyfunction]
 #[pyo3(name = "deg_to_rad")]
 fn py_deg_to_rad(deg: f64) -> f64 {
     core::constants::deg_to_rad(deg)
 }
 
+/// Convert radians to degrees
+///
+/// # Arguments
+/// * `rad` - Angle in radians
+///
+/// # Returns
+/// Angle in degrees
+///
+/// # Example
+/// ```python
+/// from astrora import rad_to_deg
+/// import math
+/// deg = rad_to_deg(math.pi)  # Returns 180.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "rad_to_deg")]
 fn py_rad_to_deg(rad: f64) -> f64 {
     core::constants::rad_to_deg(rad)
 }
 
+/// Convert days to seconds
+///
+/// # Arguments
+/// * `days` - Time duration in days
+///
+/// # Returns
+/// Time duration in seconds
+///
+/// # Example
+/// ```python
+/// from astrora import days_to_sec
+/// seconds = days_to_sec(1.0)  # Returns 86400.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "days_to_sec")]
 fn py_days_to_sec(days: f64) -> f64 {
     core::constants::days_to_sec(days)
 }
 
+/// Convert seconds to days
+///
+/// # Arguments
+/// * `sec` - Time duration in seconds
+///
+/// # Returns
+/// Time duration in days
+///
+/// # Example
+/// ```python
+/// from astrora import sec_to_days
+/// days = sec_to_days(86400.0)  # Returns 1.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "sec_to_days")]
 fn py_sec_to_days(sec: f64) -> f64 {
@@ -419,12 +500,43 @@ fn add_numpy_ops(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
 // Python-facing NumPy operation functions
 
+/// Sum all elements in a NumPy array
+///
+/// # Arguments
+/// * `arr` - 1D NumPy array of floats
+///
+/// # Returns
+/// Sum of all array elements
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import sum_array
+/// arr = np.array([1.0, 2.0, 3.0])
+/// total = sum_array(arr)  # Returns 6.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "sum_array")]
 fn py_sum_array(arr: PyReadonlyArray1<f64>) -> f64 {
     core::numpy_integration::sum_array(arr.as_array())
 }
 
+/// Multiply each element of a NumPy array by a scalar value
+///
+/// # Arguments
+/// * `arr` - 1D NumPy array of floats
+/// * `scalar` - Scalar value to multiply each element by
+///
+/// # Returns
+/// New NumPy array with each element multiplied by the scalar
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import multiply_scalar
+/// arr = np.array([1.0, 2.0, 3.0])
+/// result = multiply_scalar(arr, 2.0)  # Returns [2.0, 4.0, 6.0]
+/// ```
 #[pyfunction]
 #[pyo3(name = "multiply_scalar")]
 fn py_multiply_scalar<'py>(
@@ -436,12 +548,47 @@ fn py_multiply_scalar<'py>(
     PyArray1::from_owned_array_bound(py, result)
 }
 
+/// Multiply each element of a NumPy array by a scalar value in-place
+///
+/// Modifies the input array directly without allocating new memory.
+///
+/// # Arguments
+/// * `arr` - 1D NumPy array of floats (modified in-place)
+/// * `scalar` - Scalar value to multiply each element by
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import multiply_scalar_inplace
+/// arr = np.array([1.0, 2.0, 3.0])
+/// multiply_scalar_inplace(arr, 2.0)  # arr is now [2.0, 4.0, 6.0]
+/// ```
 #[pyfunction]
 #[pyo3(name = "multiply_scalar_inplace")]
 fn py_multiply_scalar_inplace(mut arr: PyReadwriteArray1<f64>, scalar: f64) {
     core::numpy_integration::multiply_scalar_inplace(arr.as_array_mut(), scalar);
 }
 
+/// Compute the dot product of two vectors
+///
+/// # Arguments
+/// * `a` - First 1D NumPy array
+/// * `b` - Second 1D NumPy array
+///
+/// # Returns
+/// Dot product of the two vectors
+///
+/// # Errors
+/// Returns an error if the arrays have different lengths
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import dot_product
+/// a = np.array([1.0, 2.0, 3.0])
+/// b = np.array([4.0, 5.0, 6.0])
+/// result = dot_product(a, b)  # Returns 32.0 (1*4 + 2*5 + 3*6)
+/// ```
 #[pyfunction]
 #[pyo3(name = "dot_product")]
 fn py_dot_product(a: PyReadonlyArray1<f64>, b: PyReadonlyArray1<f64>) -> PyResult<f64> {
@@ -449,6 +596,26 @@ fn py_dot_product(a: PyReadonlyArray1<f64>, b: PyReadonlyArray1<f64>) -> PyResul
         .map_err(|e| e.into())
 }
 
+/// Compute the cross product of two 3D vectors
+///
+/// # Arguments
+/// * `a` - First 3D vector as NumPy array [x, y, z]
+/// * `b` - Second 3D vector as NumPy array [x, y, z]
+///
+/// # Returns
+/// Cross product vector a × b
+///
+/// # Errors
+/// Returns an error if either array is not exactly 3 elements
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import cross_product
+/// a = np.array([1.0, 0.0, 0.0])
+/// b = np.array([0.0, 1.0, 0.0])
+/// result = cross_product(a, b)  # Returns [0.0, 0.0, 1.0]
+/// ```
 #[pyfunction]
 #[pyo3(name = "cross_product")]
 fn py_cross_product<'py>(
@@ -460,6 +627,26 @@ fn py_cross_product<'py>(
     Ok(PyArray1::from_owned_array_bound(py, result))
 }
 
+/// Add two NumPy arrays element-wise
+///
+/// # Arguments
+/// * `a` - First 1D NumPy array
+/// * `b` - Second 1D NumPy array
+///
+/// # Returns
+/// New array containing element-wise sum a + b
+///
+/// # Errors
+/// Returns an error if the arrays have different lengths
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import add_arrays
+/// a = np.array([1.0, 2.0, 3.0])
+/// b = np.array([4.0, 5.0, 6.0])
+/// result = add_arrays(a, b)  # Returns [5.0, 7.0, 9.0]
+/// ```
 #[pyfunction]
 #[pyo3(name = "add_arrays")]
 fn py_add_arrays<'py>(
@@ -471,6 +658,24 @@ fn py_add_arrays<'py>(
     Ok(PyArray1::from_owned_array_bound(py, result))
 }
 
+/// Normalize a vector to unit length
+///
+/// # Arguments
+/// * `vec` - Input vector as 1D NumPy array
+///
+/// # Returns
+/// Unit vector in the same direction as the input
+///
+/// # Errors
+/// Returns an error if the vector has zero magnitude
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import normalize_vector
+/// vec = np.array([3.0, 4.0, 0.0])
+/// unit_vec = normalize_vector(vec)  # Returns [0.6, 0.8, 0.0]
+/// ```
 #[pyfunction]
 #[pyo3(name = "normalize_vector")]
 fn py_normalize_vector<'py>(
@@ -481,12 +686,44 @@ fn py_normalize_vector<'py>(
     Ok(PyArray1::from_owned_array_bound(py, result))
 }
 
+/// Compute the magnitude (L2 norm) of a vector
+///
+/// # Arguments
+/// * `vec` - Input vector as 1D NumPy array
+///
+/// # Returns
+/// Euclidean magnitude of the vector
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import vector_magnitude
+/// vec = np.array([3.0, 4.0, 0.0])
+/// mag = vector_magnitude(vec)  # Returns 5.0
+/// ```
 #[pyfunction]
 #[pyo3(name = "vector_magnitude")]
 fn py_vector_magnitude(vec: PyReadonlyArray1<f64>) -> f64 {
     core::numpy_integration::vector_magnitude(vec.as_array())
 }
 
+/// Apply a simple polynomial transformation to array elements
+///
+/// This is a placeholder function for polynomial operations.
+///
+/// # Arguments
+/// * `arr` - Input 1D NumPy array
+///
+/// # Returns
+/// Transformed NumPy array
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import apply_polynomial
+/// arr = np.array([1.0, 2.0, 3.0])
+/// result = apply_polynomial(arr)
+/// ```
 #[pyfunction]
 #[pyo3(name = "apply_polynomial")]
 fn py_apply_polynomial<'py>(
@@ -497,6 +734,26 @@ fn py_apply_polynomial<'py>(
     PyArray1::from_owned_array_bound(py, result)
 }
 
+/// Multiply a matrix by a vector
+///
+/// # Arguments
+/// * `matrix` - 2D NumPy array (m × n matrix)
+/// * `vector` - 1D NumPy array (n-element vector)
+///
+/// # Returns
+/// Result vector as 1D NumPy array (m elements)
+///
+/// # Errors
+/// Returns an error if matrix columns don't match vector length
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import matrix_vector_multiply
+/// matrix = np.array([[1.0, 2.0], [3.0, 4.0]])
+/// vector = np.array([5.0, 6.0])
+/// result = matrix_vector_multiply(matrix, vector)  # Returns [17.0, 39.0]
+/// ```
 #[pyfunction]
 #[pyo3(name = "matrix_vector_multiply")]
 fn py_matrix_vector_multiply<'py>(
@@ -511,6 +768,26 @@ fn py_matrix_vector_multiply<'py>(
     Ok(PyArray1::from_owned_array_bound(py, result))
 }
 
+/// Multiply two matrices
+///
+/// # Arguments
+/// * `a` - First 2D NumPy array (m × n matrix)
+/// * `b` - Second 2D NumPy array (n × p matrix)
+///
+/// # Returns
+/// Product matrix as 2D NumPy array (m × p)
+///
+/// # Errors
+/// Returns an error if matrix dimensions are incompatible (columns of a ≠ rows of b)
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import matrix_multiply
+/// a = np.array([[1.0, 2.0], [3.0, 4.0]])
+/// b = np.array([[5.0, 6.0], [7.0, 8.0]])
+/// result = matrix_multiply(a, b)  # Returns [[19.0, 22.0], [43.0, 50.0]]
+/// ```
 #[pyfunction]
 #[pyo3(name = "matrix_multiply")]
 fn py_matrix_multiply<'py>(
@@ -522,6 +799,21 @@ fn py_matrix_multiply<'py>(
     Ok(PyArray2::from_owned_array_bound(py, result))
 }
 
+/// Transpose a matrix
+///
+/// # Arguments
+/// * `matrix` - 2D NumPy array (m × n matrix)
+///
+/// # Returns
+/// Transposed matrix as 2D NumPy array (n × m)
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import transpose_matrix
+/// matrix = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+/// result = transpose_matrix(matrix)  # Returns [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
+/// ```
 #[pyfunction]
 #[pyo3(name = "transpose_matrix")]
 fn py_transpose_matrix<'py>(
@@ -532,6 +824,22 @@ fn py_transpose_matrix<'py>(
     PyArray2::from_owned_array_bound(py, result)
 }
 
+/// Create an identity matrix
+///
+/// # Arguments
+/// * `size` - Dimension of the square identity matrix
+///
+/// # Returns
+/// Identity matrix as 2D NumPy array (size × size)
+///
+/// # Errors
+/// Returns an error if size is zero
+///
+/// # Example
+/// ```python
+/// from astrora import identity_matrix
+/// I = identity_matrix(3)  # Returns [[1,0,0], [0,1,0], [0,0,1]]
+/// ```
 #[pyfunction]
 #[pyo3(name = "identity_matrix")]
 fn py_identity_matrix(py: Python<'_>, size: usize) -> PyResult<Bound<'_, PyArray2<f64>>> {
@@ -539,6 +847,35 @@ fn py_identity_matrix(py: Python<'_>, size: usize) -> PyResult<Bound<'_, PyArray
     Ok(PyArray2::from_owned_array_bound(py, result))
 }
 
+/// Normalize multiple vectors to unit length in batch
+///
+/// Processes multiple vectors simultaneously, normalizing each row to unit length.
+/// Significantly faster than normalizing vectors individually due to Rust vectorization.
+///
+/// # Arguments
+/// * `vectors` - 2D NumPy array where each row is a vector to normalize
+///
+/// # Returns
+/// 2D NumPy array with each row normalized to unit length
+///
+/// # Errors
+/// Returns an error if any vector has zero magnitude
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_normalize_vectors
+/// vectors = np.array([
+///     [3.0, 4.0, 0.0],
+///     [1.0, 0.0, 0.0],
+///     [0.0, 5.0, 12.0]
+/// ])
+/// result = batch_normalize_vectors(vectors)
+/// # Returns:
+/// # [[0.6, 0.8, 0.0],
+/// #  [1.0, 0.0, 0.0],
+/// #  [0.0, 0.385, 0.923]]
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_normalize_vectors")]
 fn py_batch_normalize_vectors<'py>(
@@ -2854,6 +3191,35 @@ fn py_propagate_stm_j2_rk4<'py>(
 // Batch Coordinate Transformation Python Wrappers
 // =============================================================================
 
+/// Transform multiple state vectors from GCRS to ITRS coordinates in batch
+///
+/// Converts Geocentric Celestial Reference System (inertial) coordinates to
+/// International Terrestrial Reference System (Earth-fixed) coordinates for
+/// multiple epochs simultaneously. Significantly faster than individual transformations
+/// due to vectorized operations.
+///
+/// # Arguments
+/// * `positions` - 2D NumPy array of shape (N, 3) containing GCRS position vectors in meters
+/// * `velocities` - 2D NumPy array of shape (N, 3) containing GCRS velocity vectors in m/s
+/// * `obstimes` - List of N Epoch objects for each state vector
+///
+/// # Returns
+/// Tuple of (ITRS positions, ITRS velocities) as 2D NumPy arrays
+///
+/// # Errors
+/// Returns an error if:
+/// - Array shapes are not (N, 3)
+/// - Number of epochs doesn't match number of state vectors
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_gcrs_to_itrs, Epoch
+/// positions = np.array([[7000e3, 0, 0], [0, 7000e3, 0]])  # GCRS positions
+/// velocities = np.array([[0, 7.5e3, 0], [-7.5e3, 0, 0]])  # GCRS velocities
+/// epochs = [Epoch.from_mjd(60000.0), Epoch.from_mjd(60000.5)]
+/// itrs_pos, itrs_vel = batch_gcrs_to_itrs(positions, velocities, epochs)
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_gcrs_to_itrs")]
 fn py_batch_gcrs_to_itrs<'py>(
@@ -2909,6 +3275,33 @@ fn py_batch_gcrs_to_itrs<'py>(
     ))
 }
 
+/// Transform multiple state vectors from ITRS to GCRS coordinates in batch
+///
+/// Converts International Terrestrial Reference System (Earth-fixed) coordinates to
+/// Geocentric Celestial Reference System (inertial) coordinates for multiple epochs
+/// simultaneously. This is the inverse of batch_gcrs_to_itrs.
+///
+/// # Arguments
+/// * `positions` - 2D NumPy array of shape (N, 3) containing ITRS position vectors in meters
+/// * `velocities` - 2D NumPy array of shape (N, 3) containing ITRS velocity vectors in m/s
+/// * `obstimes` - List of N Epoch objects for each state vector
+///
+/// # Returns
+/// Tuple of (GCRS positions, GCRS velocities) as 2D NumPy arrays
+///
+/// # Errors
+/// Returns an error if array shapes or epoch count are invalid
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_itrs_to_gcrs, Epoch
+/// # ITRS coordinates (Earth-fixed)
+/// positions = np.array([[7000e3, 0, 0], [0, 7000e3, 0]])
+/// velocities = np.array([[0, 0.5e3, 0], [-0.5e3, 0, 0]])
+/// epochs = [Epoch.from_mjd(60000.0), Epoch.from_mjd(60000.5)]
+/// gcrs_pos, gcrs_vel = batch_itrs_to_gcrs(positions, velocities, epochs)
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_itrs_to_gcrs")]
 fn py_batch_itrs_to_gcrs<'py>(
@@ -2964,6 +3357,32 @@ fn py_batch_itrs_to_gcrs<'py>(
     ))
 }
 
+/// Transform multiple state vectors from GCRS to TEME coordinates in batch
+///
+/// Converts Geocentric Celestial Reference System coordinates to True Equator
+/// Mean Equinox (TEME) coordinates for multiple epochs. TEME is the standard
+/// reference frame for SGP4/SDP4 satellite propagation.
+///
+/// # Arguments
+/// * `positions` - 2D NumPy array of shape (N, 3) containing GCRS position vectors in meters
+/// * `velocities` - 2D NumPy array of shape (N, 3) containing GCRS velocity vectors in m/s
+/// * `obstimes` - List of N Epoch objects for each state vector
+///
+/// # Returns
+/// Tuple of (TEME positions, TEME velocities) as 2D NumPy arrays
+///
+/// # Errors
+/// Returns an error if array shapes or epoch count are invalid
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_gcrs_to_teme, Epoch
+/// positions = np.array([[7000e3, 0, 0], [0, 7000e3, 0]])
+/// velocities = np.array([[0, 7.5e3, 0], [-7.5e3, 0, 0]])
+/// epochs = [Epoch.from_mjd(60000.0), Epoch.from_mjd(60000.5)]
+/// teme_pos, teme_vel = batch_gcrs_to_teme(positions, velocities, epochs)
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_gcrs_to_teme")]
 fn py_batch_gcrs_to_teme<'py>(
@@ -3019,6 +3438,33 @@ fn py_batch_gcrs_to_teme<'py>(
     ))
 }
 
+/// Transform multiple state vectors from TEME to GCRS coordinates in batch
+///
+/// Converts True Equator Mean Equinox (TEME) coordinates to Geocentric Celestial
+/// Reference System coordinates for multiple epochs. Useful for converting SGP4/SDP4
+/// propagated states to standard inertial coordinates.
+///
+/// # Arguments
+/// * `positions` - 2D NumPy array of shape (N, 3) containing TEME position vectors in meters
+/// * `velocities` - 2D NumPy array of shape (N, 3) containing TEME velocity vectors in m/s
+/// * `obstimes` - List of N Epoch objects for each state vector
+///
+/// # Returns
+/// Tuple of (GCRS positions, GCRS velocities) as 2D NumPy arrays
+///
+/// # Errors
+/// Returns an error if array shapes or epoch count are invalid
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_teme_to_gcrs, Epoch
+/// # TEME coordinates from SGP4 propagation
+/// positions = np.array([[7000e3, 0, 0], [0, 7000e3, 0]])
+/// velocities = np.array([[0, 7.5e3, 0], [-7.5e3, 0, 0]])
+/// epochs = [Epoch.from_mjd(60000.0), Epoch.from_mjd(60000.5)]
+/// gcrs_pos, gcrs_vel = batch_teme_to_gcrs(positions, velocities, epochs)
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_teme_to_gcrs")]
 fn py_batch_teme_to_gcrs<'py>(
@@ -3074,6 +3520,33 @@ fn py_batch_teme_to_gcrs<'py>(
     ))
 }
 
+/// Transform multiple state vectors from TEME to ITRS coordinates in batch
+///
+/// Converts True Equator Mean Equinox (TEME) coordinates to International
+/// Terrestrial Reference System (Earth-fixed) coordinates for multiple epochs.
+/// Useful for ground track calculations from SGP4 propagated states.
+///
+/// # Arguments
+/// * `positions` - 2D NumPy array of shape (N, 3) containing TEME position vectors in meters
+/// * `velocities` - 2D NumPy array of shape (N, 3) containing TEME velocity vectors in m/s
+/// * `obstimes` - List of N Epoch objects for each state vector
+///
+/// # Returns
+/// Tuple of (ITRS positions, ITRS velocities) as 2D NumPy arrays
+///
+/// # Errors
+/// Returns an error if array shapes or epoch count are invalid
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_teme_to_itrs, Epoch
+/// # TEME coordinates from SGP4
+/// positions = np.array([[7000e3, 0, 0], [0, 7000e3, 0]])
+/// velocities = np.array([[0, 7.5e3, 0], [-7.5e3, 0, 0]])
+/// epochs = [Epoch.from_mjd(60000.0), Epoch.from_mjd(60000.5)]
+/// itrs_pos, itrs_vel = batch_teme_to_itrs(positions, velocities, epochs)
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_teme_to_itrs")]
 fn py_batch_teme_to_itrs<'py>(
@@ -3129,6 +3602,33 @@ fn py_batch_teme_to_itrs<'py>(
     ))
 }
 
+/// Transform multiple state vectors from ITRS to TEME coordinates in batch
+///
+/// Converts International Terrestrial Reference System (Earth-fixed) coordinates
+/// to True Equator Mean Equinox (TEME) coordinates for multiple epochs. This is
+/// the inverse of batch_teme_to_itrs.
+///
+/// # Arguments
+/// * `positions` - 2D NumPy array of shape (N, 3) containing ITRS position vectors in meters
+/// * `velocities` - 2D NumPy array of shape (N, 3) containing ITRS velocity vectors in m/s
+/// * `obstimes` - List of N Epoch objects for each state vector
+///
+/// # Returns
+/// Tuple of (TEME positions, TEME velocities) as 2D NumPy arrays
+///
+/// # Errors
+/// Returns an error if array shapes or epoch count are invalid
+///
+/// # Example
+/// ```python
+/// import numpy as np
+/// from astrora import batch_itrs_to_teme, Epoch
+/// # ITRS coordinates (Earth-fixed)
+/// positions = np.array([[7000e3, 0, 0], [0, 7000e3, 0]])
+/// velocities = np.array([[0, 0.5e3, 0], [-0.5e3, 0, 0]])
+/// epochs = [Epoch.from_mjd(60000.0), Epoch.from_mjd(60000.5)]
+/// teme_pos, teme_vel = batch_itrs_to_teme(positions, velocities, epochs)
+/// ```
 #[pyfunction]
 #[pyo3(name = "batch_itrs_to_teme")]
 fn py_batch_itrs_to_teme<'py>(
@@ -5483,6 +5983,37 @@ fn py_eclipse_duration(altitude_km: f64, beta_angle_deg: f64) -> PyResult<f64> {
 // Satellite Lifetime Estimation
 // ==============================================================================
 
+/// Estimate orbital lifetime until atmospheric reentry
+///
+/// Predicts when a satellite will decay to a specified terminal altitude due to
+/// atmospheric drag. Uses exponential atmospheric model and simplified drag propagation.
+///
+/// # Arguments
+/// * `r_km` - Initial position vector in kilometers [x, y, z]
+/// * `v_km_s` - Initial velocity vector in km/s [vx, vy, vz]
+/// * `ballistic_coeff` - Ballistic coefficient B = Cd·A/m (m²/kg)
+/// * `terminal_altitude_km` - Altitude at which orbit is considered decayed (km)
+/// * `max_time_days` - Maximum propagation time (days)
+///
+/// # Returns
+/// Estimated lifetime in days until reaching terminal altitude
+///
+/// # Errors
+/// Returns an error if:
+/// - Orbit is already below terminal altitude
+/// - Lifetime exceeds maximum propagation time
+/// - Numerical propagation fails
+///
+/// # Example
+/// ```python
+/// from astrora import estimate_satellite_lifetime
+/// # CubeSat in LEO
+/// r = [7000.0, 0.0, 0.0]  # km
+/// v = [0.0, 7.5, 0.0]  # km/s
+/// B = 0.01  # Ballistic coefficient (m²/kg)
+/// lifetime = estimate_satellite_lifetime(r, v, B, 100.0, 365.0)
+/// print(f"Orbital lifetime: {lifetime:.1f} days")
+/// ```
 #[pyfunction]
 #[pyo3(name = "estimate_satellite_lifetime")]
 fn py_estimate_satellite_lifetime(
@@ -5509,6 +6040,32 @@ fn py_estimate_satellite_lifetime(
     }
 }
 
+/// Estimate orbital decay rate at a given altitude
+///
+/// Calculates the rate of altitude loss per day due to atmospheric drag
+/// using an exponential atmospheric density model.
+///
+/// # Arguments
+/// * `altitude_km` - Current orbital altitude above Earth's surface (km)
+/// * `ballistic_coeff` - Ballistic coefficient B = Cd·A/m (m²/kg)
+///
+/// # Returns
+/// Altitude decay rate in kilometers per day
+///
+/// # Example
+/// ```python
+/// from astrora import estimate_decay_rate
+/// # ISS-like orbit at 400 km
+/// B = 0.005  # Low ballistic coefficient (large, low mass/area)
+/// decay_rate = estimate_decay_rate(400.0, B)
+/// print(f"Decay rate: {decay_rate:.3f} km/day")
+/// ```
+///
+/// # Note
+/// This is an approximate model. Actual decay depends on:
+/// - Solar activity (affects upper atmosphere density)
+/// - Satellite orientation (affects drag coefficient)
+/// - Orbit eccentricity (varies altitude)
 #[pyfunction]
 #[pyo3(name = "estimate_decay_rate")]
 fn py_estimate_decay_rate(altitude_km: f64, ballistic_coeff: f64) -> f64 {
@@ -5524,6 +6081,39 @@ fn py_estimate_decay_rate(altitude_km: f64, ballistic_coeff: f64) -> f64 {
 // Conjunction Analysis
 // ==============================================================================
 
+/// Analyze conjunction (close approach) between two satellites
+///
+/// Determines Time of Closest Approach (TCA), miss distance, and collision risk
+/// for two objects in orbit. Uses Keplerian propagation to predict future positions.
+///
+/// # Arguments
+/// * `r1_km` - Position vector of object 1 in kilometers [x, y, z]
+/// * `v1_km_s` - Velocity vector of object 1 in km/s [vx, vy, vz]
+/// * `r2_km` - Position vector of object 2 in kilometers [x, y, z]
+/// * `v2_km_s` - Velocity vector of object 2 in km/s [vx, vy, vz]
+/// * `search_window_hours` - Time window to search for close approach (hours)
+/// * `collision_threshold_km` - Distance threshold for collision risk (km)
+///
+/// # Returns
+/// Tuple of (TCA in minutes, miss distance in km, collision risk flag)
+/// - TCA: Time to closest approach in minutes from now
+/// - Miss distance: Minimum separation distance in kilometers
+/// - Collision risk: True if miss distance < threshold
+///
+/// # Errors
+/// Returns an error if conjunction analysis fails (e.g., invalid orbits)
+///
+/// # Example
+/// ```python
+/// from astrora import compute_conjunction
+/// # Two satellites in similar orbits
+/// r1 = [7000.0, 0.0, 0.0]
+/// v1 = [0.0, 7.5, 0.0]
+/// r2 = [7005.0, 0.0, 0.0]  # 5 km offset
+/// v2 = [0.0, 7.48, 0.0]  # Slightly different velocity
+/// tca, miss_dist, risk = compute_conjunction(r1, v1, r2, v2, 24.0, 1.0)
+/// print(f"TCA: {tca:.1f} min, Miss: {miss_dist:.3f} km, Risk: {risk}")
+/// ```
 #[pyfunction]
 #[pyo3(name = "compute_conjunction")]
 fn py_compute_conjunction(
@@ -5559,6 +6149,36 @@ fn py_compute_conjunction(
     }
 }
 
+/// Calculate minimum distance during close approach between two satellites
+///
+/// Computes the closest separation distance between two objects in orbit
+/// over a specified time window. Simpler than compute_conjunction - only
+/// returns the minimum distance without timing or risk assessment.
+///
+/// # Arguments
+/// * `r1_km` - Position vector of object 1 in kilometers [x, y, z]
+/// * `v1_km_s` - Velocity vector of object 1 in km/s [vx, vy, vz]
+/// * `r2_km` - Position vector of object 2 in kilometers [x, y, z]
+/// * `v2_km_s` - Velocity vector of object 2 in km/s [vx, vy, vz]
+/// * `search_window_hours` - Time window to search (hours)
+///
+/// # Returns
+/// Minimum separation distance in kilometers during the search window
+///
+/// # Errors
+/// Returns an error if distance calculation fails (e.g., invalid orbits)
+///
+/// # Example
+/// ```python
+/// from astrora import closest_approach_distance
+/// # Two satellites in similar orbits
+/// r1 = [7000.0, 0.0, 0.0]
+/// v1 = [0.0, 7.5, 0.0]
+/// r2 = [7010.0, 0.0, 0.0]
+/// v2 = [0.0, 7.49, 0.0]
+/// min_distance = closest_approach_distance(r1, v1, r2, v2, 24.0)
+/// print(f"Closest approach: {min_distance:.3f} km")
+/// ```
 #[pyfunction]
 #[pyo3(name = "closest_approach_distance")]
 fn py_closest_approach_distance(
