@@ -64,8 +64,8 @@
 //! # References
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students. Ch. 6.5
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 6.5
-//! - https://orbital-mechanics.space/orbital-maneuvers/plane-change-maneuvers.html
-//! - https://en.wikipedia.org/wiki/Orbital_inclination_change
+//! - <https://orbital-mechanics.space/orbital-maneuvers/plane-change-maneuvers.html>
+//! - <https://en.wikipedia.org/wiki/Orbital_inclination_change>
 
 use std::f64::consts::PI;
 

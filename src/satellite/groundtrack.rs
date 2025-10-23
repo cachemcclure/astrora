@@ -72,7 +72,7 @@
 //! - Curtis, "Orbital Mechanics for Engineering Students" (2014), Ch. 5
 //! - Navipedia: "Transformations between ECEF and ENU coordinates"
 //! - ESA: "Ellipsoidal and Cartesian Coordinates Conversion"
-//!   https://gssc.esa.int/navipedia/index.php/Ellipsoidal_and_Cartesian_Coordinates_Conversion
+//!   <https://gssc.esa.int/navipedia/index.php/Ellipsoidal_and_Cartesian_Coordinates_Conversion>
 //!
 //! # Example
 //!
@@ -90,7 +90,6 @@
 //!          geodetic.altitude);
 //! ```
 
-use nalgebra::Vector3;
 use std::f64::consts::PI;
 
 /// WGS84 Earth ellipsoid parameters

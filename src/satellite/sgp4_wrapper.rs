@@ -79,8 +79,8 @@ impl From<Sgp4Error> for PyErr {
 ///
 /// # Units
 ///
-/// - Position: kilometers [km]
-/// - Velocity: kilometers per second [km/s]
+/// - Position: kilometers \[km\]
+/// - Velocity: kilometers per second \[km/s\]
 #[derive(Debug, Clone)]
 pub struct SatelliteState {
     /// Position vector [x, y, z] in TEME frame (km)

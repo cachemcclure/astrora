@@ -33,8 +33,8 @@
 //! - **Standards**:
 //!   - Spacetrack Report #3 (1980, revised 2006)
 //!   - AIAA 2006-6753 (Vallado et al.)
-//! - **TLE Format**: https://celestrak.org/NORAD/documentation/tle-fmt.php
-//! - **OMM Format**: https://public.ccsds.org/Pubs/502x0b2c1.pdf
+//! - **TLE Format**: <https://celestrak.org/NORAD/documentation/tle-fmt.php>
+//! - **OMM Format**: <https://public.ccsds.org/Pubs/502x0b2c1.pdf>
 //!
 //! # Example
 //!

@@ -1,0 +1,161 @@
+name: Full Benchmark Suite
+
+# Run comprehensive benchmarks on a schedule to track long-term performance trends
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  full-benchmark-suite:
+    name: Run All Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Create virtual environment
+        run: uv venv .venv
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          uv pip install -e ".[dev]"
+
+      - name: Build Rust extension (release mode)
+        run: |
+          source .venv/bin/activate
+          uv pip install maturin
+          maturin develop --release
+
+      - name: Run numpy overhead benchmarks
+        run: |
+          source .venv/bin/activate
+          pytest tests/benchmark_numpy_overhead.py \
+            --benchmark-only \
+            --benchmark-json=benchmark_numpy.json \
+            --benchmark-warmup=on \
+            --benchmark-min-rounds=10
+
+      - name: Run batch anomaly benchmarks
+        run: |
+          source .venv/bin/activate
+          pytest tests/benchmark_batch_anomaly.py \
+            --benchmark-only \
+            --benchmark-json=benchmark_batch.json \
+            --benchmark-warmup=on \
+            --benchmark-min-rounds=10
+
+      - name: Run parallel batch benchmarks
+        run: |
+          source .venv/bin/activate
+          pytest tests/benchmark_parallel_batch.py \
+            --benchmark-only \
+            --benchmark-json=benchmark_parallel.json \
+            --benchmark-warmup=on \
+            --benchmark-min-rounds=10
+
+      - name: Combine benchmark results
+        run: |
+          source .venv/bin/activate
+          python -c "
+          import json
+          from pathlib import Path
+
+          results = []
+          for f in ['benchmark_numpy.json', 'benchmark_batch.json', 'benchmark_parallel.json']:
+              if Path(f).exists():
+                  with open(f) as fp:
+                      data = json.load(fp)
+                      results.extend(data.get('benchmarks', []))
+
+          combined = {
+              'benchmarks': results,
+              'datetime': data.get('datetime', ''),
+              'machine_info': data.get('machine_info', {}),
+              'commit_info': data.get('commit_info', {})
+          }
+
+          with open('benchmark_full.json', 'w') as fp:
+              json.dump(combined, fp, indent=2)
+          "
+
+      - name: Store full benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'pytest'
+          output-file-path: benchmark_full.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '120%'
+          comment-on-alert: false
+          fail-on-alert: false
+          # Store in separate branch for full suite
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench/full
+
+      - name: Upload all benchmark artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: full-benchmark-results
+          path: |
+            benchmark_*.json
+          retention-days: 90
+
+      - name: Generate benchmark comparison report
+        run: |
+          source .venv/bin/activate
+          echo "# Full Benchmark Suite Results" > benchmark_report.md
+          echo "" >> benchmark_report.md
+          echo "Run date: $(date -u)" >> benchmark_report.md
+          echo "" >> benchmark_report.md
+          pytest tests/benchmark_numpy_overhead.py \
+            --benchmark-only \
+            --benchmark-compare=benchmark_numpy.json \
+            --benchmark-compare-fail=min:5% \
+            --benchmark-columns=min,max,mean,stddev,median >> benchmark_report.md || true
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-report
+          path: benchmark_report.md
+          retention-days: 90

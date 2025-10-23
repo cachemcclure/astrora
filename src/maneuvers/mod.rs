@@ -13,12 +13,12 @@
 //! # References
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students (3rd ed.). Ch. 5, 6, 8
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications (4th ed.). Ch. 6, 7, 8
-//! - https://orbital-mechanics.space/orbital-maneuvers/hohmann-transfer.html
-//! - https://orbital-mechanics.space/orbital-maneuvers/bielliptic-hohmann-transfer.html
-//! - https://orbital-mechanics.space/orbital-maneuvers/plane-change-maneuvers.html
-//! - https://orbital-mechanics.space/orbital-maneuvers/phasing-maneuvers.html
-//! - https://orbital-mechanics.space/interplanetary-maneuvers/gravity-assists.html
-//! - https://orbital-mechanics.space/lamberts-problem/lamberts-problem.html
+//! - <https://orbital-mechanics.space/orbital-maneuvers/hohmann-transfer.html>
+//! - <https://orbital-mechanics.space/orbital-maneuvers/bielliptic-hohmann-transfer.html>
+//! - <https://orbital-mechanics.space/orbital-maneuvers/plane-change-maneuvers.html>
+//! - <https://orbital-mechanics.space/orbital-maneuvers/phasing-maneuvers.html>
+//! - <https://orbital-mechanics.space/interplanetary-maneuvers/gravity-assists.html>
+//! - <https://orbital-mechanics.space/lamberts-problem/lamberts-problem.html>
 
 pub mod bielliptic;
 pub mod budget;

@@ -455,4 +455,226 @@ mod tests {
         let result = estimate_lifetime(&r_low, &v0, 0.01, 100_000.0, 86400.0, 60.0);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_lifetime_zero_ballistic_coeff_error() {
+        let r0 = Vector3::new(R_EARTH + 400_000.0, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7670.0, 0.0);
+
+        let result = estimate_lifetime(&r0, &v0, 0.0, 100_000.0, 86400.0, 60.0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("ballistic_coeff"));
+    }
+
+    #[test]
+    fn test_lifetime_zero_max_time_error() {
+        let r0 = Vector3::new(R_EARTH + 400_000.0, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7670.0, 0.0);
+
+        let result = estimate_lifetime(&r0, &v0, 0.01, 100_000.0, 0.0, 60.0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("max_time"));
+    }
+
+    #[test]
+    fn test_lifetime_altitude_just_below_terminal() {
+        // Test edge case where initial altitude is just below terminal altitude
+        let r0 = Vector3::new(R_EARTH + 99_000.0, 0.0, 0.0); // 99 km < 100 km terminal
+        let v0 = Vector3::new(0.0, 7670.0, 0.0);
+
+        let result = estimate_lifetime(&r0, &v0, 0.01, 100_000.0, 86400.0, 60.0);
+        // Should error because altitude is below terminal
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decay_rate_very_low_altitude() {
+        // Test decay rate at very low altitude (high density)
+        let B = 0.01;
+        let rate = estimate_decay_rate(100_000.0, B); // 100 km
+
+        // Should be strongly negative (fast decay)
+        assert!(rate < -0.01); // At least 10 m/s² decay rate magnitude
+    }
+
+    #[test]
+    fn test_decay_rate_very_high_altitude() {
+        // Test decay rate at very high altitude (low density)
+        let B = 0.01;
+        let rate = estimate_decay_rate(1_000_000.0, B); // 1000 km
+
+        // Should be very small (slow decay)
+        assert!(rate > -1e-6); // Very small magnitude
+        assert!(rate < 0.0);   // But still negative
+    }
+
+    #[test]
+    fn test_decay_rate_zero_ballistic_coeff() {
+        // Zero ballistic coefficient should give zero decay rate
+        let rate = estimate_decay_rate(400_000.0, 0.0);
+        assert_relative_eq!(rate, 0.0, epsilon = 1e-15);
+    }
+
+    #[test]
+    fn test_decay_rate_altitude_scaling() {
+        // Test exponential scaling with altitude
+        let B = 0.01;
+
+        let rate_300 = estimate_decay_rate(300_000.0, B);
+        let rate_400 = estimate_decay_rate(400_000.0, B);
+        let rate_500 = estimate_decay_rate(500_000.0, B);
+
+        // All should be negative
+        assert!(rate_300 < 0.0);
+        assert!(rate_400 < 0.0);
+        assert!(rate_500 < 0.0);
+
+        // Each 100 km increase should reduce decay rate exponentially
+        // rate should scale as exp(-Δh / H) where H ≈ 8500 m
+        let ratio_1 = rate_300 / rate_400;
+        let ratio_2 = rate_400 / rate_500;
+
+        // Each ratio should be significantly greater than 1 (faster decay at lower altitude)
+        // exp(100km / 8.5km) ≈ exp(11.76) ≈ 127,000
+        assert!(ratio_1 > 10.0);
+        assert!(ratio_2 > 10.0);
+    }
+
+    #[test]
+    fn test_decay_rate_ballistic_coeff_range() {
+        // Test with a range of realistic ballistic coefficients
+        let altitude = 400_000.0;
+
+        // CubeSat: small area, low mass
+        let B_cubesat = 0.001; // m²/kg
+        let rate_cubesat = estimate_decay_rate(altitude, B_cubesat);
+
+        // Large satellite with solar panels: large area, medium mass
+        let B_solar = 0.05; // m²/kg
+        let rate_solar = estimate_decay_rate(altitude, B_solar);
+
+        // Balloon satellite: very large area, low mass
+        let B_balloon = 0.2; // m²/kg
+        let rate_balloon = estimate_decay_rate(altitude, B_balloon);
+
+        // All should be negative
+        assert!(rate_cubesat < 0.0);
+        assert!(rate_solar < 0.0);
+        assert!(rate_balloon < 0.0);
+
+        // Should scale with B
+        assert!(rate_balloon.abs() > rate_solar.abs());
+        assert!(rate_solar.abs() > rate_cubesat.abs());
+    }
+
+    #[test]
+    fn test_decay_rate_consistency() {
+        // Decay rate should be smooth and continuous
+        let B = 0.01;
+
+        let h1 = 350_000.0;
+        let h2 = 351_000.0; // 1 km higher
+
+        let rate1 = estimate_decay_rate(h1, B);
+        let rate2 = estimate_decay_rate(h2, B);
+
+        // Both should be negative
+        assert!(rate1 < 0.0);
+        assert!(rate2 < 0.0);
+
+        // Lower altitude should have faster (more negative) decay
+        assert!(rate1.abs() > rate2.abs());
+
+        // Rates should be relatively close (continuity)
+        // With scale height of 8.5 km, 1 km change is exp(1/8.5) ≈ 1.125 (12.5% difference)
+        let relative_diff = (rate1 - rate2).abs() / rate1.abs();
+        assert!(relative_diff < 0.15); // Less than 15% difference for 1 km change
+    }
+
+    #[test]
+    fn test_constants() {
+        // Verify module constants are reasonable
+        assert_eq!(DEFAULT_TERMINAL_ALTITUDE, 100_000.0);
+        assert_eq!(DEFAULT_RHO0, 1.225);
+        assert_eq!(DEFAULT_H0, 0.0);
+        assert_eq!(DEFAULT_SCALE_HEIGHT, 8500.0);
+        assert_eq!(TYPICAL_DRAG_COEFFICIENT, 2.2);
+
+        // Scale height should be positive
+        assert!(DEFAULT_SCALE_HEIGHT > 0.0);
+
+        // Sea level density should be positive
+        assert!(DEFAULT_RHO0 > 0.0);
+
+        // Terminal altitude should be reasonable
+        assert!(DEFAULT_TERMINAL_ALTITUDE > 0.0);
+        assert!(DEFAULT_TERMINAL_ALTITUDE < 200_000.0); // Should be in lower atmosphere
+    }
+
+    #[test]
+    fn test_decay_rate_iss_altitude() {
+        // Test at ISS altitude (~408 km)
+        let iss_altitude = 408_000.0;
+        let B_iss = 0.0001; // ISS is massive with small cross-section
+
+        let rate = estimate_decay_rate(iss_altitude, B_iss);
+
+        // Should have slow but non-zero decay
+        assert!(rate < 0.0);
+        assert!(rate > -1e-4); // Very slow decay
+    }
+
+    #[test]
+    fn test_decay_rate_geo_altitude() {
+        // Test at GEO altitude (~36,000 km)
+        let geo_altitude = 36_000_000.0;
+        let B = 0.01;
+
+        let rate = estimate_decay_rate(geo_altitude, B);
+
+        // At GEO, atmospheric density is negligible, decay should be essentially zero
+        assert_relative_eq!(rate, 0.0, epsilon = 1e-15);
+    }
+
+    #[test]
+    #[ignore] // Fast test with extreme parameters for quick decay
+    fn test_lifetime_extreme_parameters() {
+        // Test with extreme parameters for very fast decay
+        // Very low orbit with huge ballistic coefficient
+
+        let r0 = Vector3::new(R_EARTH + 110_000.0, 0.0, 0.0); // Just above terminal
+        let v_circ = (GM_EARTH / r0.norm()).sqrt();
+        let v0 = Vector3::new(0.0, v_circ, 0.0);
+
+        // Enormous ballistic coefficient for instant decay
+        let B = 1.0; // Extremely large
+
+        let lifetime = estimate_lifetime(
+            &r0,
+            &v0,
+            B,
+            100_000.0,  // Terminal at 100 km
+            3600.0,     // Max 1 hour
+            1.0,        // 1 second time step
+        );
+
+        // Should succeed and give short lifetime
+        assert!(lifetime.is_ok());
+        let time = lifetime.unwrap();
+        assert!(time > 0.0);
+        assert!(time < 3600.0); // Less than 1 hour
+    }
+
+    #[test]
+    fn test_lifetime_max_time_exceeded() {
+        // Test that we get an error when max_time is too short
+        let r0 = Vector3::new(R_EARTH + 400_000.0, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7670.0, 0.0);
+
+        // Very small max_time, satellite won't decay
+        let result = estimate_lifetime(&r0, &v0, 0.001, 100_000.0, 1.0, 1.0);
+
+        // Should error due to exceeding max_time
+        assert!(result.is_err());
+    }
 }

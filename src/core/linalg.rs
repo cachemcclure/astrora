@@ -209,10 +209,10 @@ pub fn try_normalize(v: &Vector3, min_norm: f64) -> Option<Vector3> {
 /// Create a skew-symmetric matrix from a 3D vector
 ///
 /// This is useful for representing cross products as matrix multiplication:
-/// a × b = [a]× b
+/// a × b = \[a\]× b
 ///
 /// # Arguments
-/// * `v` - Input vector [x, y, z]
+/// * `v` - Input vector \[x, y, z\]
 ///
 /// # Returns
 /// 3x3 skew-symmetric matrix:
@@ -395,5 +395,140 @@ mod tests {
         // Check off-diagonal blocks are zero
         assert_eq!(block[(0, 3)], 0.0);
         assert_eq!(block[(3, 0)], 0.0);
+    }
+
+    // ============================================================================
+    // Property-Based Tests
+    // ============================================================================
+    // These tests verify mathematical properties hold for arbitrary inputs
+
+    use proptest::prelude::*;
+
+    // Strategy for generating non-degenerate 3D vectors
+    fn vector3_strategy() -> impl Strategy<Value = Vector3> {
+        (
+            -1e6..1e6_f64,
+            -1e6..1e6_f64,
+            -1e6..1e6_f64,
+        )
+            .prop_map(|(x, y, z)| Vector3::new(x, y, z))
+            .prop_filter("non-zero vector", |v| v.norm() > 1e-10)
+    }
+
+    proptest! {
+        #[test]
+        fn test_normalize_yields_unit_vector(v in vector3_strategy()) {
+            let normalized = normalize(&v);
+            let norm = normalized.norm();
+            // Normalized vector should have magnitude 1
+            assert!((norm - 1.0).abs() < 1e-10, "norm = {}", norm);
+        }
+
+        #[test]
+        fn test_cross_product_orthogonality(
+            a in vector3_strategy(),
+            b in vector3_strategy()
+        ) {
+            let c = cross(&a, &b);
+            // Cross product should be orthogonal to both input vectors
+            // Use relative tolerance based on magnitudes involved
+            let a_mag = a.norm();
+            let b_mag = b.norm();
+            let c_mag = c.norm();
+            // Tolerance accounts for floating point errors in large magnitude products
+            let tolerance = a_mag * b_mag * 1e-9;
+
+            let dot_a = c.dot(&a).abs();
+            let dot_b = c.dot(&b).abs();
+            assert!(dot_a < tolerance, "c·a = {}, tolerance = {}", dot_a, tolerance);
+            assert!(dot_b < tolerance, "c·b = {}, tolerance = {}", dot_b, tolerance);
+        }
+
+        #[test]
+        fn test_cross_product_anticommutativity(
+            a in vector3_strategy(),
+            b in vector3_strategy()
+        ) {
+            // Property: a × b = -(b × a)
+            let ab = cross(&a, &b);
+            let ba = cross(&b, &a);
+            let diff = (ab + ba).norm();
+            assert!(diff < 1e-10, "||a×b + b×a|| = {}", diff);
+        }
+
+        #[test]
+        fn test_skew_symmetric_property(v in vector3_strategy()) {
+            let skew = skew_symmetric(&v);
+            // Skew-symmetric matrix should satisfy: S = -S^T
+            let skew_transpose = skew.transpose();
+            let sum = skew + skew_transpose;
+            let max_elem = sum.abs().max();
+            assert!(max_elem < 1e-10, "max|S + S^T| = {}", max_elem);
+        }
+
+        #[test]
+        fn test_skew_symmetric_cross_product_equivalence(
+            a in vector3_strategy(),
+            b in vector3_strategy()
+        ) {
+            // Property: skew(a) * b = a × b
+            let skew_a = skew_symmetric(&a);
+            let result1 = skew_a * b;
+            let result2 = cross(&a, &b);
+            let diff = (result1 - result2).norm();
+            assert!(diff < 1e-10, "||skew(a)*b - a×b|| = {}", diff);
+        }
+
+        #[test]
+        fn test_state_roundtrip(
+            rx in -1e8..1e8_f64, ry in -1e8..1e8_f64, rz in -1e8..1e8_f64,
+            vx in -1e5..1e5_f64, vy in -1e5..1e5_f64, vz in -1e5..1e5_f64
+        ) {
+            // Property: state construction and extraction should be inverse operations
+            let pos = Vector3::new(rx, ry, rz);
+            let vel = Vector3::new(vx, vy, vz);
+            let state = state_vector(pos, vel);
+
+            let pos_extracted = position_from_state(&state);
+            let vel_extracted = velocity_from_state(&state);
+
+            assert_relative_eq!(pos, pos_extracted, epsilon = 1e-10);
+            assert_relative_eq!(vel, vel_extracted, epsilon = 1e-10);
+        }
+
+        #[test]
+        fn test_triple_scalar_product_property(
+            a in vector3_strategy(),
+            b in vector3_strategy(),
+            c in vector3_strategy()
+        ) {
+            // Property: a · (b × c) = (a × b) · c (scalar triple product)
+            let bc = cross(&b, &c);
+            let ab = cross(&a, &b);
+
+            let result1 = a.dot(&bc);
+            let result2 = ab.dot(&c);
+
+            // Use relative tolerance for larger values
+            let max_result = result1.abs().max(result2.abs());
+            let tolerance = if max_result > 1.0 {
+                max_result * 1e-10
+            } else {
+                1e-10
+            };
+
+            let diff = (result1 - result2).abs();
+            assert!(diff < tolerance, "diff = {}, tolerance = {}", diff, tolerance);
+        }
+
+        #[test]
+        fn test_double_normalization_idempotent(v in vector3_strategy()) {
+            // Property: normalizing a normalized vector should not change it
+            let normalized_once = normalize(&v);
+            let normalized_twice = normalize(&normalized_once);
+
+            let diff = (normalized_once - normalized_twice).norm();
+            assert!(diff < 1e-10, "||norm(norm(v)) - norm(v)|| = {}", diff);
+        }
     }
 }

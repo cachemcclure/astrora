@@ -21,7 +21,7 @@
 //! # References
 //! - Vallado, D. A. "Fundamentals of Astrodynamics and Applications", 5th Ed., p. 748
 //! - Tapley, Schutz, Born "Statistical Orbit Determination" (2004), Ch. 3
-//! - nyx-space STM implementation: https://nyxspace.com/nyxspace/MathSpec/optimization/stm/
+//! - nyx-space STM implementation: <https://nyxspace.com/nyxspace/MathSpec/optimization/stm/>
 
 use crate::core::error::PoliastroResult;
 use crate::core::linalg::Vector3;

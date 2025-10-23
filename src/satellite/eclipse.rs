@@ -98,8 +98,8 @@
 //!   Chapter 3: Orbital elements, Section 12: Eclipse prediction
 //! - **Wertz, J. R., & Larson, W. J.** (1999). Space Mission Analysis and Design (3rd ed.).
 //!   Chapter 5: Spacecraft thermal control
-//! - https://en.wikipedia.org/wiki/Beta_angle
-//! - https://en.wikipedia.org/wiki/Sun-synchronous_orbit
+//! - <https://en.wikipedia.org/wiki/Beta_angle>
+//! - <https://en.wikipedia.org/wiki/Sun-synchronous_orbit>
 
 use nalgebra::Vector3;
 use std::f64::consts::PI;

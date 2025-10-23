@@ -33,7 +33,6 @@
 //! - Intel optimization manual: FMA reduces latency and improves accuracy
 //! - ARM NEON: Paired trig operations have lower instruction count
 
-use std::f64::consts::PI;
 
 /// Compute sin and cos simultaneously (optimized)
 ///
@@ -256,6 +255,7 @@ pub fn stumpff_derivatives(z: f64, c2: f64, c3: f64) -> (f64, f64) {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use std::f64::consts::PI;
 
     #[test]
     fn test_sin_cos_accuracy() {

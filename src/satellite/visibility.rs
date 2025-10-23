@@ -53,7 +53,7 @@
 //!   - Algorithm 27: Range, Azimuth, Elevation (rv2razel)
 //!   - Section 4.4: Site Tracking
 //! - Navipedia: "Transformations between ECEF and ENU coordinates"
-//!   https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
+//!   <https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates>
 //! - Curtis, "Orbital Mechanics for Engineering Students" (2014)
 //!   - Chapter 5: Ground Track and Satellite Access
 //!
@@ -379,7 +379,7 @@ pub struct SatellitePass {
 /// from an observer location, using a propagation function to get satellite position.
 ///
 /// # Arguments
-/// - `propagate_fn`: Function that takes time offset (minutes) and returns ECEF position [x,y,z] in km
+/// - `propagate_fn`: Function that takes time offset (minutes) and returns ECEF position \[x,y,z\] in km
 /// - `observer`: Observer location on Earth's surface
 /// - `start_time`: Start of search window (minutes from epoch)
 /// - `end_time`: End of search window (minutes from epoch)
@@ -850,5 +850,460 @@ mod tests {
         assert!(range_rate > 0.0);
         // Should be close to 5 km/s (moving directly away)
         assert_relative_eq!(range_rate, 5.0, epsilon = 0.5);
+    }
+
+    #[test]
+    fn test_range_rate_approaching() {
+        let obs = Observer::new(0.0, 0.0, 0.0);
+        let obs_ecef = obs.to_ecef();
+
+        // Satellite approaching (negative range rate)
+        let sat_ecef = [obs_ecef[0] + 500.0, obs_ecef[1], obs_ecef[2]];
+        let vel_ecef = [-3.0, 0.0, 0.0]; // Moving toward observer at 3 km/s
+
+        let topo = compute_azimuth_elevation_rate(&sat_ecef, &vel_ecef, &obs);
+
+        assert!(topo.range_rate.is_some());
+        let range_rate = topo.range_rate.unwrap();
+        // Should be negative (approaching)
+        assert!(range_rate < 0.0);
+    }
+
+    #[test]
+    fn test_ecef_to_enu_matrix_equator() {
+        // Observer at equator, prime meridian
+        let obs = Observer::new(0.0, 0.0, 0.0);
+        let rot = obs.ecef_to_enu_matrix();
+
+        // At equator, prime meridian:
+        // E should point to +Y (East), N to +Z (North), U to +X (Up)
+        // Test that the matrix is orthonormal
+        let det = rot.determinant();
+        assert_relative_eq!(det.abs(), 1.0, epsilon = 1e-10);
+
+        // Test a known vector transformation
+        // ECEF +Y (East direction) should map to ENU [1, 0, 0]
+        let ecef_east = Vector3::new(0.0, 1.0, 0.0);
+        let enu_east = rot * ecef_east;
+        assert_relative_eq!(enu_east[0], 1.0, epsilon = 1e-10); // East component
+        assert_relative_eq!(enu_east[1], 0.0, epsilon = 1e-10); // North component
+        assert_relative_eq!(enu_east[2], 0.0, epsilon = 1e-10); // Up component
+    }
+
+    #[test]
+    fn test_ecef_to_enu_matrix_north_pole() {
+        // Observer at north pole
+        let obs = Observer::new(PI / 2.0, 0.0, 0.0);
+        let rot = obs.ecef_to_enu_matrix();
+
+        // Matrix should be orthonormal
+        let det = rot.determinant();
+        assert_relative_eq!(det.abs(), 1.0, epsilon = 1e-10);
+
+        // At north pole, ECEF +Z should map to ENU Up
+        let ecef_up = Vector3::new(0.0, 0.0, 1.0);
+        let enu = rot * ecef_up;
+        assert_relative_eq!(enu[2], 1.0, epsilon = 1e-10); // Up component
+    }
+
+    #[test]
+    fn test_ecef_to_sez_matrix() {
+        // Test SEZ transformation
+        let obs = Observer::new(0.0, 0.0, 0.0);
+        let rot_sez = obs.ecef_to_sez_matrix();
+
+        // Matrix should be orthonormal
+        let det = rot_sez.determinant();
+        assert_relative_eq!(det.abs(), 1.0, epsilon = 1e-10);
+
+        // SEZ is related to ENU by 180° rotation about zenith
+        // This is mainly used in Vallado's algorithms
+    }
+
+    #[test]
+    fn test_azimuth_east() {
+        let obs = Observer::new(0.0, 0.0, 0.0);
+
+        // Satellite to the east
+        let enu_east = Vector3::new(500.0, 0.0, 500.0); // East=500, North=0, Up=500
+        let rot_enu = obs.ecef_to_enu_matrix();
+        let obs_ecef = obs.to_ecef();
+        let ecef_offset = rot_enu.transpose() * enu_east;
+        let sat_ecef_vec = obs_ecef + ecef_offset;
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // Azimuth should be 90° (East)
+        assert_relative_eq!(topo.azimuth, PI / 2.0, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_azimuth_south() {
+        let obs = Observer::new(0.0, 0.0, 0.0);
+
+        // Satellite to the south
+        let enu_south = Vector3::new(0.0, -500.0, 500.0); // East=0, North=-500, Up=500
+        let rot_enu = obs.ecef_to_enu_matrix();
+        let obs_ecef = obs.to_ecef();
+        let ecef_offset = rot_enu.transpose() * enu_south;
+        let sat_ecef_vec = obs_ecef + ecef_offset;
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // Azimuth should be 180° (South)
+        assert_relative_eq!(topo.azimuth, PI, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_azimuth_west() {
+        let obs = Observer::new(0.0, 0.0, 0.0);
+
+        // Satellite to the west
+        let enu_west = Vector3::new(-500.0, 0.0, 500.0); // East=-500, North=0, Up=500
+        let rot_enu = obs.ecef_to_enu_matrix();
+        let obs_ecef = obs.to_ecef();
+        let ecef_offset = rot_enu.transpose() * enu_west;
+        let sat_ecef_vec = obs_ecef + ecef_offset;
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // Azimuth should be 270° (West)
+        assert_relative_eq!(topo.azimuth, 3.0 * PI / 2.0, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_observer_southern_hemisphere() {
+        // Observer in southern hemisphere (Sydney: 33.87°S, 151.21°E)
+        let obs = Observer::new(
+            -33.87_f64.to_radians(),
+            151.21_f64.to_radians(),
+            0.050, // 50m altitude
+        );
+        let ecef = obs.to_ecef();
+
+        // Should have negative Z component (southern hemisphere)
+        assert!(ecef[2] < 0.0);
+
+        // Test visibility calculation works - place satellite directly above observer
+        let radial_direction = ecef.normalize();
+        let sat_ecef_vec = ecef + radial_direction * 500.0; // 500 km above
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // Should have valid azimuth and elevation
+        assert!(topo.azimuth >= 0.0 && topo.azimuth <= 2.0 * PI);
+        assert!(topo.elevation > 0.0);
+    }
+
+    #[test]
+    fn test_observer_with_altitude() {
+        // Observer at high altitude (mountaintop)
+        let obs_sea = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_mountain = Observer::new(45.0_f64.to_radians(), 0.0, 5.0); // 5 km altitude
+
+        let ecef_sea = obs_sea.to_ecef();
+        let ecef_mountain = obs_mountain.to_ecef();
+
+        // Mountain observer should be further from Earth's center
+        assert!(ecef_mountain.norm() > ecef_sea.norm());
+        assert_relative_eq!(ecef_mountain.norm() - ecef_sea.norm(), 5.0, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_elevation_nadir() {
+        let obs = Observer::new(0.0, 0.0, 0.0);
+        let obs_ecef = obs.to_ecef();
+
+        // Satellite below observer (nadir direction)
+        let radial_direction = obs_ecef.normalize();
+        let sat_ecef_vec = obs_ecef - radial_direction * 100.0; // 100 km below
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // Should have negative elevation (below horizon)
+        assert!(topo.elevation < 0.0);
+        // Should be close to -90° (nadir)
+        assert_relative_eq!(topo.elevation, -PI / 2.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_azimuth_wrapping() {
+        // Test that azimuth wraps correctly to [0, 2π)
+        let obs = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+
+        // Create satellites in different directions and verify azimuth is in range
+        for angle in [0.0_f64, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0] {
+            let az_rad = angle.to_radians();
+            let e = 500.0 * az_rad.sin();
+            let n = 500.0 * az_rad.cos();
+            let u = 200.0;
+
+            let enu = Vector3::new(e, n, u);
+            let rot_enu = obs.ecef_to_enu_matrix();
+            let obs_ecef = obs.to_ecef();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef_vec = obs_ecef + ecef_offset;
+            let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+            let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+            // Azimuth must be in [0, 2π)
+            assert!(topo.azimuth >= 0.0);
+            assert!(topo.azimuth < 2.0 * PI);
+        }
+    }
+
+    #[test]
+    fn test_find_next_pass_simple() {
+        // Create a simple propagation function that simulates a satellite pass
+        // The satellite starts below horizon, rises, reaches max elevation, then sets
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |t_minutes: f64| -> [f64; 3] {
+            // Simple model: satellite moves in a circular path
+            // At t=0, satellite is below horizon (negative elevation)
+            // At t=5, satellite is at max elevation
+            // At t=10, satellite is below horizon again
+            let phase = (t_minutes - 5.0) / 5.0; // -1 at t=0, 0 at t=5, 1 at t=10
+            let elevation_factor = 1.0 - phase * phase; // Parabola with max at t=5
+
+            // Position: 500 km above observer at max, moving north
+            let enu = Vector3::new(
+                0.0,  // East
+                t_minutes * 50.0, // North (moving)
+                elevation_factor * 500.0 - 100.0, // Up (parabolic)
+            );
+
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        // Find the pass
+        let pass = find_next_pass(&propagate, &observer, 0.0, 20.0, 0.0, 0.5);
+
+        assert!(pass.is_some());
+        let pass = pass.unwrap();
+
+        // Pass should be roughly from t=2 to t=8 (when elevation > 0)
+        assert!(pass.rise_time > 0.0 && pass.rise_time < 5.0);
+        assert!(pass.set_time > 5.0 && pass.set_time < 10.0);
+        assert!(pass.max_elevation_time > pass.rise_time);
+        assert!(pass.max_elevation_time < pass.set_time);
+        assert!(pass.max_elevation > 0.0);
+        assert!(pass.duration > 0.0);
+    }
+
+    #[test]
+    fn test_find_next_pass_no_pass() {
+        // Satellite that never rises above horizon
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |_t_minutes: f64| -> [f64; 3] {
+            // Always below horizon
+            let enu = Vector3::new(0.0, 1000.0, -200.0); // Below horizon
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        let pass = find_next_pass(&propagate, &observer, 0.0, 100.0, 0.0, 1.0);
+        assert!(pass.is_none());
+    }
+
+    #[test]
+    fn test_find_next_pass_with_min_elevation() {
+        // Test with minimum elevation threshold
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |t_minutes: f64| -> [f64; 3] {
+            // Satellite that starts below, rises above, then sets
+            // At t=5, reaches peak elevation
+            let phase = (t_minutes - 10.0) / 8.0; // -1.25 at t=0, 0 at t=10, 1.25 at t=20
+            let elevation_factor = 1.0 - phase * phase; // Parabola, max at t=10
+
+            // Adjust so it crosses 0° around t=5 and t=15
+            let enu = Vector3::new(
+                0.0,
+                t_minutes * 50.0,
+                elevation_factor * 600.0 - 150.0, // Below horizon at t=0, above during pass, below at t=20
+            );
+
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        // With 0° minimum, should find a pass
+        let pass_0deg = find_next_pass(&propagate, &observer, 0.0, 25.0, 0.0, 0.5);
+        assert!(pass_0deg.is_some());
+
+        // With 10° minimum, should still find a pass
+        let pass_10deg = find_next_pass(&propagate, &observer, 0.0, 25.0, 10.0_f64.to_radians(), 0.5);
+        assert!(pass_10deg.is_some());
+
+        // With 60° minimum, should not find a pass (satellite doesn't reach that high)
+        let pass_60deg = find_next_pass(&propagate, &observer, 0.0, 25.0, 60.0_f64.to_radians(), 0.5);
+        assert!(pass_60deg.is_none());
+    }
+
+    #[test]
+    fn test_find_all_passes() {
+        // Satellite with multiple passes
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |t_minutes: f64| -> [f64; 3] {
+            // Two passes: one centered at t=5, another at t=25
+            // Use modulo to create repeating pattern
+            let period = 20.0;
+            let t_in_period = t_minutes % period;
+            let phase = (t_in_period - 5.0) / 5.0;
+            let elevation_factor = 1.0 - phase * phase;
+
+            let enu = Vector3::new(
+                0.0,
+                t_minutes * 50.0,
+                elevation_factor * 500.0 - 100.0,
+            );
+
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        let passes = find_all_passes(&propagate, &observer, 0.0, 40.0, 0.0, 0.5);
+
+        // Should find 2 passes
+        assert!(passes.len() >= 1); // At least one pass
+        // Each pass should have valid properties
+        for pass in &passes {
+            assert!(pass.rise_time < pass.set_time);
+            assert!(pass.max_elevation_time >= pass.rise_time);
+            assert!(pass.max_elevation_time <= pass.set_time);
+            assert!(pass.duration > 0.0);
+        }
+    }
+
+    #[test]
+    fn test_find_all_passes_empty() {
+        // No passes in time window
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |_t_minutes: f64| -> [f64; 3] {
+            // Always below horizon
+            let enu = Vector3::new(0.0, 1000.0, -200.0);
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        let passes = find_all_passes(&propagate, &observer, 0.0, 100.0, 0.0, 1.0);
+        assert_eq!(passes.len(), 0);
+    }
+
+    #[test]
+    fn test_enu_components_accuracy() {
+        // Verify that ENU components are correctly calculated
+        let obs = Observer::new(0.0, 0.0, 0.0);
+
+        // Known ENU offset
+        let e_expected = 100.0;
+        let n_expected = 200.0;
+        let u_expected = 300.0;
+
+        let enu_vec = Vector3::new(e_expected, n_expected, u_expected);
+        let rot_enu = obs.ecef_to_enu_matrix();
+        let obs_ecef = obs.to_ecef();
+        let ecef_offset = rot_enu.transpose() * enu_vec;
+        let sat_ecef_vec = obs_ecef + ecef_offset;
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // ENU components should match
+        assert_relative_eq!(topo.enu[0], e_expected, epsilon = 1e-6);
+        assert_relative_eq!(topo.enu[1], n_expected, epsilon = 1e-6);
+        assert_relative_eq!(topo.enu[2], u_expected, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_range_accuracy() {
+        let obs = Observer::new(0.0, 0.0, 0.0);
+        let obs_ecef = obs.to_ecef();
+
+        // Satellite at known distance
+        let range_expected = 500.0; // km
+        let direction = Vector3::new(1.0, 1.0, 1.0).normalize();
+        let sat_ecef_vec = obs_ecef + direction * range_expected;
+        let sat_ecef = [sat_ecef_vec[0], sat_ecef_vec[1], sat_ecef_vec[2]];
+
+        let topo = compute_azimuth_elevation(&sat_ecef, &obs);
+
+        // Range should match expected value
+        assert_relative_eq!(topo.range, range_expected, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_satellite_pass_duration() {
+        // Verify pass duration is correctly calculated
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |t_minutes: f64| -> [f64; 3] {
+            let phase = (t_minutes - 10.0) / 10.0;
+            let elevation_factor = 1.0 - phase * phase;
+
+            let enu = Vector3::new(0.0, t_minutes * 50.0, elevation_factor * 500.0 - 50.0);
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        let pass = find_next_pass(&propagate, &observer, 0.0, 30.0, 0.0, 0.5);
+        assert!(pass.is_some());
+
+        let pass = pass.unwrap();
+        // Duration should equal set_time - rise_time
+        assert_relative_eq!(pass.duration, pass.set_time - pass.rise_time, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_max_elevation_time_bounds() {
+        // Verify max elevation time is within pass bounds
+        let observer = Observer::new(45.0_f64.to_radians(), 0.0, 0.0);
+        let obs_ecef = observer.to_ecef();
+
+        let propagate = |t_minutes: f64| -> [f64; 3] {
+            let phase = (t_minutes - 15.0) / 10.0;
+            let elevation_factor = 1.0 - phase * phase;
+
+            let enu = Vector3::new(0.0, t_minutes * 30.0, elevation_factor * 600.0);
+            let rot_enu = observer.ecef_to_enu_matrix();
+            let ecef_offset = rot_enu.transpose() * enu;
+            let sat_ecef = obs_ecef + ecef_offset;
+            [sat_ecef[0], sat_ecef[1], sat_ecef[2]]
+        };
+
+        let pass = find_next_pass(&propagate, &observer, 0.0, 40.0, 0.0, 0.5);
+        assert!(pass.is_some());
+
+        let pass = pass.unwrap();
+        assert!(pass.max_elevation_time >= pass.rise_time);
+        assert!(pass.max_elevation_time <= pass.set_time);
     }
 }

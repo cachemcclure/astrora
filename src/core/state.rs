@@ -539,4 +539,104 @@ mod tests {
         let period_result = state.period(GM_EARTH);
         assert!(period_result.is_err());
     }
+
+    #[test]
+    fn test_position_velocity_getters() {
+        // Test position() and velocity() getter methods
+        let pos = Vector3::new(7000e3, 1000e3, 2000e3);
+        let vel = Vector3::new(1000.0, 7000.0, 500.0);
+        let state = CartesianState::new(pos, vel);
+
+        // Test getters
+        assert_eq!(state.position(), &pos);
+        assert_eq!(state.velocity(), &vel);
+        assert_eq!(state.position().x, 7000e3);
+        assert_eq!(state.velocity().y, 7000.0);
+    }
+
+    #[test]
+    fn test_orbit_type_parabolic() {
+        // Test parabolic orbit classification (e ≈ 1.0)
+        // For parabolic orbit: v² = 2μ/r
+        let r = 7000e3;
+        let v_parabolic = (2.0 * GM_EARTH / r).sqrt();
+
+        let pos = Vector3::new(r, 0.0, 0.0);
+        let vel = Vector3::new(0.0, v_parabolic, 0.0);
+        let state = CartesianState::new(pos, vel);
+
+        let orbit_type = state.orbit_type(GM_EARTH);
+        assert_eq!(orbit_type, "parabolic");
+    }
+
+    #[test]
+    fn test_semi_major_axis_parabolic_error() {
+        // Test that parabolic orbits return error for semi_major_axis
+        // Parabolic orbit has energy ≈ 0
+        let r = 7000e3;
+        let v_parabolic = (2.0 * GM_EARTH / r).sqrt();
+
+        let pos = Vector3::new(r, 0.0, 0.0);
+        let vel = Vector3::new(0.0, v_parabolic, 0.0);
+        let state = CartesianState::new(pos, vel);
+
+        let result = state.semi_major_axis(GM_EARTH);
+        assert!(result.is_err());
+
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("parabolic"));
+    }
+
+    #[test]
+    fn test_period_parabolic_error() {
+        // Test that parabolic orbits return error for period
+        let r = 7000e3;
+        let v_parabolic = (2.0 * GM_EARTH / r).sqrt();
+
+        let pos = Vector3::new(r, 0.0, 0.0);
+        let vel = Vector3::new(0.0, v_parabolic, 0.0);
+        let state = CartesianState::new(pos, vel);
+
+        let result = state.period(GM_EARTH);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("parabolic"));
+    }
+
+    #[test]
+    fn test_orbit_type_all_classifications() {
+        // Test all orbit type classifications
+        let r = 7000e3;
+
+        // Circular (e ≈ 0)
+        let v_circ = (GM_EARTH / r).sqrt();
+        let state_circ = CartesianState::new(
+            Vector3::new(r, 0.0, 0.0),
+            Vector3::new(0.0, v_circ, 0.0),
+        );
+        assert_eq!(state_circ.orbit_type(GM_EARTH), "circular");
+
+        // Elliptical (0 < e < 1)
+        let v_ellip = v_circ * 1.2; // Slightly higher velocity
+        let state_ellip = CartesianState::new(
+            Vector3::new(r, 0.0, 0.0),
+            Vector3::new(0.0, v_ellip, 0.0),
+        );
+        assert_eq!(state_ellip.orbit_type(GM_EARTH), "elliptical");
+
+        // Parabolic (e ≈ 1)
+        let v_para = (2.0 * GM_EARTH / r).sqrt();
+        let state_para = CartesianState::new(
+            Vector3::new(r, 0.0, 0.0),
+            Vector3::new(0.0, v_para, 0.0),
+        );
+        assert_eq!(state_para.orbit_type(GM_EARTH), "parabolic");
+
+        // Hyperbolic (e > 1)
+        let v_hyp = v_para * 1.1; // Above escape velocity
+        let state_hyp = CartesianState::new(
+            Vector3::new(r, 0.0, 0.0),
+            Vector3::new(0.0, v_hyp, 0.0),
+        );
+        assert_eq!(state_hyp.orbit_type(GM_EARTH), "hyperbolic");
+    }
 }

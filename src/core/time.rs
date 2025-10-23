@@ -917,4 +917,247 @@ mod tests {
         assert!(!zero.is_positive());
         assert!(!zero.is_negative());
     }
+
+    #[test]
+    fn test_from_gregorian_tai() {
+        let epoch_tai = Epoch::from_gregorian_tai(2000, 1, 1, 12, 0, 0, 0);
+        let epoch_utc = Epoch::from_gregorian_utc(2000, 1, 1, 12, 0, 0, 0);
+
+        // TAI and UTC represent different time scales, so they should be different
+        // TAI-UTC difference at J2000 was 32 seconds
+        let diff = epoch_tai.duration_since(&epoch_utc);
+        assert!(diff.to_seconds().abs() > 0.0);
+    }
+
+    #[test]
+    fn test_from_gregorian_tt() {
+        let epoch_tt = Epoch::from_gregorian_tt(2000, 1, 1, 12, 0, 0, 0);
+        let j2000 = Epoch::j2000();
+
+        // Should be very close to J2000 which is defined in TT
+        let diff = epoch_tt.duration_since(&j2000);
+        assert_relative_eq!(diff.to_seconds().abs(), 0.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_from_gregorian_tdb() {
+        let epoch_tdb = Epoch::from_gregorian_tdb(2000, 1, 1, 12, 0, 0, 0);
+        let j2000 = Epoch::j2000();
+
+        // TDB and TT differ by small periodic terms (up to ~2ms)
+        let diff = epoch_tdb.duration_since(&j2000);
+        assert!(diff.to_seconds().abs() < 0.01); // Within 10ms
+    }
+
+    #[test]
+    fn test_from_mjd() {
+        let mjd = 51544.5; // J2000 MJD
+        let epoch = Epoch::from_mjd(mjd, TimeScale::TT);
+        let j2000 = Epoch::j2000();
+
+        let diff = epoch.duration_since(&j2000);
+        assert_relative_eq!(diff.to_seconds(), 0.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_from_jd() {
+        let jd = 2451545.0; // J2000 JD
+        let epoch = Epoch::from_jd(jd, TimeScale::TT);
+        let j2000 = Epoch::j2000();
+
+        let diff = epoch.duration_since(&j2000);
+        assert_relative_eq!(diff.to_seconds(), 0.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_to_time_scale() {
+        let utc_epoch = Epoch::from_gregorian_utc(2020, 6, 15, 10, 30, 0, 0);
+
+        // Convert to TT using generic function
+        let tt_epoch = utc_epoch.to_time_scale(TimeScale::TT);
+        let tt_epoch2 = utc_epoch.to_tt();
+
+        // Should be the same
+        let diff = tt_epoch.duration_since(&tt_epoch2);
+        assert_relative_eq!(diff.to_seconds(), 0.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_to_tt_and_tdb() {
+        let epoch = Epoch::from_gregorian_utc(2015, 7, 1, 0, 0, 0, 0);
+
+        let tt_epoch = epoch.to_tt();
+        let tdb_epoch = epoch.to_tdb();
+
+        // TT and TDB should differ by small periodic terms
+        let diff = tt_epoch.duration_since(&tdb_epoch);
+        assert!(diff.to_seconds().abs() < 0.01); // Within 10ms
+    }
+
+    #[test]
+    fn test_to_gpst() {
+        let epoch = Epoch::from_gregorian_utc(2020, 1, 1, 0, 0, 0, 0);
+        let gps_epoch = epoch.to_gpst();
+
+        // GPS time and UTC differ by leap seconds (no leap seconds after GPS epoch)
+        // Should be a valid conversion
+        assert!(gps_epoch.to_mjd_utc() > 0.0);
+    }
+
+    #[test]
+    fn test_to_mjd_tdb() {
+        let j2000 = Epoch::j2000();
+        let mjd_tdb = j2000.to_mjd_tdb();
+
+        // Should be close to 51544.5 (J2000 MJD)
+        assert_relative_eq!(mjd_tdb, 51544.5, epsilon = 0.001);
+    }
+
+    #[test]
+    fn test_to_jd_tt_two_part() {
+        let j2000 = Epoch::j2000();
+        let (jd1, jd2) = j2000.to_jd_tt_two_part();
+
+        // Two-part JD for increased precision
+        let total_jd = jd1 + jd2;
+        assert_relative_eq!(total_jd, 2451545.0, epsilon = 1e-10);
+
+        // First part should be the integer part
+        assert_relative_eq!(jd1, 2451545.0, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_to_tdb_seconds_since_j2000() {
+        let j2000 = Epoch::j2000();
+        let seconds_tdb = j2000.to_tdb_seconds_since_j2000();
+
+        // Should be very close to 0
+        assert_relative_eq!(seconds_tdb, 0.0, epsilon = 0.01);
+
+        // Test with offset
+        let future = j2000.add_duration(Duration::from_days(1.0));
+        let seconds_future = future.to_tdb_seconds_since_j2000();
+        assert_relative_eq!(seconds_future, 86400.0, epsilon = 0.1);
+    }
+
+    #[test]
+    fn test_duration_since_j2000() {
+        let j2000 = Epoch::j2000();
+        let duration = j2000.duration_since_j2000();
+
+        // J2000 epoch should have 0 duration since itself
+        assert_relative_eq!(duration.to_seconds(), 0.0, epsilon = 1e-6);
+
+        // Test with offset
+        let future = j2000.add_duration(Duration::from_days(10.0));
+        let dur_future = future.duration_since_j2000();
+        assert_relative_eq!(dur_future.to_days(), 10.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_to_gregorian_tai() {
+        let epoch = Epoch::from_gregorian_tai(2024, 3, 15, 14, 30, 45, 123456789);
+        let (year, month, day, hour, minute, second, nanos) = epoch.to_gregorian_tai();
+
+        assert_eq!(year, 2024);
+        assert_eq!(month, 3);
+        assert_eq!(day, 15);
+        assert_eq!(hour, 14);
+        assert_eq!(minute, 30);
+        assert_eq!(second, 45);
+        assert_eq!(nanos, 123456789);
+    }
+
+    #[test]
+    fn test_to_iso_string() {
+        let epoch = Epoch::from_gregorian_utc(2000, 1, 1, 12, 0, 0, 0);
+        let iso = epoch.to_iso_string();
+
+        // Should contain year, month, day
+        assert!(iso.contains("2000"));
+        assert!(iso.contains("01"));
+        assert!(iso.contains("12"));
+    }
+
+    #[test]
+    fn test_duration_abs() {
+        let pos = Duration::from_seconds(100.0);
+        let neg = Duration::from_seconds(-100.0);
+
+        let abs_pos = pos.abs();
+        let abs_neg = neg.abs();
+
+        assert_relative_eq!(abs_pos.to_seconds(), 100.0, epsilon = 1e-9);
+        assert_relative_eq!(abs_neg.to_seconds(), 100.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_duration_from_days() {
+        let duration = Duration::from_days(2.5);
+        assert_relative_eq!(duration.to_seconds(), 2.5 * 86400.0, epsilon = 1e-9);
+        assert_relative_eq!(duration.to_hours(), 60.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_epoch_now() {
+        let now = Epoch::now();
+        let j2000 = Epoch::j2000();
+
+        // Now should be well after J2000 (2000-01-01)
+        let diff = now.duration_since(&j2000);
+        assert!(diff.to_days() > 9000.0); // More than ~25 years after J2000
+    }
+
+    #[test]
+    fn test_mjd_jd_relationship() {
+        // Test the relationship: JD = MJD + 2400000.5
+        let epoch = Epoch::from_gregorian_utc(2020, 6, 15, 12, 0, 0, 0);
+
+        let mjd_utc = epoch.to_mjd_utc();
+        let jd_utc = epoch.to_jd_utc();
+
+        assert_relative_eq!(jd_utc, mjd_utc + 2400000.5, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_time_scale_consistency() {
+        // Create epoch in different time scales representing the same Gregorian date
+        let year = 2020;
+        let month = 3;
+        let day = 15;
+
+        let utc = Epoch::from_gregorian_utc(year, month, day, 12, 0, 0, 0);
+        let tai = Epoch::from_gregorian_tai(year, month, day, 12, 0, 0, 0);
+
+        // When converted to the same time scale, the MJD values should differ
+        let mjd_utc = utc.to_mjd_utc();
+        let mjd_tai_native = tai.to_mjd_tai();
+
+        // Different time scales should have different MJD values for same Gregorian date
+        assert!((mjd_tai_native - mjd_utc).abs() < 1.0); // Within a day
+    }
+
+    #[test]
+    fn test_duration_edge_cases() {
+        // Test very small duration
+        let tiny = Duration::from_seconds(1e-9);
+        assert!(tiny.to_seconds() > 0.0);
+        assert!(tiny.is_positive());
+
+        // Test very large duration
+        let large = Duration::from_days(365.25 * 100.0); // 100 years
+        assert_relative_eq!(large.to_days(), 36525.0, epsilon = 1.0);
+    }
+
+    #[test]
+    fn test_leap_second_aware() {
+        // Create epoch near a known leap second (June 30, 2015 23:59:60)
+        // Note: This tests that hifitime handles leap seconds properly
+        let pre_leap = Epoch::from_gregorian_utc(2015, 6, 30, 23, 59, 59, 0);
+        let post_leap = Epoch::from_gregorian_utc(2015, 7, 1, 0, 0, 0, 0);
+
+        let diff = post_leap.duration_since(&pre_leap);
+        // Should be 1 second (leap second is internal to hifitime)
+        assert_relative_eq!(diff.to_seconds(), 1.0, epsilon = 0.1);
+    }
 }

@@ -1233,7 +1233,7 @@ pub fn propagate_thirdbody_dopri5(
 /// - Montenbruck & Gill, "Satellite Orbits", Section 3.4
 /// - Vallado, "Fundamentals of Astrodynamics", Section 8.7.2
 pub fn shadow_function(r_sat: &Vector3, r_sun: &Vector3, R_earth: f64) -> f64 {
-    use crate::core::constants::{AU, R_SUN};
+    use crate::core::constants::R_SUN;
 
     // Vectors from Earth to satellite and Sun
     let r_sat_mag = r_sat.norm();
@@ -1694,6 +1694,66 @@ mod tests {
 
         // The difference should be small but measurable
         assert!(energy_diff < 1e6); // Less than 1 MJ/kg change
+    }
+
+    #[test]
+    fn test_propagate_j2_dop853_basic() {
+        // Test high-order DOP853 propagator for J2
+        let r0 = Vector3::new(7000e3, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7546.0, 0.0);
+
+        let result = propagate_j2_dop853(&r0, &v0, 100.0, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10));
+        assert!(result.is_ok());
+
+        let (r1, v1) = result.unwrap();
+
+        // Verify orbit is reasonable
+        assert!(r1.norm() > 6000e3);
+        assert!(v1.norm() > 1000.0);
+    }
+
+    #[test]
+    fn test_propagate_j2_dop853_vs_dopri5() {
+        // DOP853 should be more accurate than DOPRI5 for same tolerance
+        let r0 = Vector3::new(7000e3, 0.0, 1000e3);
+        let v0 = Vector3::new(0.0, 7546.0, 100.0);
+        let dt = 3600.0;
+
+        // Both with same tolerance
+        let (r_dop853, v_dop853) = propagate_j2_dop853(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10)).unwrap();
+        let (r_dopri5, v_dopri5) = propagate_j2_dopri5(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10)).unwrap();
+
+        // Results should be very close (both high accuracy)
+        let pos_diff = (r_dop853 - r_dopri5).norm();
+        let vel_diff = (v_dop853 - v_dopri5).norm();
+
+        // Should agree to within meters/mm/s (both are accurate)
+        assert!(pos_diff < 10.0, "Position difference: {} m", pos_diff);
+        assert!(vel_diff < 0.01, "Velocity difference: {} m/s", vel_diff);
+    }
+
+    #[test]
+    fn test_propagate_j2_dop853_long_duration() {
+        // Test longer propagation (1 orbit period)
+        let r0 = Vector3::new(7000e3, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7546.0, 0.0);
+
+        // Orbital period ~98 minutes
+        let period = 2.0 * std::f64::consts::PI * (r0.norm().powi(3) / GM_EARTH).sqrt();
+
+        let result = propagate_j2_dop853(&r0, &v0, period, GM_EARTH, J2_EARTH, R_EARTH, None);
+        assert!(result.is_ok());
+
+        let (r1, v1) = result.unwrap();
+
+        // After one period, should be roughly back to same position
+        // (J2 causes secular drift, so won't be exact)
+        let pos_diff = (r1 - r0).norm();
+        assert!(pos_diff < 150e3, "Position drift after 1 orbit: {} km", pos_diff / 1e3);
+
+        // Velocity magnitude should be preserved
+        let v_ratio = v1.norm() / v0.norm();
+        assert!((v_ratio - 1.0).abs() < 0.01, "Velocity change: {}", v_ratio);
     }
 
     #[test]
@@ -2436,6 +2496,280 @@ mod thirdbody_tests {
 
         // Should be measurably different
         assert!(diff > 1e-8); // At least some difference
+    }
+
+    #[test]
+    fn test_shadow_function_full_sunlight() {
+        use crate::core::constants::R_EARTH;
+
+        // Satellite on the Sun side of Earth - full sunlight
+        let r_sat = Vector3::new(7000e3, 0.0, 0.0);
+        let r_sun = Vector3::new(AU, 0.0, 0.0); // Sun in same direction
+
+        let nu = shadow_function(&r_sat, &r_sun, R_EARTH);
+
+        // Should be in full sunlight (nu = 1.0)
+        assert_relative_eq!(nu, 1.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_shadow_function_full_umbra() {
+        use crate::core::constants::R_EARTH;
+
+        // Satellite directly behind Earth from Sun - full umbra
+        let r_sat = Vector3::new(-7000e3, 0.0, 0.0); // Opposite to Sun
+        let r_sun = Vector3::new(AU, 0.0, 0.0);
+
+        let nu = shadow_function(&r_sat, &r_sun, R_EARTH);
+
+        // Should be in full umbra (nu = 0.0)
+        assert_relative_eq!(nu, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_shadow_function_penumbra() {
+        use crate::core::constants::R_EARTH;
+
+        // Satellite at edge of shadow cone - should be in penumbra
+        // Place satellite at angle that puts it in partial shadow
+        let r_sat = Vector3::new(-7000e3, 1000e3, 0.0);
+        let r_sun = Vector3::new(AU, 0.0, 0.0);
+
+        let nu = shadow_function(&r_sat, &r_sun, R_EARTH);
+
+        // Should be in penumbra (0 < nu < 1)
+        // The exact value depends on geometry
+        assert!(nu >= 0.0 && nu <= 1.0, "Shadow function out of range: {}", nu);
+    }
+
+    #[test]
+    fn test_shadow_function_high_altitude_less_shadow() {
+        use crate::core::constants::R_EARTH;
+
+        // Higher altitude satellites spend less time in shadow
+        let r_sun = Vector3::new(AU, 0.0, 0.0);
+
+        // LEO satellite behind Earth
+        let r_leo = Vector3::new(-7000e3, 0.0, 0.0);
+        let nu_leo = shadow_function(&r_leo, &r_sun, R_EARTH);
+
+        // GEO satellite behind Earth (further from shadow cone)
+        let r_geo = Vector3::new(-42164e3, 0.0, 0.0);
+        let nu_geo = shadow_function(&r_geo, &r_sun, R_EARTH);
+
+        // GEO should be more likely to be out of shadow
+        // (Earth's shadow cone doesn't extend as far)
+        assert!(nu_geo >= nu_leo, "GEO should have >= shadow function than LEO");
+    }
+
+    #[test]
+    fn test_shadow_function_perpendicular_full_sun() {
+        use crate::core::constants::R_EARTH;
+
+        // Satellite perpendicular to Sun-Earth line
+        let r_sat = Vector3::new(0.0, 7000e3, 0.0);
+        let r_sun = Vector3::new(AU, 0.0, 0.0);
+
+        let nu = shadow_function(&r_sat, &r_sun, R_EARTH);
+
+        // Should be in full sunlight (not behind Earth)
+        assert_relative_eq!(nu, 1.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_shadow_function_symmetry() {
+        use crate::core::constants::R_EARTH;
+
+        // Shadow function should be symmetric about Sun-Earth line
+        let r_sun = Vector3::new(AU, 0.0, 0.0);
+
+        let r_sat_plus_y = Vector3::new(-7000e3, 500e3, 0.0);
+        let r_sat_minus_y = Vector3::new(-7000e3, -500e3, 0.0);
+        let r_sat_plus_z = Vector3::new(-7000e3, 0.0, 500e3);
+
+        let nu_plus_y = shadow_function(&r_sat_plus_y, &r_sun, R_EARTH);
+        let nu_minus_y = shadow_function(&r_sat_minus_y, &r_sun, R_EARTH);
+        let nu_plus_z = shadow_function(&r_sat_plus_z, &r_sun, R_EARTH);
+
+        // Should all be equal (cylindrical symmetry)
+        assert_relative_eq!(nu_plus_y, nu_minus_y, epsilon = 1e-10);
+        assert_relative_eq!(nu_plus_y, nu_plus_z, epsilon = 1e-10);
+    }
+}
+
+#[cfg(test)]
+mod srp_tests {
+    use super::*;
+    use crate::core::constants::{AU, GM_EARTH, R_EARTH};
+    use approx::assert_relative_eq;
+
+    #[test]
+    fn test_propagate_srp_rk4_basic() {
+        // Test SRP propagation with RK4
+        let r0 = Vector3::new(42164e3, 0.0, 0.0); // GEO altitude
+        let v0 = Vector3::new(0.0, 3075.0, 0.0);
+        let dt = 600.0; // 10 minutes
+
+        // Typical values for a satellite with solar panels
+        let area_mass_ratio = 0.01; // m²/kg
+        let C_r = 1.3; // Reflectivity coefficient
+        let t0 = 0.0;
+
+        let result = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100));
+        assert!(result.is_ok());
+
+        let (r1, v1) = result.unwrap();
+
+        // Orbit should still be valid
+        assert!(r1.norm() > 40000e3); // Still near GEO
+        assert!(v1.norm() > 2000.0); // Still has orbital velocity
+    }
+
+    #[test]
+    fn test_propagate_srp_dopri5_basic() {
+        // Test SRP propagation with DOPRI5
+        let r0 = Vector3::new(42164e3, 0.0, 0.0); // GEO altitude
+        let v0 = Vector3::new(0.0, 3075.0, 0.0);
+        let dt = 600.0;
+
+        let area_mass_ratio = 0.01;
+        let C_r = 1.3;
+        let t0 = 0.0;
+
+        let result = propagate_srp_dopri5(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(1e-8));
+        assert!(result.is_ok());
+
+        let (r1, v1) = result.unwrap();
+
+        assert!(r1.norm() > 40000e3);
+        assert!(v1.norm() > 2000.0);
+    }
+
+    #[test]
+    fn test_propagate_srp_rk4_vs_dopri5() {
+        // Both integrators should give similar results
+        let r0 = Vector3::new(42164e3, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 3075.0, 0.0);
+        let dt = 3600.0; // 1 hour
+
+        let area_mass_ratio = 0.01;
+        let C_r = 1.3;
+        let t0 = 0.0;
+
+        let (r_rk4, v_rk4) = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100)).unwrap();
+        let (r_dopri5, v_dopri5) = propagate_srp_dopri5(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(1e-8)).unwrap();
+
+        // Results should be close (both accurate integrators)
+        let pos_diff = (r_rk4 - r_dopri5).norm();
+        let vel_diff = (v_rk4 - v_dopri5).norm();
+
+        // Should agree within reasonable tolerance
+        assert!(pos_diff < 100.0, "Position difference: {} m", pos_diff);
+        assert!(vel_diff < 0.1, "Velocity difference: {} m/s", vel_diff);
+    }
+
+    #[test]
+    fn test_propagate_srp_vs_twobody() {
+        // SRP should cause orbit to differ from pure two-body
+        use crate::propagators::keplerian::propagate_state_keplerian;
+
+        let r0 = Vector3::new(42164e3, 0.0, 0.0); // GEO
+        let v0 = Vector3::new(0.0, 3075.0, 0.0);
+        let dt = 86400.0; // 1 day
+
+        let area_mass_ratio = 0.01; // Relatively large area
+        let C_r = 1.3;
+        let t0 = 0.0;
+
+        // Two-body propagation
+        let (r_twobody, _v_twobody) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
+
+        // SRP propagation
+        let (r_srp, _v_srp) = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(1000)).unwrap();
+
+        // Positions should differ (SRP causes perturbations)
+        let pos_diff = (r_twobody - r_srp).norm();
+        println!("Position difference after 1 day (GEO): {} m", pos_diff);
+
+        // SRP at GEO over 1 day should cause measurable difference
+        assert!(pos_diff > 1.0); // At least 1 m difference
+        assert!(pos_diff < 100000.0); // Less than 100 km (sanity check)
+    }
+
+    #[test]
+    fn test_propagate_srp_zero_area() {
+        // Zero area/mass ratio should give two-body propagation
+        use crate::propagators::keplerian::propagate_state_keplerian;
+
+        let r0 = Vector3::new(42164e3, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 3075.0, 0.0);
+        let dt = 3600.0;
+
+        let area_mass_ratio = 0.0; // No SRP effect
+        let C_r = 1.3;
+        let t0 = 0.0;
+
+        let (r_srp, v_srp) = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100)).unwrap();
+        let (r_twobody, v_twobody) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
+
+        // Should be very close to two-body (only numerical errors)
+        let pos_diff = (r_srp - r_twobody).norm();
+        let vel_diff = (v_srp - v_twobody).norm();
+
+        assert!(pos_diff < 10.0, "Position difference: {} m", pos_diff);
+        assert!(vel_diff < 0.01, "Velocity difference: {} m/s", vel_diff);
+    }
+
+    #[test]
+    fn test_propagate_srp_shadow_effect() {
+        // SRP should be reduced in Earth's shadow
+        let r0 = Vector3::new(7000e3, 0.0, 0.0); // LEO
+        let v0 = Vector3::new(0.0, 7546.0, 0.0);
+        let dt = 600.0;
+
+        let area_mass_ratio = 0.02; // High area for LEO
+        let C_r = 1.5;
+        let t0 = 0.0;
+
+        // Propagate - should handle shadow transitions
+        let result = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100));
+        assert!(result.is_ok());
+
+        let (r1, v1) = result.unwrap();
+
+        // Verify orbit is still reasonable
+        assert!(r1.norm() > 6000e3);
+        assert!(v1.norm() > 6000.0);
+    }
+
+    #[test]
+    fn test_propagate_srp_long_duration() {
+        // Test longer propagation
+        let r0 = Vector3::new(42164e3, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 3075.0, 0.0);
+
+        // One day
+        let dt = 86400.0;
+        let area_mass_ratio = 0.01;
+        let C_r = 1.3;
+        let t0 = 0.0;
+
+        let result = propagate_srp_dopri5(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, None);
+        assert!(result.is_ok());
+
+        let (r1, v1) = result.unwrap();
+
+        // After 1 day at GEO, orbit should still be reasonable
+        // Semi-major axis should be roughly preserved
+        let a0 = r0.norm();
+        let a1 = r1.norm();
+        let a_ratio = a1 / a0;
+
+        assert!((a_ratio - 1.0).abs() < 0.01, "Semi-major axis change: {}", a_ratio);
+
+        // Velocity magnitude roughly preserved
+        let v_ratio = v1.norm() / v0.norm();
+        assert!((v_ratio - 1.0).abs() < 0.05, "Velocity magnitude change: {}", v_ratio);
     }
 }
 

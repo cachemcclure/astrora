@@ -61,7 +61,7 @@
 //! - Curtis, H. D. (2014). "Orbital Mechanics for Engineering Students" (3rd Ed.), Ch. 4
 //! - Markley, F. L., & Crassidis, J. L. (2014). "Fundamentals of Spacecraft Attitude Determination and Control"
 //! - IAU SOFA Library: Standards Of Fundamental Astronomy (rotation matrix conventions)
-//! - https://en.wikipedia.org/wiki/Rotation_matrix
+//! - <https://en.wikipedia.org/wiki/Rotation_matrix>
 
 use nalgebra::{Matrix3, Vector3};
 

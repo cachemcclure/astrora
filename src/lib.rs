@@ -17,6 +17,10 @@ pub mod maneuvers;
 pub mod satellite;
 pub mod utils;
 
+// Test utilities (only compiled in test mode)
+#[cfg(test)]
+pub mod test_utils;
+
 // Re-export commonly used types for Rust API
 pub use core::{PoliastroError, PoliastroResult};
 
@@ -5932,7 +5936,7 @@ fn py_sun_synchronous_inclination(altitude_km: f64, eccentricity: f64) -> PyResu
     use crate::satellite::eclipse::sun_synchronous_inclination;
     use crate::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
 
-    let semi_major_axis = (R_EARTH + altitude_km * 1000.0);
+    let semi_major_axis = R_EARTH + altitude_km * 1000.0;
 
     match sun_synchronous_inclination(semi_major_axis, eccentricity, J2_EARTH, R_EARTH, GM_EARTH) {
         Ok(inclination) => Ok(inclination.to_degrees()),

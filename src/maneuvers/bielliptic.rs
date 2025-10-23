@@ -63,8 +63,8 @@
 //! # References
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students. Ch. 6.3
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 6.3
-//! - https://orbital-mechanics.space/orbital-maneuvers/bielliptic-hohmann-transfer.html
-//! - https://en.wikipedia.org/wiki/Bi-elliptic_transfer
+//! - <https://orbital-mechanics.space/orbital-maneuvers/bielliptic-hohmann-transfer.html>
+//! - <https://en.wikipedia.org/wiki/Bi-elliptic_transfer>
 //! - Gobetz, F. W. & Doll, J. R. (1969). "A Survey of Impulsive Trajectories"
 
 use std::f64::consts::PI;

@@ -73,7 +73,7 @@
 //! # References
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students. Ch. 8
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 7
-//! - https://orbital-mechanics.space/orbital-maneuvers/phasing-maneuvers.html
+//! - <https://orbital-mechanics.space/orbital-maneuvers/phasing-maneuvers.html>
 //! - Pressbooks: Introduction to Orbital Mechanics, Ch. 8 (Rendezvous)
 
 use std::f64::consts::PI;

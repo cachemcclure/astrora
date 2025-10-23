@@ -44,8 +44,8 @@
 //! - Verification that mission is achievable with given spacecraft
 //!
 //! # References
-//! - https://en.wikipedia.org/wiki/Delta-v_budget
-//! - https://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation
+//! - <https://en.wikipedia.org/wiki/Delta-v_budget>
+//! - <https://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation>
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students. Ch. 11
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 6
 

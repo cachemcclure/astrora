@@ -75,13 +75,52 @@ features = ["pyo3/extension-module"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --cov=astrora --cov-report=term-missing"
+addopts = """
+    -ra
+    -q
+    --strict-markers
+    --strict-config
+    --cov=astrora
+    --cov-report=term-missing
+    --cov-report=html
+    --tb=short
+"""
 testpaths = ["tests"]
-python_files = ["test_*.py"]
+python_files = ["test_*.py", "benchmark_*.py"]
 python_classes = ["Test*"]
-python_functions = ["test_*"]
+python_functions = ["test_*", "bench_*"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    # Test type markers
+    "unit: marks tests as unit tests (fast, isolated, no external dependencies)",
+    "integration: marks tests as integration tests (may involve multiple components)",
+    "validation: marks tests as validation tests (compare against reference implementations)",
+    "regression: marks tests for specific bug fixes (ensure bugs don't return)",
+
+    # Performance markers
+    "benchmark: marks tests as performance benchmarks (use with pytest-benchmark)",
+    "slow: marks tests as slow running (typically > 1 second)",
+    "very_slow: marks tests as very slow (typically > 10 seconds)",
+
+    # Domain-specific markers
+    "propagation: marks tests related to orbit propagation",
+    "coordinates: marks tests related to coordinate transformations",
+    "maneuvers: marks tests related to orbital maneuvers",
+    "perturbations: marks tests related to perturbation models",
+    "satellite: marks tests related to satellite operations (SGP4, TLE, etc)",
+    "plotting: marks tests related to visualization",
+
+    # Accuracy level markers
+    "high_precision: marks tests requiring high numerical precision",
+    "numerical: marks tests involving numerical computations with tolerances",
+
+    # External dependencies
+    "requires_ephemerides: marks tests requiring JPL ephemerides data",
+    "requires_internet: marks tests requiring internet connectivity",
 ]
 
 [tool.black]

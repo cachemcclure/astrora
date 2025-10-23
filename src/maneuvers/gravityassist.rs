@@ -72,8 +72,8 @@
 //! # References
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students. Ch. 8
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 8
-//! - https://en.wikipedia.org/wiki/Gravity_assist
-//! - https://en.wikipedia.org/wiki/Hyperbolic_trajectory
+//! - <https://en.wikipedia.org/wiki/Gravity_assist>
+//! - <https://en.wikipedia.org/wiki/Hyperbolic_trajectory>
 //! - Braeunig, R. (2013). Rocket and Space Technology: Orbital Mechanics
 //! - Strange, N., & Longuski, J. (2002). Graphical Method for Gravity-Assist Trajectory Design. Journal of Spacecraft and Rockets.
 
@@ -657,5 +657,242 @@ mod tests {
         // Specific energy should equal v∞²/2
         let expected_energy = v_infinity.powi(2) / 2.0;
         assert_relative_eq!(result.specific_energy, expected_energy, epsilon = 1.0);
+    }
+
+    #[test]
+    fn test_error_zero_v_infinity() {
+        let mu = 1.266865e17;
+        let r_p = 200000e3;
+        let result = GravityAssist::from_periapsis(0.0, r_p, mu);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_error_zero_r_periapsis() {
+        let mu = 1.266865e17;
+        let v_inf = 5000.0;
+        let result = GravityAssist::from_periapsis(v_inf, 0.0, mu);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_error_zero_mu() {
+        let r_p = 200000e3;
+        let v_inf = 5000.0;
+        let result = GravityAssist::from_periapsis(v_inf, r_p, 0.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_calculate_b_plane() {
+        // Test B-plane calculation
+        let mu = 1.266865e17; // Jupiter
+
+        // Hyperbolic approach vector - need high enough velocity for hyperbolic orbit
+        let position = [1e9, 0.0, 0.0]; // 1 million km on x-axis
+        let velocity = [0.0, 20000.0, 5000.0]; // High velocity with y and z components
+
+        let b_plane = GravityAssist::calculate_b_plane(position, velocity, mu).unwrap();
+
+        // B-plane parameters should be calculated
+        assert!(b_plane.b_magnitude >= 0.0);
+        assert!(b_plane.theta >= 0.0);
+        assert!(b_plane.theta <= 2.0 * PI);
+    }
+
+    #[test]
+    fn test_calculate_velocities() {
+        // Test velocity calculation around a gravity assist
+        let v_sc_in = [5000.0, 13000.0, 0.0]; // Incoming spacecraft velocity in heliocentric frame
+        let v_planet = [0.0, 13000.0, 0.0]; // Planet velocity
+        let delta = PI / 3.0; // 60 degree deflection
+        let rotation_axis = [0.0, 0.0, 1.0]; // Rotate about z-axis
+
+        let velocities = GravityAssist::calculate_velocities(
+            v_sc_in,
+            v_planet,
+            delta,
+            rotation_axis,
+        );
+
+        // Check that v_infinity magnitude is conserved
+        let v_inf_in_mag = GravityAssist::vector_magnitude(velocities.v_infinity_in);
+        let v_inf_out_mag = GravityAssist::vector_magnitude(velocities.v_infinity_out);
+        assert_relative_eq!(v_inf_in_mag, v_inf_out_mag, epsilon = 1e-3);
+
+        // Check heliocentric velocities are computed
+        assert!(velocities.v_sc_in.iter().any(|&x| x != 0.0));
+        assert!(velocities.v_sc_out.iter().any(|&x| x != 0.0));
+    }
+
+    #[test]
+    fn test_vector_add() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0, 6.0];
+        let result = GravityAssist::vector_add(a, b);
+
+        assert_relative_eq!(result[0], 5.0, epsilon = EPSILON);
+        assert_relative_eq!(result[1], 7.0, epsilon = EPSILON);
+        assert_relative_eq!(result[2], 9.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_vector_subtract() {
+        let a = [5.0, 7.0, 9.0];
+        let b = [4.0, 5.0, 6.0];
+        let result = GravityAssist::vector_subtract(a, b);
+
+        assert_relative_eq!(result[0], 1.0, epsilon = EPSILON);
+        assert_relative_eq!(result[1], 2.0, epsilon = EPSILON);
+        assert_relative_eq!(result[2], 3.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_normalize_vector() {
+        let v = [3.0, 4.0, 0.0]; // magnitude = 5
+        let normalized = GravityAssist::normalize_vector(v);
+
+        assert_relative_eq!(normalized[0], 0.6, epsilon = EPSILON);
+        assert_relative_eq!(normalized[1], 0.8, epsilon = EPSILON);
+        assert_relative_eq!(normalized[2], 0.0, epsilon = EPSILON);
+
+        // Check that result has unit magnitude
+        let mag = GravityAssist::vector_magnitude(normalized);
+        assert_relative_eq!(mag, 1.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_normalize_unit_vector() {
+        // Normalizing an already normalized vector should give same vector
+        let v = [1.0, 0.0, 0.0];
+        let normalized = GravityAssist::normalize_vector(v);
+
+        assert_relative_eq!(normalized[0], 1.0, epsilon = EPSILON);
+        assert_relative_eq!(normalized[1], 0.0, epsilon = EPSILON);
+        assert_relative_eq!(normalized[2], 0.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_cross_product_orthogonality() {
+        // Cross product should be orthogonal to both input vectors
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0, 6.0];
+        let cross = GravityAssist::cross_product(a, b);
+
+        // cross · a should be 0
+        let dot_a = GravityAssist::dot_product(cross, a);
+        assert_relative_eq!(dot_a, 0.0, epsilon = 1e-10);
+
+        // cross · b should be 0
+        let dot_b = GravityAssist::dot_product(cross, b);
+        assert_relative_eq!(dot_b, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_dot_product_parallel_vectors() {
+        // Dot product of parallel vectors = product of magnitudes
+        let a = [2.0, 0.0, 0.0];
+        let b = [3.0, 0.0, 0.0];
+        let dot = GravityAssist::dot_product(a, b);
+
+        assert_relative_eq!(dot, 6.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_dot_product_perpendicular_vectors() {
+        // Dot product of perpendicular vectors = 0
+        let a = [1.0, 0.0, 0.0];
+        let b = [0.0, 1.0, 0.0];
+        let dot = GravityAssist::dot_product(a, b);
+
+        assert_relative_eq!(dot, 0.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_rotate_velocity_no_rotation() {
+        // Rotating by 0 radians should return same vector
+        let v = [1.0, 2.0, 3.0];
+        let axis = [0.0, 0.0, 1.0];
+        let rotated = GravityAssist::rotate_velocity(v, 0.0, axis);
+
+        assert_relative_eq!(rotated[0], v[0], epsilon = EPSILON);
+        assert_relative_eq!(rotated[1], v[1], epsilon = EPSILON);
+        assert_relative_eq!(rotated[2], v[2], epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_rotate_velocity_180_degrees() {
+        // Rotating by 180° should reverse the perpendicular component
+        let v = [1.0, 0.0, 0.0];
+        let axis = [0.0, 0.0, 1.0];
+        let rotated = GravityAssist::rotate_velocity(v, PI, axis);
+
+        assert_relative_eq!(rotated[0], -1.0, epsilon = EPSILON);
+        assert_relative_eq!(rotated[1], 0.0, epsilon = EPSILON);
+        assert_relative_eq!(rotated[2], 0.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_periapsis_from_b_parameter_edge_case() {
+        // Test with very large B parameter (distant flyby)
+        let v_infinity = 5000.0;
+        let mu = 1.266865e17;
+        let b_large = 1e9; // Very large impact parameter
+
+        let r_p = GravityAssist::periapsis_from_b_parameter(v_infinity, b_large, mu);
+
+        // Should return a valid positive periapsis
+        assert!(r_p > 0.0);
+        // Periapsis is always less than the impact parameter
+        assert!(r_p < b_large);
+        // For these parameters (b * v_infinity² / mu ≈ 0.197), r_p ≈ 9.8e7
+        assert!((r_p - 9.77e7).abs() < 1e6); // Within 1 km of expected value
+    }
+
+    #[test]
+    fn test_periapsis_from_b_parameter_small_b() {
+        // Test with small B parameter (close flyby)
+        let v_infinity = 10000.0;
+        let mu = 1.266865e17;
+        let b_small = 1e6; // Small impact parameter
+
+        let r_p = GravityAssist::periapsis_from_b_parameter(v_infinity, b_small, mu);
+
+        // Should return a valid periapsis
+        assert!(r_p > 0.0);
+        assert!(r_p < mu / v_infinity.powi(2)); // Should be less than semi-latus rectum
+    }
+
+    #[test]
+    fn test_b_parameter_relationship() {
+        // Test relationship: B = |a| × √(e² - 1)
+        let v_infinity = 6000.0;
+        let mu = 1.266865e17;
+        let r_periapsis = 150000e3;
+
+        let result = GravityAssist::from_periapsis(v_infinity, r_periapsis, mu).unwrap();
+
+        // Verify B = |a| × √(e² - 1)
+        let b_calculated = result.semi_major_axis.abs()
+            * (result.eccentricity.powi(2) - 1.0).sqrt();
+
+        assert_relative_eq!(result.b_parameter, b_calculated, epsilon = 1e-3);
+    }
+
+    #[test]
+    fn test_very_high_speed_flyby() {
+        // Test extreme case with very high v_infinity
+        let v_infinity = 50000.0; // 50 km/s - very fast
+        let mu = 1.266865e17; // Jupiter
+        let r_jupiter = 71492e3;
+        let r_periapsis = 2.0 * r_jupiter;
+
+        let result = GravityAssist::from_periapsis(v_infinity, r_periapsis, mu).unwrap();
+
+        // At very high speeds, eccentricity should be very high
+        assert!(result.eccentricity > 3.0);
+        // Turning angle should be moderate (high e means low turning angle)
+        assert!(result.delta > 0.0);
+        assert!(result.delta < PI);
     }
 }

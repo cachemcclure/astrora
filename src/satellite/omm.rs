@@ -57,8 +57,8 @@
 //! # References
 //!
 //! - CCSDS 502.0-B-2: Orbit Data Messages
-//! - https://public.ccsds.org/Pubs/502x0b2c1.pdf
-//! - https://www.space-track.org/documentation#/OMM
+//! - <https://public.ccsds.org/Pubs/502x0b2c1.pdf>
+//! - <https://www.space-track.org/documentation#/OMM>
 
 use sgp4::Elements;
 use crate::satellite::sgp4_wrapper::Sgp4Error;
@@ -167,7 +167,8 @@ mod tests {
         assert_eq!(elements.norad_id, 25544);
         assert_eq!(elements.object_name, Some("ISS (ZARYA)".to_string()));
         assert_eq!(elements.international_designator, Some("1998-067A".to_string()));
-        assert!((elements.inclination.to_degrees() - 51.6416).abs() < 0.001);
+        // Note: sgp4::Elements stores inclination in degrees (not radians)
+        assert!((elements.inclination - 51.6416).abs() < 0.001);
         assert!((elements.eccentricity - 0.0006703).abs() < 0.0000001);
         assert!((elements.mean_motion - 15.72125391).abs() < 0.00001);
         assert_eq!(elements.element_set_number, 292);
@@ -205,9 +206,10 @@ mod tests {
     }
 
     #[test]
-    fn test_minimal_omm() {
-        // Minimal valid OMM with required fields only
-        let minimal_omm = r#"{
+    fn test_required_fields_only() {
+        // Test with all required fields (no optional object name or ID)
+        // Note: sgp4 crate has many mandatory fields
+        let required_fields_omm = r#"{
             "EPOCH": "2008-09-20T12:25:40.104",
             "MEAN_MOTION": 15.72125391,
             "ECCENTRICITY": 0.0006703,
@@ -215,10 +217,17 @@ mod tests {
             "RA_OF_ASC_NODE": 247.4627,
             "ARG_OF_PERICENTER": 130.5360,
             "MEAN_ANOMALY": 325.0288,
-            "NORAD_CAT_ID": 25544
+            "NORAD_CAT_ID": 25544,
+            "CLASSIFICATION_TYPE": "U",
+            "MEAN_MOTION_DOT": 0.0,
+            "MEAN_MOTION_DDOT": 0.0,
+            "BSTAR": 0.0,
+            "ELEMENT_SET_NO": 1,
+            "REV_AT_EPOCH": 1000,
+            "EPHEMERIS_TYPE": 0
         }"#;
 
-        let elements = parse_omm(minimal_omm).unwrap();
+        let elements = parse_omm(required_fields_omm).unwrap();
         assert_eq!(elements.norad_id, 25544);
     }
 }

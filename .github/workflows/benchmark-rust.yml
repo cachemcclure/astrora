@@ -1,0 +1,135 @@
+name: Rust Benchmarks
+
+# Run Criterion benchmarks for Rust performance tracking
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'benches/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'benches/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  benchmark-rust:
+    name: Run Rust Criterion Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-bench-
+            ${{ runner.os }}-cargo-
+
+      - name: Run Criterion benchmarks
+        run: |
+          cargo bench --message-format=json | tee benchmark_rust.json
+
+      - name: Process Criterion results
+        run: |
+          # Criterion outputs results in target/criterion
+          # Create a summary for github-action-benchmark
+          python3 -c "
+          import json
+          import os
+          from pathlib import Path
+
+          # Parse Criterion output format
+          criterion_dir = Path('target/criterion')
+          benchmarks = []
+
+          # Criterion stores results in subdirectories
+          if criterion_dir.exists():
+              for group_dir in criterion_dir.iterdir():
+                  if group_dir.is_dir() and group_dir.name != 'report':
+                      for bench_dir in group_dir.iterdir():
+                          if bench_dir.is_dir():
+                              estimates_file = bench_dir / 'base' / 'estimates.json'
+                              if estimates_file.exists():
+                                  with open(estimates_file) as f:
+                                      estimates = json.load(f)
+                                      mean = estimates.get('mean', {})
+                                      # Convert to nanoseconds
+                                      benchmarks.append({
+                                          'name': f'{group_dir.name}/{bench_dir.name}',
+                                          'unit': 'nanoseconds',
+                                          'value': mean.get('point_estimate', 0),
+                                          'range': str(mean.get('confidence_interval', {}))
+                                      })
+
+          output = {
+              'benchmarks': benchmarks,
+              'commit': os.environ.get('GITHUB_SHA', ''),
+              'date': os.popen('date -u +%s').read().strip()
+          }
+
+          with open('benchmark_rust_processed.json', 'w') as f:
+              json.dump(output, f, indent=2)
+
+          print(f'Processed {len(benchmarks)} Rust benchmarks')
+          "
+
+      - name: Store Rust benchmark results (main branch)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark_rust_processed.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '120%'
+          comment-on-alert: true
+          fail-on-alert: false
+          benchmark-data-dir-path: dev/bench/rust
+
+      - name: Compare Rust benchmarks (PR)
+        if: github.event_name == 'pull_request'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark_rust_processed.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          alert-threshold: '120%'
+          comment-on-alert: true
+          fail-on-alert: true
+
+      - name: Upload Criterion reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: criterion-reports
+          path: |
+            target/criterion/
+            benchmark_rust*.json
+          retention-days: 90

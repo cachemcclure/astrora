@@ -41,8 +41,8 @@
 //! - Hohmann, W. (1925). Die Erreichbarkeit der Himmelskörper.
 //! - Curtis, H. D. (2013). Orbital Mechanics for Engineering Students. Ch. 6.2
 //! - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 6.2
-//! - https://orbital-mechanics.space/orbital-maneuvers/hohmann-transfer.html
-//! - https://en.wikipedia.org/wiki/Hohmann_transfer_orbit
+//! - <https://orbital-mechanics.space/orbital-maneuvers/hohmann-transfer.html>
+//! - <https://en.wikipedia.org/wiki/Hohmann_transfer_orbit>
 
 use std::f64::consts::PI;
 

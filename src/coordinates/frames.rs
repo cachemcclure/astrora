@@ -42,8 +42,8 @@
 //! - Vallado, "Fundamentals of Astrodynamics and Applications", 4th Ed., Ch. 3
 //! - Vallado et al. (2006), "Revisiting Spacetrack Report #3", AIAA 2006-6753 (TEME definition)
 //! - USNO Circular 179: "The IAU Resolutions on Astronomical Reference Systems"
-//! - https://aa.usno.navy.mil/faq/ICRS_doc
-//! - IERS Conventions (2010): https://www.iers.org/IERS/EN/Publications/TechnicalNotes/tn36.html
+//! - <https://aa.usno.navy.mil/faq/ICRS_doc>
+//! - IERS Conventions (2010): <https://www.iers.org/IERS/EN/Publications/TechnicalNotes/tn36.html>
 
 use nalgebra::{Vector3, Matrix3};
 use pyo3::prelude::*;
@@ -53,6 +53,7 @@ use crate::core::time::Epoch;
 use crate::coordinates::rotations::{rotation_x, rotation_z};
 use std::f64::consts::PI;
 use rayon::prelude::*;
+use hifitime::TimeScale;
 
 /// International Celestial Reference System (ICRS)
 ///
@@ -398,7 +399,7 @@ impl GCRS {
 /// # References
 /// - IERS Conventions (2010), Chapter 5
 /// - "Expressions to implement the IAU 2000 definition of UT1", A&A 2003
-/// - https://www.celestialprogramming.com/snippets/greenwichMeanSiderealTime.html
+/// - <https://www.celestialprogramming.com/snippets/greenwichMeanSiderealTime.html>>
 ///
 /// # Note
 /// This is a simplified V1 implementation. For highest precision:
@@ -764,7 +765,7 @@ impl ITRS {
 /// # References
 /// - Vallado et al. (2006), "Revisiting Spacetrack Report #3", AIAA 2006-6753
 /// - Vallado, "Fundamentals of Astrodynamics and Applications", 4th Ed., Ch. 3
-/// - https://celestrak.org/publications/AIAA/2006-6753/
+/// - <https://celestrak.org/publications/AIAA/2006-6753/>
 #[pyclass(module = "astrora._core")]
 #[derive(Debug, Clone, PartialEq)]
 pub struct TEME {
@@ -980,7 +981,7 @@ impl TEME {
 /// # References
 /// - Curtis, "Orbital Mechanics for Engineering Students", Ch. 4
 /// - Vallado, "Fundamentals of Astrodynamics", Ch. 3
-/// - https://orbital-mechanics.space/classical-orbital-elements/perifocal-frame.html
+/// - <https://orbital-mechanics.space/classical-orbital-elements/perifocal-frame.html>>
 #[pyclass(module = "astrora._core")]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Perifocal {
@@ -3052,4 +3053,376 @@ mod tests {
         let r_icrs = icrs.position().norm();
         assert_relative_eq!(r_icrs, r, epsilon = 1.0);
     }
+
+    // ========== Batch Transformation Tests ==========
+
+    #[test]
+    fn test_batch_gcrs_to_itrs_basic() {
+        // Test basic GCRS to ITRS batch transformation
+        let positions = vec![
+            Vector3::new(7000e3, 0.0, 0.0),
+            Vector3::new(0.0, 7000e3, 0.0),
+            Vector3::new(7000e3, 7000e3, 0.0),
+        ];
+        let velocities = vec![
+            Vector3::new(0.0, 7500.0, 0.0),
+            Vector3::new(-7500.0, 0.0, 0.0),
+            Vector3::new(-5000.0, 5000.0, 0.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 1, 1, 12, 0, 0, 0),
+            Epoch::from_gregorian_utc(2024, 6, 15, 0, 0, 0, 0),
+        ];
+
+        let result = batch_gcrs_to_itrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let (itrs_pos, itrs_vel) = result.unwrap();
+        assert_eq!(itrs_pos.len(), 3);
+        assert_eq!(itrs_vel.len(), 3);
+
+        // Verify positions are rotated (not zero)
+        for pos in &itrs_pos {
+            assert!(pos.norm() > 1e6); // Should be ~7000 km
+        }
+    }
+
+    #[test]
+    fn test_batch_gcrs_to_itrs_length_mismatch() {
+        // Test error when array lengths don't match
+        let positions = vec![Vector3::new(7000e3, 0.0, 0.0)];
+        let velocities = vec![
+            Vector3::new(0.0, 7500.0, 0.0),
+            Vector3::new(0.0, 7500.0, 0.0),
+        ];
+        let obstimes = vec![Epoch::j2000()];
+
+        let result = batch_gcrs_to_itrs(&positions, &velocities, &obstimes);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_batch_itrs_to_gcrs_basic() {
+        // Test basic ITRS to GCRS batch transformation
+        let positions = vec![
+            Vector3::new(7000e3, 0.0, 0.0),
+            Vector3::new(0.0, 7000e3, 0.0),
+        ];
+        let velocities = vec![
+            Vector3::new(0.0, 100.0, 0.0),
+            Vector3::new(-100.0, 0.0, 0.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 3, 21, 12, 0, 0, 0),
+        ];
+
+        let result = batch_itrs_to_gcrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let (gcrs_pos, gcrs_vel) = result.unwrap();
+        assert_eq!(gcrs_pos.len(), 2);
+        assert_eq!(gcrs_vel.len(), 2);
+
+        // Verify transformation occurred
+        for pos in &gcrs_pos {
+            assert!(pos.norm() > 1e6);
+        }
+    }
+
+    #[test]
+    fn test_batch_gcrs_itrs_roundtrip() {
+        // Test GCRS → ITRS → GCRS round-trip
+        let positions = vec![
+            Vector3::new(7000e3, 1000e3, 500e3),
+            Vector3::new(42164e3, 0.0, 0.0), // GEO altitude
+        ];
+        let velocities = vec![
+            Vector3::new(500.0, 7500.0, 100.0),
+            Vector3::new(0.0, 3075.0, 0.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2025, 1, 1, 0, 0, 0, 0),
+        ];
+
+        // Forward: GCRS → ITRS
+        let (itrs_pos, itrs_vel) = batch_gcrs_to_itrs(&positions, &velocities, &obstimes).unwrap();
+
+        // Reverse: ITRS → GCRS
+        let (gcrs_pos_rt, gcrs_vel_rt) = batch_itrs_to_gcrs(&itrs_pos, &itrs_vel, &obstimes).unwrap();
+
+        // Verify round-trip accuracy
+        for i in 0..positions.len() {
+            assert_relative_eq!(gcrs_pos_rt[i].x, positions[i].x, epsilon = 1e-6);
+            assert_relative_eq!(gcrs_pos_rt[i].y, positions[i].y, epsilon = 1e-6);
+            assert_relative_eq!(gcrs_pos_rt[i].z, positions[i].z, epsilon = 1e-6);
+            assert_relative_eq!(gcrs_vel_rt[i].x, velocities[i].x, epsilon = 1e-9);
+            assert_relative_eq!(gcrs_vel_rt[i].y, velocities[i].y, epsilon = 1e-9);
+            assert_relative_eq!(gcrs_vel_rt[i].z, velocities[i].z, epsilon = 1e-9);
+        }
+    }
+
+    #[test]
+    fn test_batch_gcrs_to_teme_basic() {
+        // Test GCRS to TEME batch transformation
+        let positions = vec![
+            Vector3::new(7000e3, 0.0, 0.0),
+            Vector3::new(0.0, 8000e3, 0.0),
+        ];
+        let velocities = vec![
+            Vector3::new(0.0, 7500.0, 0.0),
+            Vector3::new(-7000.0, 0.0, 0.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 7, 4, 12, 0, 0, 0),
+        ];
+
+        let result = batch_gcrs_to_teme(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let (teme_pos, teme_vel) = result.unwrap();
+        assert_eq!(teme_pos.len(), 2);
+        assert_eq!(teme_vel.len(), 2);
+
+        // Verify positions have correct magnitude
+        for (i, pos) in teme_pos.iter().enumerate() {
+            assert_relative_eq!(pos.norm(), positions[i].norm(), epsilon = 1.0);
+        }
+    }
+
+    #[test]
+    fn test_batch_teme_to_gcrs_basic() {
+        // Test TEME to GCRS batch transformation
+        let positions = vec![
+            Vector3::new(6800e3, 0.0, 0.0),
+            Vector3::new(0.0, 6800e3, 1000e3),
+        ];
+        let velocities = vec![
+            Vector3::new(0.0, 7600.0, 0.0),
+            Vector3::new(-7600.0, 0.0, 100.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 12, 25, 0, 0, 0, 0),
+        ];
+
+        let result = batch_teme_to_gcrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let (gcrs_pos, gcrs_vel) = result.unwrap();
+        assert_eq!(gcrs_pos.len(), 2);
+        assert_eq!(gcrs_vel.len(), 2);
+    }
+
+    #[test]
+    fn test_batch_gcrs_teme_roundtrip() {
+        // Test GCRS → TEME → GCRS round-trip
+        let positions = vec![
+            Vector3::new(7100e3, 500e3, 300e3),
+            Vector3::new(8000e3, 8000e3, 0.0),
+        ];
+        let velocities = vec![
+            Vector3::new(200.0, 7400.0, 50.0),
+            Vector3::new(-5000.0, 5000.0, 100.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 2, 29, 12, 0, 0, 0), // Leap day
+        ];
+
+        // Forward: GCRS → TEME
+        let (teme_pos, teme_vel) = batch_gcrs_to_teme(&positions, &velocities, &obstimes).unwrap();
+
+        // Reverse: TEME → GCRS
+        let (gcrs_pos_rt, gcrs_vel_rt) = batch_teme_to_gcrs(&teme_pos, &teme_vel, &obstimes).unwrap();
+
+        // Verify round-trip accuracy (note: TEME has lower accuracy than GCRS/ITRS)
+        for i in 0..positions.len() {
+            assert_relative_eq!(gcrs_pos_rt[i].x, positions[i].x, epsilon = 100.0); // ~100m tolerance
+            assert_relative_eq!(gcrs_pos_rt[i].y, positions[i].y, epsilon = 100.0);
+            assert_relative_eq!(gcrs_pos_rt[i].z, positions[i].z, epsilon = 100.0);
+            assert_relative_eq!(gcrs_vel_rt[i].x, velocities[i].x, epsilon = 0.1); // 0.1 m/s tolerance
+            assert_relative_eq!(gcrs_vel_rt[i].y, velocities[i].y, epsilon = 0.1);
+            assert_relative_eq!(gcrs_vel_rt[i].z, velocities[i].z, epsilon = 0.1);
+        }
+    }
+
+    #[test]
+    fn test_batch_teme_to_itrs_basic() {
+        // Test TEME to ITRS batch transformation
+        let positions = vec![
+            Vector3::new(7000e3, 0.0, 0.0),
+            Vector3::new(0.0, 7000e3, 0.0),
+            Vector3::new(7000e3, 7000e3, 1000e3),
+        ];
+        let velocities = vec![
+            Vector3::new(0.0, 7500.0, 0.0),
+            Vector3::new(-7500.0, 0.0, 0.0),
+            Vector3::new(-5000.0, 5000.0, 100.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 6, 21, 0, 0, 0, 0), // Summer solstice
+            Epoch::from_gregorian_utc(2024, 12, 21, 12, 0, 0, 0), // Winter solstice
+        ];
+
+        let result = batch_teme_to_itrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let (itrs_pos, itrs_vel) = result.unwrap();
+        assert_eq!(itrs_pos.len(), 3);
+        assert_eq!(itrs_vel.len(), 3);
+
+        // Verify position magnitudes are preserved
+        for (i, pos) in itrs_pos.iter().enumerate() {
+            assert_relative_eq!(pos.norm(), positions[i].norm(), epsilon = 1.0);
+        }
+    }
+
+    #[test]
+    fn test_batch_itrs_to_teme_basic() {
+        // Test ITRS to TEME batch transformation
+        let positions = vec![
+            Vector3::new(6800e3, 0.0, 0.0),
+            Vector3::new(0.0, 6800e3, 0.0),
+        ];
+        let velocities = vec![
+            Vector3::new(0.0, 100.0, 0.0),
+            Vector3::new(-100.0, 0.0, 0.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2024, 9, 22, 12, 0, 0, 0), // Autumnal equinox
+        ];
+
+        let result = batch_itrs_to_teme(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let (teme_pos, teme_vel) = result.unwrap();
+        assert_eq!(teme_pos.len(), 2);
+        assert_eq!(teme_vel.len(), 2);
+    }
+
+    #[test]
+    fn test_batch_teme_itrs_roundtrip() {
+        // Test TEME → ITRS → TEME round-trip
+        let positions = vec![
+            Vector3::new(7200e3, 1000e3, 500e3),
+            Vector3::new(42164e3, 0.0, 100e3),
+        ];
+        let velocities = vec![
+            Vector3::new(300.0, 7400.0, 50.0),
+            Vector3::new(0.0, 3075.0, 10.0),
+        ];
+        let obstimes = vec![
+            Epoch::j2000(),
+            Epoch::from_gregorian_utc(2025, 3, 20, 0, 0, 0, 0), // Vernal equinox
+        ];
+
+        // Forward: TEME → ITRS
+        let (itrs_pos, itrs_vel) = batch_teme_to_itrs(&positions, &velocities, &obstimes).unwrap();
+
+        // Reverse: ITRS → TEME
+        let (teme_pos_rt, teme_vel_rt) = batch_itrs_to_teme(&itrs_pos, &itrs_vel, &obstimes).unwrap();
+
+        // Verify round-trip accuracy
+        for i in 0..positions.len() {
+            assert_relative_eq!(teme_pos_rt[i].x, positions[i].x, epsilon = 1e-6);
+            assert_relative_eq!(teme_pos_rt[i].y, positions[i].y, epsilon = 1e-6);
+            assert_relative_eq!(teme_pos_rt[i].z, positions[i].z, epsilon = 1e-6);
+            assert_relative_eq!(teme_vel_rt[i].x, velocities[i].x, epsilon = 1e-9);
+            assert_relative_eq!(teme_vel_rt[i].y, velocities[i].y, epsilon = 1e-9);
+            assert_relative_eq!(teme_vel_rt[i].z, velocities[i].z, epsilon = 1e-9);
+        }
+    }
+
+    #[test]
+    fn test_batch_empty_arrays() {
+        // Test batch transformations with empty arrays
+        let positions: Vec<Vector3<f64>> = vec![];
+        let velocities: Vec<Vector3<f64>> = vec![];
+        let obstimes: Vec<Epoch> = vec![];
+
+        // All batch functions should handle empty arrays
+        let result = batch_gcrs_to_itrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+        let (pos_out, vel_out) = result.unwrap();
+        assert_eq!(pos_out.len(), 0);
+        assert_eq!(vel_out.len(), 0);
+
+        let result = batch_itrs_to_gcrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let result = batch_gcrs_to_teme(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let result = batch_teme_to_gcrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let result = batch_teme_to_itrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+
+        let result = batch_itrs_to_teme(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_batch_large_array() {
+        // Test batch processing with larger arrays (parallel processing)
+        let n = 100;
+        let positions: Vec<Vector3<f64>> = (0..n)
+            .map(|i| {
+                let angle = 2.0 * PI * i as f64 / n as f64;
+                Vector3::new(7000e3 * angle.cos(), 7000e3 * angle.sin(), 0.0)
+            })
+            .collect();
+
+        let velocities: Vec<Vector3<f64>> = (0..n)
+            .map(|i| {
+                let angle = 2.0 * PI * i as f64 / n as f64;
+                Vector3::new(-7500.0 * angle.sin(), 7500.0 * angle.cos(), 0.0)
+            })
+            .collect();
+
+        let obstimes: Vec<Epoch> = (0..n)
+            .map(|i| {
+                let days = i as f64 * 10.0; // Every 10 days
+                Epoch::from_jd(2451545.0 + days, TimeScale::TAI) // J2000 + days
+            })
+            .collect();
+
+        // Test GCRS → ITRS with large array
+        let result = batch_gcrs_to_itrs(&positions, &velocities, &obstimes);
+        assert!(result.is_ok());
+        let (itrs_pos, itrs_vel) = result.unwrap();
+        assert_eq!(itrs_pos.len(), n);
+        assert_eq!(itrs_vel.len(), n);
+
+        // Verify all positions were transformed
+        for pos in &itrs_pos {
+            assert!(pos.norm() > 1e6); // Should be ~7000 km
+        }
+    }
+
+    #[test]
+    fn test_batch_coriolis_effect() {
+        // Test that Coriolis term is correctly applied in batch transformations
+        // A stationary point in ITRS should have non-zero velocity in GCRS
+        let positions = vec![Vector3::new(7000e3, 0.0, 0.0)]; // On equator
+        let velocities = vec![Vector3::zeros()]; // Stationary in ITRS
+        let obstimes = vec![Epoch::j2000()];
+
+        let (gcrs_pos, gcrs_vel) = batch_itrs_to_gcrs(&positions, &velocities, &obstimes).unwrap();
+
+        // Velocity in GCRS should be non-zero due to Earth's rotation
+        assert!(gcrs_vel[0].norm() > 100.0); // Should be ~500 m/s for 7000 km altitude
+
+        // Velocity should be roughly perpendicular to position
+        let dot_product = gcrs_pos[0].dot(&gcrs_vel[0]);
+        assert!(dot_product.abs() < 1e6); // Near-perpendicular
+    }
+
 }

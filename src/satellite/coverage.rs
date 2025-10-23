@@ -75,7 +75,7 @@
 //!   - Chapter 5: Satellite Ground Tracks and Coverage
 //! - Wertz, Larson: "Space Mission Analysis and Design" (SMAD), Ch. 9
 //! - Movable Type Scripts: "Calculate distance, bearing and more between Lat/Lon points"
-//!   https://www.movable-type.co.uk/scripts/latlong.html
+//!   <https://www.movable-type.co.uk/scripts/latlong.html>
 //!
 //! # Example
 //!
