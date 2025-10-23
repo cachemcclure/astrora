@@ -86,7 +86,7 @@ jobs:
           alert-threshold: '120%'
           comment-on-alert: true
           fail-on-alert: false
-          alert-comment-cc-users: '@poliastro-team'
+          # alert-comment-cc-users: '@cachemcclure'  # Optional: notify maintainer
 
       - name: Compare benchmark result (PR)
         if: github.event_name == 'pull_request'
@@ -100,8 +100,8 @@ jobs:
           alert-threshold: '120%'
           comment-on-alert: true
           fail-on-alert: true
-          # Compare against main branch data
-          external-data-json-path: ./dev/bench/benchmarks.json
+          # Note: Comparison against main branch will happen automatically
+          # via GitHub Pages data (no external-data-json-path needed)
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
