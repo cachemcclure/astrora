@@ -158,12 +158,12 @@ class TestInPlaceOperationsOverhead:
         scalar = 2.0
 
         def setup():
-            return (np.random.randn(size),), {}
+            # Return ALL arguments that the function needs
+            return (np.random.randn(size), scalar), {}
 
         result = benchmark.pedantic(
             numpy_ops.multiply_scalar_inplace,
             setup=setup,
-            args=(scalar,),
             iterations=1,
             rounds=100
         )
@@ -175,7 +175,8 @@ class TestInPlaceOperationsOverhead:
         scalar = 2.0
 
         def setup():
-            return (np.random.randn(size),), {}
+            # Return ALL arguments that the function needs
+            return (np.random.randn(size), scalar), {}
 
         def numpy_inplace(arr, s):
             arr *= s
@@ -183,7 +184,6 @@ class TestInPlaceOperationsOverhead:
         result = benchmark.pedantic(
             numpy_inplace,
             setup=setup,
-            args=(scalar,),
             iterations=1,
             rounds=100
         )
