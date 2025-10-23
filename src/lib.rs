@@ -184,6 +184,13 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_coverage_area, m)?)?;
     m.add_function(wrap_pyfunction!(py_coverage_percentage, m)?)?;
 
+    // Eclipse detection and solar lighting conditions
+    m.add_function(wrap_pyfunction!(py_compute_eclipse_state, m)?)?;
+    m.add_function(wrap_pyfunction!(py_solar_beta_angle, m)?)?;
+    m.add_function(wrap_pyfunction!(py_solar_beta_angle_precise, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sun_synchronous_inclination, m)?)?;
+    m.add_function(wrap_pyfunction!(py_eclipse_duration, m)?)?;
+
     Ok(())
 }
 
@@ -5076,4 +5083,200 @@ fn py_coverage_area(altitude_km: f64, min_elevation_deg: f64) -> f64 {
 fn py_coverage_percentage(total_access_time_minutes: f64, time_span_minutes: f64) -> f64 {
     use crate::satellite::coverage::coverage_percentage;
     coverage_percentage(total_access_time_minutes, time_span_minutes)
+}
+
+// ========================================
+// Eclipse Detection and Solar Lighting Conditions
+// ========================================
+
+/// Determine eclipse state for a satellite
+///
+/// Uses the conical shadow model to determine whether a satellite is in
+/// sunlight, penumbra (partial shadow), or umbra (full shadow).
+///
+/// # Arguments
+/// * `r_sat_km` - Satellite position vector in ECI frame [x, y, z] (km)
+/// * `r_sun_km` - Sun position vector from Earth in ECI frame [x, y, z] (km)
+///
+/// # Returns
+/// String: "Sunlit", "Penumbra", or "Umbra"
+///
+/// # Example
+/// ```python
+/// import astrora_core
+/// import numpy as np
+///
+/// # Satellite at 400 km altitude
+/// r_sat = np.array([6778.0, 0.0, 0.0])
+/// # Sun at 1 AU
+/// r_sun = np.array([149.6e6, 0.0, 0.0])
+///
+/// state = astrora_core.compute_eclipse_state(r_sat, r_sun)
+/// print(f"Eclipse state: {state}")
+/// # Output: "Sunlit"
+/// ```
+#[pyfunction(name = "compute_eclipse_state")]
+fn py_compute_eclipse_state(r_sat_km: [f64; 3], r_sun_km: [f64; 3]) -> &'static str {
+    use crate::satellite::eclipse::{compute_eclipse_state, EclipseState};
+    use nalgebra::Vector3;
+
+    // Convert km to m
+    let r_sat = Vector3::new(r_sat_km[0] * 1000.0, r_sat_km[1] * 1000.0, r_sat_km[2] * 1000.0);
+    let r_sun = Vector3::new(r_sun_km[0] * 1000.0, r_sun_km[1] * 1000.0, r_sun_km[2] * 1000.0);
+
+    let state = compute_eclipse_state(&r_sat, &r_sun);
+
+    match state {
+        EclipseState::Sunlit => "Sunlit",
+        EclipseState::Penumbra => "Penumbra",
+        EclipseState::Umbra => "Umbra",
+    }
+}
+
+/// Calculate solar beta angle (simplified formula)
+///
+/// The beta angle is the angle between the orbital plane and the Sun vector.
+/// It determines eclipse duration and thermal conditions.
+///
+/// # Arguments
+/// * `inclination_deg` - Orbital inclination (degrees)
+/// * `raan_deg` - Right Ascension of Ascending Node (degrees)
+/// * `solar_longitude_deg` - Ecliptic longitude of the Sun (degrees)
+///
+/// # Returns
+/// Beta angle in degrees, range [-90, +90]
+///
+/// # Example
+/// ```python
+/// import astrora_core
+///
+/// # ISS-like orbit
+/// beta = astrora_core.solar_beta_angle(51.6, 90.0, 0.0)
+/// print(f"Beta angle: {beta:.2f}°")
+/// ```
+#[pyfunction(name = "solar_beta_angle")]
+fn py_solar_beta_angle(
+    inclination_deg: f64,
+    raan_deg: f64,
+    solar_longitude_deg: f64,
+) -> f64 {
+    use crate::satellite::eclipse::solar_beta_angle;
+
+    let i = inclination_deg.to_radians();
+    let raan = raan_deg.to_radians();
+    let solar_lon = solar_longitude_deg.to_radians();
+
+    solar_beta_angle(i, raan, solar_lon).to_degrees()
+}
+
+/// Calculate solar beta angle (precise Vallado formula)
+///
+/// This version accounts for Earth's axial tilt (obliquity of ecliptic)
+/// and is more accurate than the simplified formula.
+///
+/// # Arguments
+/// * `inclination_deg` - Orbital inclination (degrees)
+/// * `raan_deg` - Right Ascension of Ascending Node (degrees)
+/// * `solar_longitude_deg` - True ecliptic longitude of Sun (degrees)
+///
+/// # Returns
+/// Beta angle in degrees, range [-90, +90]
+///
+/// # Example
+/// ```python
+/// import astrora_core
+///
+/// # ISS-like orbit
+/// beta = astrora_core.solar_beta_angle_precise(51.6, 90.0, 0.0)
+/// print(f"Beta angle (precise): {beta:.2f}°")
+/// ```
+#[pyfunction(name = "solar_beta_angle_precise")]
+fn py_solar_beta_angle_precise(
+    inclination_deg: f64,
+    raan_deg: f64,
+    solar_longitude_deg: f64,
+) -> f64 {
+    use crate::satellite::eclipse::solar_beta_angle_precise;
+
+    let i = inclination_deg.to_radians();
+    let raan = raan_deg.to_radians();
+    let solar_lon = solar_longitude_deg.to_radians();
+
+    solar_beta_angle_precise(i, raan, solar_lon).to_degrees()
+}
+
+/// Calculate required inclination for a sun-synchronous orbit
+///
+/// A sun-synchronous orbit maintains a constant angle between the orbital
+/// plane and the Sun direction.
+///
+/// # Arguments
+/// * `altitude_km` - Orbit altitude above Earth's surface (km)
+/// * `eccentricity` - Orbital eccentricity (default: 0.0 for circular)
+///
+/// # Returns
+/// Required inclination in degrees for sun-synchronous orbit
+///
+/// # Raises
+/// ValueError if sun-synchronous orbit is not possible at this altitude
+///
+/// # Example
+/// ```python
+/// import astrora_core
+///
+/// # Typical sun-sync orbit at 600 km
+/// inclination = astrora_core.sun_synchronous_inclination(600.0, 0.0)
+/// print(f"Sun-sync inclination: {inclination:.2f}°")
+/// # Output: ~97.8° (retrograde)
+/// ```
+#[pyfunction(name = "sun_synchronous_inclination", signature = (altitude_km, eccentricity=0.0))]
+fn py_sun_synchronous_inclination(altitude_km: f64, eccentricity: f64) -> PyResult<f64> {
+    use crate::satellite::eclipse::sun_synchronous_inclination;
+    use crate::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
+
+    let semi_major_axis = (R_EARTH + altitude_km * 1000.0);
+
+    match sun_synchronous_inclination(semi_major_axis, eccentricity, J2_EARTH, R_EARTH, GM_EARTH) {
+        Ok(inclination) => Ok(inclination.to_degrees()),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Sun-synchronous orbit not possible: {}", e)
+        )),
+    }
+}
+
+/// Calculate eclipse duration for a circular orbit
+///
+/// Estimates the maximum eclipse duration per orbit based on beta angle
+/// and orbit altitude.
+///
+/// # Arguments
+/// * `altitude_km` - Orbit altitude above Earth's surface (km)
+/// * `beta_angle_deg` - Solar beta angle (degrees)
+///
+/// # Returns
+/// Eclipse duration in minutes (0 if no eclipse)
+///
+/// # Example
+/// ```python
+/// import astrora_core
+///
+/// # ISS at 400 km with beta = 0° (maximum eclipse)
+/// duration = astrora_core.eclipse_duration(400.0, 0.0)
+/// print(f"Eclipse duration: {duration:.1f} minutes")
+/// # Output: ~37 minutes
+/// ```
+#[pyfunction(name = "eclipse_duration")]
+fn py_eclipse_duration(altitude_km: f64, beta_angle_deg: f64) -> PyResult<f64> {
+    use crate::satellite::eclipse::eclipse_duration;
+    use crate::core::constants::{GM_EARTH, R_EARTH};
+
+    let semi_major_axis = R_EARTH + altitude_km * 1000.0;
+    let beta_angle = beta_angle_deg.to_radians();
+
+    match eclipse_duration(semi_major_axis, beta_angle, GM_EARTH) {
+        Ok(duration_sec) => Ok(duration_sec / 60.0), // Convert to minutes
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Eclipse duration calculation failed: {}", e)
+        )),
+    }
 }

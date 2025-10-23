@@ -436,6 +436,58 @@ impl Epoch {
         Self::j2000()
     }
 
+    /// Create epoch from Julian Date in specified time scale
+    ///
+    /// # Parameters
+    /// * `jd`: Julian Date in days
+    /// * `scale`: Time scale as string ('UTC', 'TAI', 'TT', 'TDB', 'GPST')
+    ///
+    /// # Example
+    /// ```python
+    /// from astrora._core import Epoch
+    /// epoch = Epoch.from_jd(2451545.0, 'TT')  # J2000 in TT
+    /// ```
+    #[staticmethod]
+    fn from_jd_scale(jd: f64, scale: &str) -> PyResult<Self> {
+        let time_scale = match scale.to_uppercase().as_str() {
+            "UTC" => TimeScale::UTC,
+            "TAI" => TimeScale::TAI,
+            "TT" => TimeScale::TT,
+            "TDB" => TimeScale::TDB,
+            "GPST" => TimeScale::GPST,
+            _ => return Err(pyo3::exceptions::PyValueError::new_err(
+                format!("Unsupported time scale: {}. Use UTC, TAI, TT, TDB, or GPST", scale)
+            )),
+        };
+        Ok(Self::from_jd(jd, time_scale))
+    }
+
+    /// Create epoch from Modified Julian Date in specified time scale
+    ///
+    /// # Parameters
+    /// * `mjd`: Modified Julian Date in days
+    /// * `scale`: Time scale as string ('UTC', 'TAI', 'TT', 'TDB', 'GPST')
+    ///
+    /// # Example
+    /// ```python
+    /// from astrora._core import Epoch
+    /// epoch = Epoch.from_mjd(51544.5, 'TT')  # J2000 in TT
+    /// ```
+    #[staticmethod]
+    fn from_mjd_scale(mjd: f64, scale: &str) -> PyResult<Self> {
+        let time_scale = match scale.to_uppercase().as_str() {
+            "UTC" => TimeScale::UTC,
+            "TAI" => TimeScale::TAI,
+            "TT" => TimeScale::TT,
+            "TDB" => TimeScale::TDB,
+            "GPST" => TimeScale::GPST,
+            _ => return Err(pyo3::exceptions::PyValueError::new_err(
+                format!("Unsupported time scale: {}. Use UTC, TAI, TT, TDB, or GPST", scale)
+            )),
+        };
+        Ok(Self::from_mjd(mjd, time_scale))
+    }
+
     /// Convert to UTC time scale
     fn as_utc(&self) -> Self {
         self.to_utc()

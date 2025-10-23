@@ -58,6 +58,7 @@ pub mod omm;
 pub mod visibility;
 pub mod groundtrack;
 pub mod coverage;
+pub mod eclipse;
 
 pub use sgp4_wrapper::{propagate_from_elements, propagate_batch, SatelliteState, Sgp4Error};
 pub use tle::parse_tle;
@@ -77,4 +78,9 @@ pub use coverage::{
     GeodeticPoint, AccessStatistics,
     visibility_circle, coverage_area,
     compute_access_statistics, coverage_percentage,
+};
+pub use eclipse::{
+    EclipseState,
+    compute_eclipse_state, solar_beta_angle, solar_beta_angle_precise,
+    sun_synchronous_inclination, eclipse_duration,
 };

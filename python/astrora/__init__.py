@@ -26,11 +26,18 @@ except ImportError as e:
         ImportWarning
     )
 
-# High-level API will be added here as modules are implemented
-# from poliastro import bodies
-# from poliastro import twobody
-# from poliastro import plotting
+# High-level API
+from astrora import bodies
+from astrora import twobody
+from astrora import time
+from astrora.twobody import Orbit
+from astrora.maneuver import Maneuver
 
 __all__ = [
     "__version__",
+    "bodies",
+    "twobody",
+    "time",
+    "Orbit",
+    "Maneuver",
 ]
