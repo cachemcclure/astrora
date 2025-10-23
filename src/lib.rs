@@ -191,6 +191,14 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_sun_synchronous_inclination, m)?)?;
     m.add_function(wrap_pyfunction!(py_eclipse_duration, m)?)?;
 
+    // Satellite lifetime estimation and decay
+    m.add_function(wrap_pyfunction!(py_estimate_satellite_lifetime, m)?)?;
+    m.add_function(wrap_pyfunction!(py_estimate_decay_rate, m)?)?;
+
+    // Conjunction analysis and collision detection
+    m.add_function(wrap_pyfunction!(py_compute_conjunction, m)?)?;
+    m.add_function(wrap_pyfunction!(py_closest_approach_distance, m)?)?;
+
     Ok(())
 }
 
@@ -5277,6 +5285,115 @@ fn py_eclipse_duration(altitude_km: f64, beta_angle_deg: f64) -> PyResult<f64> {
         Ok(duration_sec) => Ok(duration_sec / 60.0), // Convert to minutes
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
             format!("Eclipse duration calculation failed: {}", e)
+        )),
+    }
+}
+
+// ==============================================================================
+// Satellite Lifetime Estimation
+// ==============================================================================
+
+#[pyfunction]
+#[pyo3(name = "estimate_satellite_lifetime")]
+fn py_estimate_satellite_lifetime(
+    r_km: [f64; 3],
+    v_km_s: [f64; 3],
+    ballistic_coeff: f64,
+    terminal_altitude_km: f64,
+    max_time_days: f64,
+) -> PyResult<f64> {
+    use crate::satellite::lifetime::estimate_lifetime;
+    use crate::core::linalg::Vector3;
+
+    // Convert from km to meters
+    let r = Vector3::new(r_km[0] * 1000.0, r_km[1] * 1000.0, r_km[2] * 1000.0);
+    let v = Vector3::new(v_km_s[0] * 1000.0, v_km_s[1] * 1000.0, v_km_s[2] * 1000.0);
+    let terminal_altitude = terminal_altitude_km * 1000.0;
+    let max_time = max_time_days * 86400.0; // days to seconds
+
+    match estimate_lifetime(&r, &v, ballistic_coeff, terminal_altitude, max_time, 60.0) {
+        Ok(lifetime_sec) => Ok(lifetime_sec / 86400.0), // Convert to days
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Lifetime estimation failed: {}", e)
+        )),
+    }
+}
+
+#[pyfunction]
+#[pyo3(name = "estimate_decay_rate")]
+fn py_estimate_decay_rate(altitude_km: f64, ballistic_coeff: f64) -> f64 {
+    use crate::satellite::lifetime::estimate_decay_rate;
+
+    let altitude = altitude_km * 1000.0; // km to meters
+    let decay_rate_m_per_day = estimate_decay_rate(altitude, ballistic_coeff);
+
+    decay_rate_m_per_day / 1000.0 // Convert to km/day
+}
+
+// ==============================================================================
+// Conjunction Analysis
+// ==============================================================================
+
+#[pyfunction]
+#[pyo3(name = "compute_conjunction")]
+fn py_compute_conjunction(
+    r1_km: [f64; 3],
+    v1_km_s: [f64; 3],
+    r2_km: [f64; 3],
+    v2_km_s: [f64; 3],
+    search_window_hours: f64,
+    collision_threshold_km: f64,
+) -> PyResult<(f64, f64, bool)> {
+    use crate::satellite::conjunction::compute_conjunction;
+    use crate::core::linalg::Vector3;
+    use crate::core::constants::GM_EARTH;
+
+    // Convert from km to meters
+    let r1 = Vector3::new(r1_km[0] * 1000.0, r1_km[1] * 1000.0, r1_km[2] * 1000.0);
+    let v1 = Vector3::new(v1_km_s[0] * 1000.0, v1_km_s[1] * 1000.0, v1_km_s[2] * 1000.0);
+    let r2 = Vector3::new(r2_km[0] * 1000.0, r2_km[1] * 1000.0, r2_km[2] * 1000.0);
+    let v2 = Vector3::new(v2_km_s[0] * 1000.0, v2_km_s[1] * 1000.0, v2_km_s[2] * 1000.0);
+
+    let search_window = search_window_hours * 3600.0; // hours to seconds
+    let collision_threshold = collision_threshold_km * 1000.0; // km to meters
+
+    match compute_conjunction(&r1, &v1, &r2, &v2, GM_EARTH, search_window, collision_threshold) {
+        Ok(result) => Ok((
+            result.tca / 60.0, // TCA in minutes
+            result.miss_distance / 1000.0, // miss distance in km
+            result.collision_risk,
+        )),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Conjunction analysis failed: {}", e)
+        )),
+    }
+}
+
+#[pyfunction]
+#[pyo3(name = "closest_approach_distance")]
+fn py_closest_approach_distance(
+    r1_km: [f64; 3],
+    v1_km_s: [f64; 3],
+    r2_km: [f64; 3],
+    v2_km_s: [f64; 3],
+    search_window_hours: f64,
+) -> PyResult<f64> {
+    use crate::satellite::conjunction::closest_approach_distance;
+    use crate::core::linalg::Vector3;
+    use crate::core::constants::GM_EARTH;
+
+    // Convert from km to meters
+    let r1 = Vector3::new(r1_km[0] * 1000.0, r1_km[1] * 1000.0, r1_km[2] * 1000.0);
+    let v1 = Vector3::new(v1_km_s[0] * 1000.0, v1_km_s[1] * 1000.0, v1_km_s[2] * 1000.0);
+    let r2 = Vector3::new(r2_km[0] * 1000.0, r2_km[1] * 1000.0, r2_km[2] * 1000.0);
+    let v2 = Vector3::new(v2_km_s[0] * 1000.0, v2_km_s[1] * 1000.0, v2_km_s[2] * 1000.0);
+
+    let search_window = search_window_hours * 3600.0; // hours to seconds
+
+    match closest_approach_distance(&r1, &v1, &r2, &v2, GM_EARTH, search_window) {
+        Ok(distance) => Ok(distance / 1000.0), // Convert to km
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Closest approach calculation failed: {}", e)
         )),
     }
 }

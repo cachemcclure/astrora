@@ -14,7 +14,7 @@ use criterion::{
     AxisScale,
 };
 use nalgebra::Vector3;
-use astrora_core::core::constants::EARTH_MU;
+use astrora_core::core::constants::{GM_EARTH, GM_SUN};
 use astrora_core::maneuvers::{Lambert, TransferKind};
 use std::f64::consts::PI;
 
@@ -24,44 +24,44 @@ use std::f64::consts::PI;
 
 /// LEO to LEO transfer (quarter orbit)
 fn leo_to_leo_quarter() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
-    let r_leo = 7000e3; // 7000 km altitude
+    let r_leo: f64 = 7000e3; // 7000 km altitude
     let r1 = Vector3::new(r_leo, 0.0, 0.0);
     let r2 = Vector3::new(0.0, r_leo, 0.0);
 
     // Quarter orbit time
-    let period = 2.0 * PI * (r_leo.powi(3) / EARTH_MU).sqrt();
+    let period = 2.0 * PI * (r_leo.powi(3) / GM_EARTH).sqrt();
     let tof = period / 4.0;
 
-    (r1, r2, tof, EARTH_MU)
+    (r1, r2, tof, GM_EARTH)
 }
 
 /// LEO to GEO transfer (Hohmann-like)
 fn leo_to_geo_transfer() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
-    let r_leo = 7000e3;
-    let r_geo = 42164e3; // GEO altitude
+    let r_leo: f64 = 7000e3;
+    let r_geo: f64 = 42164e3; // GEO altitude
 
     let r1 = Vector3::new(r_leo, 0.0, 0.0);
     let r2 = Vector3::new(0.0, r_geo, 0.0);
 
     // Approximate Hohmann transfer time
-    let a_transfer = (r_leo + r_geo) / 2.0;
-    let tof = PI * (a_transfer.powi(3) / EARTH_MU).sqrt();
+    let a_transfer: f64 = (r_leo + r_geo) / 2.0;
+    let tof = PI * (a_transfer.powi(3) / GM_EARTH).sqrt();
 
-    (r1, r2, tof, EARTH_MU)
+    (r1, r2, tof, GM_EARTH)
 }
 
 /// LEO to MEO transfer
 fn leo_to_meo_transfer() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
-    let r_leo = 7000e3;
-    let r_meo = 20000e3; // MEO altitude
+    let r_leo: f64 = 7000e3;
+    let r_meo: f64 = 20000e3; // MEO altitude
 
     let r1 = Vector3::new(r_leo, 0.0, 0.0);
     let r2 = Vector3::new(0.0, r_meo, 0.0);
 
-    let a_transfer = (r_leo + r_meo) / 2.0;
-    let tof = PI * (a_transfer.powi(3) / EARTH_MU).sqrt();
+    let a_transfer: f64 = (r_leo + r_meo) / 2.0;
+    let tof = PI * (a_transfer.powi(3) / GM_EARTH).sqrt();
 
-    (r1, r2, tof, EARTH_MU)
+    (r1, r2, tof, GM_EARTH)
 }
 
 /// Complex 3D transfer
@@ -70,23 +70,22 @@ fn complex_3d_transfer() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
     let r2 = Vector3::new(-14600e3, 2500e3, 7000e3);
     let tof = 3600.0; // 1 hour
 
-    (r1, r2, tof, EARTH_MU)
+    (r1, r2, tof, GM_EARTH)
 }
 
 /// Earth to Mars-like interplanetary transfer (simplified)
 fn interplanetary_like_transfer() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
-    let r_earth = 149.6e9; // ~1 AU
-    let r_mars = 227.9e9;  // ~1.52 AU
-    let sun_mu = 1.32712440018e20; // Sun's gravitational parameter
+    let r_earth: f64 = 149.6e9; // ~1 AU
+    let r_mars: f64 = 227.9e9;  // ~1.52 AU
 
     let r1 = Vector3::new(r_earth, 0.0, 0.0);
     let r2 = Vector3::new(0.0, r_mars, 0.0);
 
     // Approximate Hohmann transfer time (~8.5 months)
-    let a_transfer = (r_earth + r_mars) / 2.0;
-    let tof = PI * (a_transfer.powi(3) / sun_mu).sqrt();
+    let a_transfer: f64 = (r_earth + r_mars) / 2.0;
+    let tof = PI * (a_transfer.powi(3) / GM_SUN).sqrt();
 
-    (r1, r2, tof, sun_mu)
+    (r1, r2, tof, GM_SUN)
 }
 
 //=============================================================================
@@ -274,10 +273,10 @@ fn bench_lambert_parallel_batch(c: &mut Criterion) {
 fn bench_lambert_multi_revolution(c: &mut Criterion) {
     let mut group = c.benchmark_group("Lambert_Multi_Revolution");
 
-    let r_leo = 7000e3;
+    let r_leo: f64 = 7000e3;
     let r1 = Vector3::new(r_leo, 0.0, 0.0);
     let r2 = Vector3::new(0.0, r_leo, 0.0);
-    let period = 2.0 * PI * (r_leo.powi(3) / EARTH_MU).sqrt();
+    let period: f64 = 2.0 * PI * (r_leo.powi(3) / GM_EARTH).sqrt();
 
     // Zero revolutions (baseline)
     group.bench_function("0_revolutions", |b| {
@@ -287,7 +286,7 @@ fn bench_lambert_multi_revolution(c: &mut Criterion) {
                 black_box(r1),
                 black_box(r2),
                 black_box(tof),
-                black_box(EARTH_MU),
+                black_box(GM_EARTH),
                 black_box(TransferKind::Auto),
                 black_box(0),
             ))
@@ -302,7 +301,7 @@ fn bench_lambert_multi_revolution(c: &mut Criterion) {
                 black_box(r1),
                 black_box(r2),
                 black_box(tof),
-                black_box(EARTH_MU),
+                black_box(GM_EARTH),
                 black_box(TransferKind::Auto),
                 black_box(1),
             ))
@@ -317,7 +316,7 @@ fn bench_lambert_multi_revolution(c: &mut Criterion) {
                 black_box(r1),
                 black_box(r2),
                 black_box(tof),
-                black_box(EARTH_MU),
+                black_box(GM_EARTH),
                 black_box(TransferKind::Auto),
                 black_box(2),
             ))

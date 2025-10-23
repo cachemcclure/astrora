@@ -59,6 +59,8 @@ pub mod visibility;
 pub mod groundtrack;
 pub mod coverage;
 pub mod eclipse;
+pub mod lifetime;
+pub mod conjunction;
 
 pub use sgp4_wrapper::{propagate_from_elements, propagate_batch, SatelliteState, Sgp4Error};
 pub use tle::parse_tle;
@@ -83,4 +85,12 @@ pub use eclipse::{
     EclipseState,
     compute_eclipse_state, solar_beta_angle, solar_beta_angle_precise,
     sun_synchronous_inclination, eclipse_duration,
+};
+pub use lifetime::{
+    estimate_lifetime, estimate_decay_rate,
+    DEFAULT_TERMINAL_ALTITUDE, TYPICAL_DRAG_COEFFICIENT,
+};
+pub use conjunction::{
+    ConjunctionResult,
+    compute_conjunction, check_collision, closest_approach_distance,
 };

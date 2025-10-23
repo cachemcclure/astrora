@@ -30,6 +30,8 @@ except ImportError as e:
 from astrora import bodies
 from astrora import twobody
 from astrora import time
+from astrora import units
+from astrora import coordinates
 from astrora.twobody import Orbit
 from astrora.maneuver import Maneuver
 
@@ -38,6 +40,8 @@ __all__ = [
     "bodies",
     "twobody",
     "time",
+    "units",
+    "coordinates",
     "Orbit",
     "Maneuver",
 ]

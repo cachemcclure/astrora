@@ -873,6 +873,237 @@ class Orbit:
         return Orbit(new_state, self._epoch, self._attractor)
 
     # ========================================================================
+    # Astropy Coordinates Integration
+    # ========================================================================
+
+    def to_skycoord(self, frame='gcrs'):
+        """
+        Convert orbit to astropy SkyCoord.
+
+        Parameters
+        ----------
+        frame : str, optional
+            Target coordinate frame for SkyCoord ('icrs', 'gcrs', or 'itrs').
+            Default is 'gcrs' (Geocentric Celestial Reference System).
+
+        Returns
+        -------
+        astropy.coordinates.SkyCoord
+            SkyCoord object with position, velocity, and time information.
+
+        Notes
+        -----
+        - Requires astropy to be installed
+        - Position and velocity are preserved
+        - Observation time is set from orbit epoch
+        - GCRS frame is most common for Earth satellites
+
+        Examples
+        --------
+        >>> from astrora.twobody import Orbit
+        >>> from astrora.bodies import Earth
+        >>> import numpy as np
+        >>>
+        >>> r = np.array([7000e3, 0, 0])
+        >>> v = np.array([0, 7546, 0])
+        >>> orbit = Orbit.from_vectors(Earth, r, v)
+        >>>
+        >>> # Convert to SkyCoord
+        >>> sc = orbit.to_skycoord()
+        >>> print(f"Distance: {sc.distance}")
+        >>> print(f"RA: {sc.ra}, Dec: {sc.dec}")
+        """
+        from astrora.coordinates import to_skycoord, to_astropy_coord
+        from astrora._core import ICRS, GCRS, ITRS
+        from astrora.time import epoch_to_astropy_time
+
+        # Get astropy Time from epoch
+        obstime = epoch_to_astropy_time(self._epoch)
+
+        # Create appropriate coordinate frame based on position/velocity
+        if frame.lower() == 'icrs':
+            astrora_frame = ICRS(self.r, self.v)
+        elif frame.lower() == 'gcrs':
+            astrora_frame = GCRS(self.r, self.v, self._epoch)
+        elif frame.lower() == 'itrs':
+            astrora_frame = ITRS(self.r, self.v, self._epoch)
+        else:
+            raise ValueError(
+                f"Unsupported frame '{frame}'. "
+                "Supported frames: 'icrs', 'gcrs', 'itrs'"
+            )
+
+        # Convert to SkyCoord
+        return to_skycoord(astrora_frame, obstime=obstime)
+
+    @classmethod
+    def from_skycoord(cls, skycoord, attractor):
+        """
+        Create orbit from astropy SkyCoord.
+
+        Parameters
+        ----------
+        skycoord : astropy.coordinates.SkyCoord
+            SkyCoord object with position and velocity information.
+        attractor : Body
+            Central body for the orbit.
+
+        Returns
+        -------
+        Orbit
+            Orbit object created from SkyCoord.
+
+        Notes
+        -----
+        - Requires astropy to be installed
+        - SkyCoord must have Cartesian representation with velocity
+        - Observation time is extracted from SkyCoord and used as orbit epoch
+        - Position and velocity are converted from astropy units to SI (meters, m/s)
+
+        Examples
+        --------
+        >>> from astropy.coordinates import SkyCoord
+        >>> from astropy import units as u
+        >>> from astropy.time import Time
+        >>> from astrora.twobody import Orbit
+        >>> from astrora.bodies import Earth
+        >>>
+        >>> # Create SkyCoord
+        >>> sc = SkyCoord(
+        ...     x=7000*u.km, y=0*u.km, z=0*u.km,
+        ...     v_x=0*u.km/u.s, v_y=7.5*u.km/u.s, v_z=0*u.km/u.s,
+        ...     representation_type='cartesian',
+        ...     frame='gcrs',
+        ...     obstime=Time('2024-01-01')
+        ... )
+        >>>
+        >>> # Create orbit
+        >>> orbit = Orbit.from_skycoord(sc, Earth)
+        >>> print(orbit.period / 3600)  # hours
+        """
+        from astrora.coordinates import from_skycoord
+        from astrora.time import astropy_time_to_epoch
+
+        # Convert SkyCoord to astrora frame (ICRS, GCRS, or ITRS)
+        astrora_frame = from_skycoord(skycoord)
+
+        # Extract position and velocity
+        position = astrora_frame.position
+        velocity = astrora_frame.velocity
+
+        # Extract observation time
+        if hasattr(skycoord.frame, 'obstime') and skycoord.frame.obstime is not None:
+            epoch = astropy_time_to_epoch(skycoord.frame.obstime)
+        else:
+            # Use J2000.0 if no obstime specified
+            epoch = Epoch.j2000_epoch()
+
+        # Create orbit
+        return cls.from_vectors(attractor, position, velocity, epoch=epoch)
+
+    def to_astropy_coord(self, frame='gcrs'):
+        """
+        Convert orbit to astropy coordinate frame.
+
+        This is a lower-level method compared to `to_skycoord()`. Use `to_skycoord()`
+        for most applications.
+
+        Parameters
+        ----------
+        frame : str, optional
+            Target coordinate frame ('icrs', 'gcrs', or 'itrs').
+            Default is 'gcrs'.
+
+        Returns
+        -------
+        astropy.coordinates frame (ICRS, GCRS, or ITRS)
+            Astropy coordinate frame object.
+
+        Examples
+        --------
+        >>> orbit = Orbit.from_vectors(Earth, r, v)
+        >>> gcrs = orbit.to_astropy_coord(frame='gcrs')
+        >>> print(gcrs.cartesian.xyz)
+        """
+        from astrora.coordinates import to_astropy_coord
+        from astrora._core import ICRS, GCRS, ITRS
+        from astrora.time import epoch_to_astropy_time
+
+        # Get astropy Time from epoch
+        obstime = epoch_to_astropy_time(self._epoch)
+
+        # Create appropriate coordinate frame
+        if frame.lower() == 'icrs':
+            astrora_frame = ICRS(self.r, self.v)
+        elif frame.lower() == 'gcrs':
+            astrora_frame = GCRS(self.r, self.v, self._epoch)
+        elif frame.lower() == 'itrs':
+            astrora_frame = ITRS(self.r, self.v, self._epoch)
+        else:
+            raise ValueError(
+                f"Unsupported frame '{frame}'. "
+                "Supported frames: 'icrs', 'gcrs', 'itrs'"
+            )
+
+        return to_astropy_coord(astrora_frame, obstime=obstime)
+
+    @classmethod
+    def from_astropy_coord(cls, astropy_coord, attractor):
+        """
+        Create orbit from astropy coordinate frame.
+
+        This is a lower-level method compared to `from_skycoord()`. Use `from_skycoord()`
+        for most applications.
+
+        Parameters
+        ----------
+        astropy_coord : astropy.coordinates frame
+            Astropy coordinate frame (ICRS, GCRS, or ITRS).
+        attractor : Body
+            Central body for the orbit.
+
+        Returns
+        -------
+        Orbit
+            Orbit object created from astropy coordinate frame.
+
+        Examples
+        --------
+        >>> from astropy.coordinates import GCRS
+        >>> from astropy import units as u
+        >>> from astropy.time import Time
+        >>>
+        >>> gcrs = GCRS(
+        ...     x=7000*u.km, y=0*u.km, z=0*u.km,
+        ...     v_x=0*u.km/u.s, v_y=7.5*u.km/u.s, v_z=0*u.km/u.s,
+        ...     representation_type='cartesian',
+        ...     differential_type='cartesian',
+        ...     obstime=Time('2024-01-01')
+        ... )
+        >>>
+        >>> orbit = Orbit.from_astropy_coord(gcrs, Earth)
+        """
+        from astrora.coordinates import from_astropy_coord
+        from astrora.time import astropy_time_to_epoch
+
+        # Convert astropy frame to astrora frame
+        astrora_frame = from_astropy_coord(astropy_coord)
+
+        # Extract position and velocity
+        position = astrora_frame.position
+        velocity = astrora_frame.velocity
+
+        # Extract observation time
+        if hasattr(astropy_coord, 'obstime') and astropy_coord.obstime is not None:
+            epoch = astropy_time_to_epoch(astropy_coord.obstime)
+        else:
+            # Use J2000.0 if no obstime specified
+            epoch = Epoch.j2000_epoch()
+
+        # Create orbit
+        return cls.from_vectors(attractor, position, velocity, epoch=epoch)
+
+    # ========================================================================
     # String Representation
     # ========================================================================
 

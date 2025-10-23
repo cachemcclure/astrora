@@ -15,7 +15,7 @@ use criterion::{
 };
 use hifitime::{Duration, Epoch};
 use nalgebra as na;
-use astrora_core::core::constants::{EARTH_MU, EARTH_RADIUS, EARTH_J2};
+use astrora_core::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
 use astrora_core::core::state::CartesianState;
 use astrora_core::propagators::perturbations::{
     j2_perturbation, propagate_j2_rk4, propagate_j2_dopri5,
@@ -25,8 +25,8 @@ use astrora_core::propagators::keplerian::propagate_keplerian;
 /// LEO satellite initial state (ISS-like orbit)
 /// Altitude: ~400 km, inclination: ~51.6°
 fn leo_initial_state() -> CartesianState {
-    let r_mag = EARTH_RADIUS + 400e3; // 400 km altitude
-    let v_circular = (EARTH_MU / r_mag).sqrt();
+    let r_mag = R_EARTH + 400e3; // 400 km altitude
+    let v_circular = (GM_EARTH / r_mag).sqrt();
 
     // Inclined circular orbit
     let inclination = 51.6_f64.to_radians();
@@ -34,33 +34,33 @@ fn leo_initial_state() -> CartesianState {
     CartesianState::new(
         na::Vector3::new(r_mag * inclination.cos(), 0.0, r_mag * inclination.sin()),
         na::Vector3::new(0.0, v_circular, 0.0),
-        EARTH_MU,
+        GM_EARTH,
     )
 }
 
 /// GEO satellite initial state
 /// Altitude: ~35,786 km (geostationary)
 fn geo_initial_state() -> CartesianState {
-    let r_mag = EARTH_RADIUS + 35786e3;
-    let v_circular = (EARTH_MU / r_mag).sqrt();
+    let r_mag = R_EARTH + 35786e3;
+    let v_circular = (GM_EARTH / r_mag).sqrt();
 
     CartesianState::new(
         na::Vector3::new(r_mag, 0.0, 0.0),
         na::Vector3::new(0.0, v_circular, 0.0),
-        EARTH_MU,
+        GM_EARTH,
     )
 }
 
 /// Highly elliptical orbit (Molniya-like)
 /// Perigee: 500 km, Apogee: 39,750 km, inclination: 63.4°
 fn heo_initial_state() -> CartesianState {
-    let r_perigee = EARTH_RADIUS + 500e3;
-    let r_apogee = EARTH_RADIUS + 39750e3;
+    let r_perigee = R_EARTH + 500e3;
+    let r_apogee = R_EARTH + 39750e3;
     let a = (r_perigee + r_apogee) / 2.0;
     let e = (r_apogee - r_perigee) / (r_apogee + r_perigee);
 
     // Velocity at perigee
-    let v_perigee = ((EARTH_MU / a) * (1.0 + e) / (1.0 - e)).sqrt();
+    let v_perigee = ((GM_EARTH / a) * (1.0 + e) / (1.0 - e)).sqrt();
 
     // Inclined orbit (Molniya: 63.4° minimizes precession)
     let inclination = 63.4_f64.to_radians();
@@ -68,7 +68,7 @@ fn heo_initial_state() -> CartesianState {
     CartesianState::new(
         na::Vector3::new(r_perigee * inclination.cos(), 0.0, r_perigee * inclination.sin()),
         na::Vector3::new(0.0, v_perigee, 0.0),
-        EARTH_MU,
+        GM_EARTH,
     )
 }
 
@@ -106,8 +106,8 @@ fn bench_j2_rk4_step_sizes(c: &mut Criterion) {
                         black_box(&state),
                         black_box(epoch),
                         black_box(duration),
-                        black_box(EARTH_J2),
-                        black_box(EARTH_RADIUS),
+                        black_box(J2_EARTH),
+                        black_box(R_EARTH),
                         black_box(steps),
                     ))
                 })
@@ -151,8 +151,8 @@ fn bench_j2_dopri5_tolerances(c: &mut Criterion) {
                         black_box(&state),
                         black_box(epoch),
                         black_box(duration),
-                        black_box(EARTH_J2),
-                        black_box(EARTH_RADIUS),
+                        black_box(J2_EARTH),
+                        black_box(R_EARTH),
                         black_box(tol),
                     ))
                 })
@@ -181,8 +181,8 @@ fn bench_integrator_comparison_leo(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(1000),
             ))
         })
@@ -195,8 +195,8 @@ fn bench_integrator_comparison_leo(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(10000),
             ))
         })
@@ -209,8 +209,8 @@ fn bench_integrator_comparison_leo(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(1e-8),
             ))
         })
@@ -223,8 +223,8 @@ fn bench_integrator_comparison_leo(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(1e-10),
             ))
         })
@@ -252,8 +252,8 @@ fn bench_orbit_types_dopri5(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(tol),
             ))
         })
@@ -267,8 +267,8 @@ fn bench_orbit_types_dopri5(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(tol),
             ))
         })
@@ -282,8 +282,8 @@ fn bench_orbit_types_dopri5(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(tol),
             ))
         })
@@ -318,8 +318,8 @@ fn bench_propagation_durations(c: &mut Criterion) {
                         black_box(&state),
                         black_box(epoch),
                         black_box(duration),
-                        black_box(EARTH_J2),
-                        black_box(EARTH_RADIUS),
+                        black_box(J2_EARTH),
+                        black_box(R_EARTH),
                         black_box(tol),
                     ))
                 })
@@ -359,8 +359,8 @@ fn bench_keplerian_vs_j2(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(1000),
             ))
         })
@@ -373,8 +373,8 @@ fn bench_keplerian_vs_j2(c: &mut Criterion) {
                 black_box(&state),
                 black_box(epoch),
                 black_box(duration),
-                black_box(EARTH_J2),
-                black_box(EARTH_RADIUS),
+                black_box(J2_EARTH),
+                black_box(R_EARTH),
                 black_box(1e-8),
             ))
         })
@@ -410,8 +410,8 @@ fn bench_tolerance_accuracy_tradeoff(c: &mut Criterion) {
                         black_box(&state),
                         black_box(epoch),
                         black_box(duration),
-                        black_box(EARTH_J2),
-                        black_box(EARTH_RADIUS),
+                        black_box(J2_EARTH),
+                        black_box(R_EARTH),
                         black_box(tol),
                     ))
                 })
@@ -449,8 +449,8 @@ fn bench_rk4_step_size_performance(c: &mut Criterion) {
                         black_box(&state),
                         black_box(epoch),
                         black_box(duration),
-                        black_box(EARTH_J2),
-                        black_box(EARTH_RADIUS),
+                        black_box(J2_EARTH),
+                        black_box(R_EARTH),
                         black_box(steps),
                     ))
                 })
