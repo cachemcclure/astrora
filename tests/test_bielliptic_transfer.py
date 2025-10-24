@@ -10,12 +10,13 @@ Tests the Python bindings for bi-elliptic orbital transfers, including:
 """
 
 import math
+
 import pytest
 from astrora._core import (
     bielliptic_transfer,
     compare_bielliptic_hohmann,
-    find_optimal_bielliptic,
     constants,
+    find_optimal_bielliptic,
 )
 
 GM_EARTH = constants.GM_EARTH
@@ -65,10 +66,13 @@ class TestBiellipticTransferBasic:
         assert result["delta_v_total"] > 0
 
         # Verify delta_v_total is sum of components
-        assert abs(
-            result["delta_v_total"]
-            - (result["delta_v1"] + result["delta_v2"] + result["delta_v3"])
-        ) < 1e-6
+        assert (
+            abs(
+                result["delta_v_total"]
+                - (result["delta_v1"] + result["delta_v2"] + result["delta_v3"])
+            )
+            < 1e-6
+        )
 
     def test_transfer_time_positive(self, leo_radius, geo_radius):
         """Test that transfer time is positive and reasonable"""
@@ -117,9 +121,7 @@ class TestBiellipticVsHohmann:
     def test_comparison_structure(self, leo_radius, high_radius):
         """Test that comparison returns correct structure"""
         r_intermediate = high_radius * 5.0
-        result = compare_bielliptic_hohmann(
-            leo_radius, high_radius, r_intermediate, GM_EARTH
-        )
+        result = compare_bielliptic_hohmann(leo_radius, high_radius, r_intermediate, GM_EARTH)
 
         assert "bielliptic" in result
         assert "hohmann" in result
@@ -136,9 +138,7 @@ class TestBiellipticVsHohmann:
         r_final = leo_radius * 25.0
         r_intermediate = r_final * 5.0
 
-        result = compare_bielliptic_hohmann(
-            leo_radius, r_final, r_intermediate, GM_EARTH
-        )
+        result = compare_bielliptic_hohmann(leo_radius, r_final, r_intermediate, GM_EARTH)
 
         # Bi-elliptic should save delta-v
         assert result["dv_savings"] > 0
@@ -151,9 +151,7 @@ class TestBiellipticVsHohmann:
         # GEO/LEO ratio is about 6.6 (below 15.58 threshold)
         r_intermediate = geo_radius * 2.0
 
-        result = compare_bielliptic_hohmann(
-            leo_radius, geo_radius, r_intermediate, GM_EARTH
-        )
+        result = compare_bielliptic_hohmann(leo_radius, geo_radius, r_intermediate, GM_EARTH)
 
         # Hohmann should be more efficient (negative savings)
         assert result["dv_savings"] < 0
@@ -163,12 +161,8 @@ class TestBiellipticVsHohmann:
         r_int_small = high_radius * 2.0
         r_int_large = high_radius * 10.0
 
-        result_small = compare_bielliptic_hohmann(
-            leo_radius, high_radius, r_int_small, GM_EARTH
-        )
-        result_large = compare_bielliptic_hohmann(
-            leo_radius, high_radius, r_int_large, GM_EARTH
-        )
+        result_small = compare_bielliptic_hohmann(leo_radius, high_radius, r_int_small, GM_EARTH)
+        result_large = compare_bielliptic_hohmann(leo_radius, high_radius, r_int_large, GM_EARTH)
 
         # Larger intermediate radius should mean longer transfer time
         assert result_large["time_penalty"] > result_small["time_penalty"]
@@ -196,9 +190,7 @@ class TestOptimalIntermediate:
         # Large radius ratio where bi-elliptic should be better
         r_final = leo_radius * 30.0
 
-        r_opt, bielliptic_result = find_optimal_bielliptic(
-            leo_radius, r_final, GM_EARTH, 100.0
-        )
+        r_opt, bielliptic_result = find_optimal_bielliptic(leo_radius, r_final, GM_EARTH, 100.0)
 
         # Compare with Hohmann
         comparison = compare_bielliptic_hohmann(leo_radius, r_final, r_opt, GM_EARTH)

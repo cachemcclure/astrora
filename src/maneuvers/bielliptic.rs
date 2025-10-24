@@ -210,9 +210,8 @@ impl BiellipticTransfer {
             return Err(PoliastroError::invalid_parameter(
                 "r_intermediate",
                 r_intermediate,
-                &format!(
-                    "must be larger than both initial and final radii (max = {:.1} m)",
-                    r_max_orbit
+                format!(
+                    "must be larger than both initial and final radii (max = {r_max_orbit:.1} m)"
                 ),
             ));
         }

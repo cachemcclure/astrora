@@ -432,8 +432,7 @@ pub fn batch_propagate_states(
             parameter: "time_steps".into(),
             value: time_steps.len() as f64,
             constraint: format!(
-                "must be 1 or match number of states ({})",
-                n_states
+                "must be 1 or match number of states ({n_states})"
             ),
         });
     };
@@ -451,7 +450,7 @@ pub fn batch_propagate_states(
             // Propagate this state
             let (r, v) = propagate_state_keplerian(&r0, &v0, dt, mu).map_err(|e| {
                 PoliastroError::PropagationFailed {
-                    context: format!("batch propagation at index {}", i),
+                    context: format!("batch propagation at index {i}"),
                     source: Box::new(e),
                 }
             })?;
@@ -505,8 +504,7 @@ pub fn batch_propagate_lagrange(
             parameter: "time_steps".into(),
             value: time_steps.len() as f64,
             constraint: format!(
-                "must be 1 or match number of states ({})",
-                n_states
+                "must be 1 or match number of states ({n_states})"
             ),
         });
     };
@@ -522,7 +520,7 @@ pub fn batch_propagate_lagrange(
 
             let (r, v) = propagate_lagrange(&r0, &v0, dt, mu).map_err(|e| {
                 PoliastroError::PropagationFailed {
-                    context: format!("batch lagrange propagation at index {}", i),
+                    context: format!("batch lagrange propagation at index {i}"),
                     source: Box::new(e),
                 }
             })?;

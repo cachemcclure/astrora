@@ -12,13 +12,12 @@ This example demonstrates all plotting capabilities in astrora, showing how to:
 This is a comprehensive demonstration of the plotting module functionality.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from astropy import units as u
-
-from astrora.twobody import Orbit
 from astrora.bodies import Earth
 from astrora.plotting import StaticOrbitPlotter, plot_ground_track
+from astrora.twobody import Orbit
 
 print("=" * 70)
 print(" Astrora Complete Orbit Plotting Examples")
@@ -38,7 +37,7 @@ iss_orbit = Orbit.from_classical(
     inc=51.6 << u.deg,
     raan=0 << u.deg,
     argp=0 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 # Create MEO orbit (GPS-like, medium eccentricity)
@@ -49,7 +48,7 @@ meo_orbit = Orbit.from_classical(
     inc=55 << u.deg,  # GPS inclination
     raan=0 << u.deg,
     argp=0 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 # Create GEO orbit (circular, equatorial)
@@ -60,7 +59,7 @@ geo_orbit = Orbit.from_classical(
     inc=0 << u.deg,
     raan=0 << u.deg,
     argp=0 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 # Plot all three orbits
@@ -69,7 +68,7 @@ plotter.plot(iss_orbit, label="ISS (LEO)", color="blue")
 plotter.plot(meo_orbit, label="GPS (MEO)", color="red")
 plotter.plot(geo_orbit, label="GEO", color="green")
 
-plt.title("Comparison of Different Orbit Types", fontsize=14, fontweight='bold')
+plt.title("Comparison of Different Orbit Types", fontsize=14, fontweight="bold")
 plotter.savefig("multiple_orbits_2d.png", dpi=150)
 print("   ✓ Saved: multiple_orbits_2d.png")
 plt.close()
@@ -89,7 +88,7 @@ gto_orbit = Orbit.from_classical(
     inc=7 << u.deg,
     raan=0 << u.deg,
     argp=178 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 plotter = StaticOrbitPlotter()
@@ -114,7 +113,7 @@ polar_orbit = Orbit.from_classical(
     inc=89.9 << u.deg,  # Near-polar inclination
     raan=0 << u.deg,
     argp=0 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 plotter = StaticOrbitPlotter()
@@ -136,8 +135,8 @@ plotter.plot(iss_orbit, label="ISS", color="#00D9FF")  # Cyan
 plotter.plot(meo_orbit, label="GPS", color="#FF6B9D")  # Pink
 plotter.plot(geo_orbit, label="GEO", color="#C3F73A")  # Lime green
 
-plt.title("Dark Mode Orbit Visualization", fontsize=14, fontweight='bold', color='white')
-plotter.savefig("orbits_dark_mode.png", dpi=150, facecolor='#1a1a1a')
+plt.title("Dark Mode Orbit Visualization", fontsize=14, fontweight="bold", color="white")
+plotter.savefig("orbits_dark_mode.png", dpi=150, facecolor="#1a1a1a")
 print("   ✓ Saved: orbits_dark_mode.png")
 plt.close()
 
@@ -178,12 +177,12 @@ plot_ground_track(
     duration=iss_orbit.period.value,
     dt=30,  # Sample every 30 seconds
     ax=ax,
-    color='blue',
-    label='ISS Ground Track'
+    color="blue",
+    label="ISS Ground Track",
 )
 
-plt.title("ISS Ground Track (One Orbit)", fontsize=14, fontweight='bold')
-plt.savefig("iss_ground_track.png", dpi=150, bbox_inches='tight')
+plt.title("ISS Ground Track (One Orbit)", fontsize=14, fontweight="bold")
+plt.savefig("iss_ground_track.png", dpi=150, bbox_inches="tight")
 print("   ✓ Saved: iss_ground_track.png")
 plt.close()
 
@@ -199,12 +198,12 @@ plot_ground_track(
     duration=polar_orbit.period.value,
     dt=60,  # Sample every minute
     ax=ax,
-    color='purple',
-    label='Polar Orbit Track'
+    color="purple",
+    label="Polar Orbit Track",
 )
 
-plt.title("Polar Orbit Ground Track", fontsize=14, fontweight='bold')
-plt.savefig("polar_ground_track.png", dpi=150, bbox_inches='tight')
+plt.title("Polar Orbit Ground Track", fontsize=14, fontweight="bold")
+plt.savefig("polar_ground_track.png", dpi=150, bbox_inches="tight")
 print("   ✓ Saved: polar_ground_track.png")
 plt.close()
 
@@ -222,8 +221,8 @@ plot_ground_track(
     duration=iss_orbit.period.value,
     dt=60,
     ax=ax,
-    color='blue',
-    label='ISS (51.6° inclination)'
+    color="blue",
+    label="ISS (51.6° inclination)",
 )
 
 # Polar orbit track
@@ -232,12 +231,12 @@ plot_ground_track(
     duration=polar_orbit.period.value,
     dt=60,
     ax=ax,
-    color='purple',
-    label='Polar (90° inclination)'
+    color="purple",
+    label="Polar (90° inclination)",
 )
 
-plt.title("Ground Track Comparison: ISS vs Polar Orbit", fontsize=14, fontweight='bold')
-plt.savefig("ground_track_comparison.png", dpi=150, bbox_inches='tight')
+plt.title("Ground Track Comparison: ISS vs Polar Orbit", fontsize=14, fontweight="bold")
+plt.savefig("ground_track_comparison.png", dpi=150, bbox_inches="tight")
 print("   ✓ Saved: ground_track_comparison.png")
 plt.close()
 

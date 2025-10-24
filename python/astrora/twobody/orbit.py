@@ -5,32 +5,30 @@ This module provides the Orbit class, which represents a spacecraft or celestial
 body's state in orbit around an attractor (e.g., Earth, Sun).
 """
 
+from typing import TYPE_CHECKING, Optional, Tuple, Union
+
 import numpy as np
-from typing import Optional, Union, Tuple, TYPE_CHECKING
 from astropy import units as u
+
 from astrora._core import (
     CartesianState,
-    Epoch,
     Duration,
+    Epoch,
     OrbitalElements,
-    rv_to_coe,
+    batch_propagate_states,
     coe_to_rv,
     propagate_state_keplerian,
-    batch_propagate_states,
     py_propagate_tle,
-)
-from astrora.units import (
-    to_si_position,
-    to_si_velocity_vector,
-    to_si_length,
-    to_si_angle,
-    to_dimensionless,
-    as_quantity_length,
-    as_quantity_angle,
-    as_quantity_time,
-    as_quantity_vector,
+    rv_to_coe,
 )
 from astrora.time import to_epoch
+from astrora.units import (
+    to_dimensionless,
+    to_si_angle,
+    to_si_length,
+    to_si_position,
+    to_si_velocity_vector,
+)
 
 # Type hints for astropy.time.Time without requiring it at runtime
 if TYPE_CHECKING:
@@ -128,7 +126,7 @@ class Orbit:
         attractor,
         r: Union[np.ndarray, u.Quantity],
         v: Union[np.ndarray, u.Quantity],
-        epoch: Optional[Union[Epoch, 'AstropyTime']] = None,
+        epoch: Optional[Union[Epoch, "AstropyTime"]] = None,
     ) -> "Orbit":
         """
         Create an orbit from position and velocity vectors.
@@ -195,7 +193,7 @@ class Orbit:
         raan: Union[float, u.Quantity],
         argp: Union[float, u.Quantity],
         nu: Union[float, u.Quantity],
-        epoch: Optional[Union[Epoch, 'AstropyTime']] = None,
+        epoch: Optional[Union[Epoch, "AstropyTime"]] = None,
     ) -> "Orbit":
         """
         Create an orbit from classical Keplerian orbital elements.
@@ -330,6 +328,7 @@ class Orbit:
         """
         if attractor is None:
             from astrora.bodies import Earth
+
             attractor = Earth
 
         # Propagate TLE to get state at epoch (or TLE epoch if epoch is None)
@@ -344,8 +343,8 @@ class Orbit:
             result = py_propagate_tle(tle_string, 0.0)
 
         # Extract position and velocity from TLE propagation result
-        r = np.array(result['position'])
-        v = np.array(result['velocity'])
+        r = np.array(result["position"])
+        v = np.array(result["velocity"])
 
         state = CartesianState(r, v)
 
@@ -504,6 +503,7 @@ class Orbit:
         """
         if attractor is None:
             from astrora.bodies import Earth
+
             attractor = Earth
 
         # Use synchronous with default period_mul=1 and inc=0
@@ -612,7 +612,7 @@ class Orbit:
             epoch = to_epoch(epoch)
 
         # Check if attractor has a rotational period
-        if not hasattr(attractor, 'rotational_period') or attractor.rotational_period is None:
+        if not hasattr(attractor, "rotational_period") or attractor.rotational_period is None:
             raise ValueError(
                 f"Attractor '{attractor.name}' does not have a defined rotational period. "
                 "Synchronous orbits require knowledge of the body's rotation rate."
@@ -630,7 +630,7 @@ class Orbit:
         # Use Kepler's third law to find semi-major axis
         # T = 2π√(a³/μ)  =>  a = (μ T² / 4π²)^(1/3)
         mu = attractor.mu
-        a = (mu * T_orbit**2 / (4 * np.pi**2)) ** (1/3)
+        a = (mu * T_orbit**2 / (4 * np.pi**2)) ** (1 / 3)
 
         # For circular orbits, use arglat; otherwise use argp
         if ecc_val == 0.0:
@@ -780,11 +780,13 @@ class Orbit:
         >>> orbit.r.to(u.m)
         <Quantity [7000000., 0., 0.] m>
         """
-        r_si = np.array([
-            self._state.position[0],
-            self._state.position[1],
-            self._state.position[2],
-        ])
+        r_si = np.array(
+            [
+                self._state.position[0],
+                self._state.position[1],
+                self._state.position[2],
+            ]
+        )
         return r_si * u.m  # Returns in SI, can be converted to km by user
 
     @property
@@ -806,11 +808,13 @@ class Orbit:
         >>> orbit.v.to(u.m / u.s)
         <Quantity [0., 7660., 0.] m / s>
         """
-        v_si = np.array([
-            self._state.velocity[0],
-            self._state.velocity[1],
-            self._state.velocity[2],
-        ])
+        v_si = np.array(
+            [
+                self._state.velocity[0],
+                self._state.velocity[1],
+                self._state.velocity[2],
+            ]
+        )
         return v_si * u.m / u.s  # Returns in SI
 
     @property
@@ -836,16 +840,20 @@ class Orbit:
         """Compute orbital elements from state vectors (with caching)."""
         if self._elements_cache is None:
             # rv_to_coe expects raw arrays in SI units
-            r_si = np.array([
-                self._state.position[0],
-                self._state.position[1],
-                self._state.position[2],
-            ])
-            v_si = np.array([
-                self._state.velocity[0],
-                self._state.velocity[1],
-                self._state.velocity[2],
-            ])
+            r_si = np.array(
+                [
+                    self._state.position[0],
+                    self._state.position[1],
+                    self._state.position[2],
+                ]
+            )
+            v_si = np.array(
+                [
+                    self._state.velocity[0],
+                    self._state.velocity[1],
+                    self._state.velocity[2],
+                ]
+            )
             self._elements_cache = rv_to_coe(r_si, v_si, self._attractor.mu)
         return self._elements_cache
 
@@ -1087,10 +1095,7 @@ class Orbit:
     # ========================================================================
 
     def propagate(
-        self,
-        value: Union[Duration, float],
-        method: str = 'keplerian',
-        **kwargs
+        self, value: Union[Duration, float], method: str = "keplerian", **kwargs
     ) -> "Orbit":
         """
         Propagate the orbit forward or backward in time.
@@ -1140,7 +1145,7 @@ class Orbit:
             raise TypeError(f"value must be Duration or numeric, got {type(value)}")
 
         # Propagate using Rust backend
-        if method == 'keplerian' or method == 'lagrange':
+        if method == "keplerian" or method == "lagrange":
             # Use Keplerian propagation (expects float seconds)
             # Returns tuple (position, velocity)
             result = propagate_state_keplerian(self.r, self.v, dt_seconds, self._attractor.mu)
@@ -1161,7 +1166,7 @@ class Orbit:
     def sample(
         self,
         times: Union[np.ndarray, list],
-        method: str = 'keplerian',
+        method: str = "keplerian",
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Sample the orbit at multiple times.
@@ -1203,14 +1208,14 @@ class Orbit:
             times = np.array([t.to_seconds() for t in times])
 
         # Handle case where times has astropy units
-        if hasattr(times, 'unit'):
+        if hasattr(times, "unit"):
             # Convert to seconds (SI)
             times_seconds = times.to(u.s).value
         else:
             times_seconds = times
 
         # Get SI values for position and velocity
-        if hasattr(self.r, 'unit'):
+        if hasattr(self.r, "unit"):
             # Extract values from Quantity objects
             r_values = self.r.to(u.m).value
             v_values = self.v.to(u.m / u.s).value
@@ -1234,7 +1239,7 @@ class Orbit:
         velocities = result[:, 3:]  # Last 3 columns
 
         # Wrap in Quantity if using units
-        if hasattr(self.r, 'unit'):
+        if hasattr(self.r, "unit"):
             positions = positions << u.m
             velocities = velocities << (u.m / u.s)
 
@@ -1282,7 +1287,7 @@ class Orbit:
     # Astropy Coordinates Integration
     # ========================================================================
 
-    def to_skycoord(self, frame='gcrs'):
+    def to_skycoord(self, frame="gcrs"):
         """
         Convert orbit to astropy SkyCoord.
 
@@ -1319,24 +1324,23 @@ class Orbit:
         >>> print(f"Distance: {sc.distance}")
         >>> print(f"RA: {sc.ra}, Dec: {sc.dec}")
         """
-        from astrora.coordinates import to_skycoord, to_astropy_coord
-        from astrora._core import ICRS, GCRS, ITRS
+        from astrora._core import GCRS, ICRS, ITRS
+        from astrora.coordinates import to_skycoord
         from astrora.time import epoch_to_astropy_time
 
         # Get astropy Time from epoch
         obstime = epoch_to_astropy_time(self._epoch)
 
         # Create appropriate coordinate frame based on position/velocity
-        if frame.lower() == 'icrs':
+        if frame.lower() == "icrs":
             astrora_frame = ICRS(self.r, self.v)
-        elif frame.lower() == 'gcrs':
+        elif frame.lower() == "gcrs":
             astrora_frame = GCRS(self.r, self.v, self._epoch)
-        elif frame.lower() == 'itrs':
+        elif frame.lower() == "itrs":
             astrora_frame = ITRS(self.r, self.v, self._epoch)
         else:
             raise ValueError(
-                f"Unsupported frame '{frame}'. "
-                "Supported frames: 'icrs', 'gcrs', 'itrs'"
+                f"Unsupported frame '{frame}'. " "Supported frames: 'icrs', 'gcrs', 'itrs'"
             )
 
         # Convert to SkyCoord
@@ -1398,7 +1402,7 @@ class Orbit:
         velocity = astrora_frame.velocity
 
         # Extract observation time
-        if hasattr(skycoord.frame, 'obstime') and skycoord.frame.obstime is not None:
+        if hasattr(skycoord.frame, "obstime") and skycoord.frame.obstime is not None:
             epoch = astropy_time_to_epoch(skycoord.frame.obstime)
         else:
             # Use J2000.0 if no obstime specified
@@ -1407,7 +1411,7 @@ class Orbit:
         # Create orbit
         return cls.from_vectors(attractor, position, velocity, epoch=epoch)
 
-    def to_astropy_coord(self, frame='gcrs'):
+    def to_astropy_coord(self, frame="gcrs"):
         """
         Convert orbit to astropy coordinate frame.
 
@@ -1431,24 +1435,23 @@ class Orbit:
         >>> gcrs = orbit.to_astropy_coord(frame='gcrs')
         >>> print(gcrs.cartesian.xyz)
         """
+        from astrora._core import GCRS, ICRS, ITRS
         from astrora.coordinates import to_astropy_coord
-        from astrora._core import ICRS, GCRS, ITRS
         from astrora.time import epoch_to_astropy_time
 
         # Get astropy Time from epoch
         obstime = epoch_to_astropy_time(self._epoch)
 
         # Create appropriate coordinate frame
-        if frame.lower() == 'icrs':
+        if frame.lower() == "icrs":
             astrora_frame = ICRS(self.r, self.v)
-        elif frame.lower() == 'gcrs':
+        elif frame.lower() == "gcrs":
             astrora_frame = GCRS(self.r, self.v, self._epoch)
-        elif frame.lower() == 'itrs':
+        elif frame.lower() == "itrs":
             astrora_frame = ITRS(self.r, self.v, self._epoch)
         else:
             raise ValueError(
-                f"Unsupported frame '{frame}'. "
-                "Supported frames: 'icrs', 'gcrs', 'itrs'"
+                f"Unsupported frame '{frame}'. " "Supported frames: 'icrs', 'gcrs', 'itrs'"
             )
 
         return to_astropy_coord(astrora_frame, obstime=obstime)
@@ -1500,7 +1503,7 @@ class Orbit:
         velocity = astrora_frame.velocity
 
         # Extract observation time
-        if hasattr(astropy_coord, 'obstime') and astropy_coord.obstime is not None:
+        if hasattr(astropy_coord, "obstime") and astropy_coord.obstime is not None:
             epoch = astropy_time_to_epoch(astropy_coord.obstime)
         else:
             # Use J2000.0 if no obstime specified
@@ -1526,6 +1529,6 @@ class Orbit:
                 f"  attractor = {self._attractor.__class__.__name__}\n"
                 f")"
             )
-        except Exception as e:
+        except Exception:
             # Fallback if element computation fails
             return f"Orbit(state={self._state}, epoch={self._epoch}, attractor={self._attractor})"

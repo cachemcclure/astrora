@@ -5,15 +5,16 @@ This module provides functions for visualizing satellite ground tracks
 (sub-satellite points) on Earth's surface.
 """
 
-import numpy as np
+from typing import Optional
+
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-from typing import Optional, Tuple, List
+import numpy as np
 from astropy import units as u
+from matplotlib.axes import Axes
 
 try:
+    from .._core import compute_ground_track, ecef_to_geodetic
     from ..twobody import Orbit
-    from .._core import ecef_to_geodetic, compute_ground_track
 except ImportError:
     Orbit = None
     ecef_to_geodetic = None
@@ -28,7 +29,7 @@ def plot_ground_track(
     show_map: bool = True,
     color: Optional[str] = None,
     label: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """
     Plot satellite ground track on a 2D map projection.
@@ -95,8 +96,7 @@ def plot_ground_track(
     """
     if ecef_to_geodetic is None:
         raise ImportError(
-            "Ground track functions not available. "
-            "Make sure astrora._core is properly compiled."
+            "Ground track functions not available. " "Make sure astrora._core is properly compiled."
         )
 
     if ax is None:
@@ -104,7 +104,7 @@ def plot_ground_track(
 
     # Generate time points
     # Handle Quantity objects
-    if hasattr(duration, 'unit'):
+    if hasattr(duration, "unit"):
         duration_seconds = duration.to(u.s).value
     else:
         duration_seconds = duration
@@ -115,7 +115,7 @@ def plot_ground_track(
     positions, _ = orbit.sample(times)
 
     # Convert to km
-    if hasattr(positions, 'unit'):
+    if hasattr(positions, "unit"):
         positions_km = positions.to(u.km).value
     else:
         positions_km = positions / 1000.0
@@ -131,8 +131,8 @@ def plot_ground_track(
     for pos in positions_km:
         # Direct conversion (approximation - assumes ECEF ≈ GCRF for short durations)
         result = ecef_to_geodetic(pos * 1000.0)  # Convert back to meters
-        latitudes.append(result['latitude_deg'])
-        longitudes.append(result['longitude_deg'])
+        latitudes.append(result["latitude_deg"])
+        longitudes.append(result["longitude_deg"])
 
     latitudes = np.array(latitudes)
     longitudes = np.array(longitudes)
@@ -145,9 +145,9 @@ def plot_ground_track(
     # Plot segments separately to avoid lines across the map
     plot_kwargs = {}
     if color is not None:
-        plot_kwargs['color'] = color
+        plot_kwargs["color"] = color
     if label is not None:
-        plot_kwargs['label'] = label
+        plot_kwargs["label"] = label
     plot_kwargs.update(kwargs)
 
     if len(breaks) == 0:
@@ -161,21 +161,21 @@ def plot_ground_track(
             segment_kwargs = plot_kwargs.copy()
             # Only label the first segment
             if i > 0:
-                segment_kwargs.pop('label', None)
+                segment_kwargs.pop("label", None)
             ax.plot(longitudes[start:end], latitudes[start:end], **segment_kwargs)
 
     # Mark start and end points
-    ax.plot(longitudes[0], latitudes[0], 'go', markersize=8, label='Start', zorder=10)
-    ax.plot(longitudes[-1], latitudes[-1], 'ro', markersize=8, label='End', zorder=10)
+    ax.plot(longitudes[0], latitudes[0], "go", markersize=8, label="Start", zorder=10)
+    ax.plot(longitudes[-1], latitudes[-1], "ro", markersize=8, label="End", zorder=10)
 
     # Configure axes
     ax.set_xlim(-180, 180)
     ax.set_ylim(-90, 90)
-    ax.set_xlabel('Longitude (°)', fontsize=12)
-    ax.set_ylabel('Latitude (°)', fontsize=12)
-    ax.set_title('Satellite Ground Track', fontsize=14, fontweight='bold')
+    ax.set_xlabel("Longitude (°)", fontsize=12)
+    ax.set_ylabel("Latitude (°)", fontsize=12)
+    ax.set_title("Satellite Ground Track", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
-    ax.set_aspect('equal', adjustable='box')
+    ax.set_aspect("equal", adjustable="box")
 
     # Add map background if requested
     if show_map:
@@ -188,28 +188,24 @@ def plot_ground_track(
             # For now, just add gridlines
             ax.set_xticks(np.arange(-180, 181, 30))
             ax.set_yticks(np.arange(-90, 91, 30))
-            ax.axhline(y=0, color='k', linestyle='--', alpha=0.3, linewidth=0.5)
-            ax.axvline(x=0, color='k', linestyle='--', alpha=0.3, linewidth=0.5)
+            ax.axhline(y=0, color="k", linestyle="--", alpha=0.3, linewidth=0.5)
+            ax.axvline(x=0, color="k", linestyle="--", alpha=0.3, linewidth=0.5)
 
         except ImportError:
             # Fallback to simple gridlines
             ax.set_xticks(np.arange(-180, 181, 30))
             ax.set_yticks(np.arange(-90, 91, 30))
-            ax.axhline(y=0, color='k', linestyle='--', alpha=0.3, linewidth=0.5)
-            ax.axvline(x=0, color='k', linestyle='--', alpha=0.3, linewidth=0.5)
+            ax.axhline(y=0, color="k", linestyle="--", alpha=0.3, linewidth=0.5)
+            ax.axvline(x=0, color="k", linestyle="--", alpha=0.3, linewidth=0.5)
 
-    ax.legend(loc='upper right')
+    ax.legend(loc="upper right")
     plt.tight_layout()
 
     return ax
 
 
 def plot_ground_track_3d(
-    orbit: "Orbit",
-    duration: float,
-    dt: float = 60.0,
-    show_earth: bool = True,
-    **kwargs
+    orbit: "Orbit", duration: float, dt: float = 60.0, show_earth: bool = True, **kwargs
 ) -> None:
     """
     Plot satellite ground track on a 3D Earth globe.
@@ -242,13 +238,12 @@ def plot_ground_track_3d(
         import plotly.graph_objects as go
     except ImportError:
         raise ImportError(
-            "Plotly is required for 3D ground tracks. "
-            "Install with: pip install plotly"
+            "Plotly is required for 3D ground tracks. " "Install with: pip install plotly"
         )
 
     # Generate time points
     # Handle Quantity objects
-    if hasattr(duration, 'unit'):
+    if hasattr(duration, "unit"):
         duration_seconds = duration.to(u.s).value
     else:
         duration_seconds = duration
@@ -259,7 +254,7 @@ def plot_ground_track_3d(
     positions, _ = orbit.sample(times)
 
     # Convert to km
-    if hasattr(positions, 'unit'):
+    if hasattr(positions, "unit"):
         positions_km = positions.to(u.km).value
     else:
         positions_km = positions / 1000.0
@@ -272,59 +267,69 @@ def plot_ground_track_3d(
         R_earth = 6378.137  # km
 
         # Create sphere
-        u = np.linspace(0, 2 * np.pi, 50)
-        v = np.linspace(0, np.pi, 50)
-        x = R_earth * np.outer(np.cos(u), np.sin(v))
-        y = R_earth * np.outer(np.sin(u), np.sin(v))
-        z = R_earth * np.outer(np.ones(np.size(u)), np.cos(v))
+        theta = np.linspace(0, 2 * np.pi, 50)
+        phi = np.linspace(0, np.pi, 50)
+        x = R_earth * np.outer(np.cos(theta), np.sin(phi))
+        y = R_earth * np.outer(np.sin(theta), np.sin(phi))
+        z = R_earth * np.outer(np.ones(np.size(theta)), np.cos(phi))
 
-        fig.add_trace(go.Surface(
-            x=x, y=y, z=z,
-            colorscale=[[0, '#4d69bb'], [1, '#4d69bb']],
-            showscale=False,
-            name='Earth',
-            hoverinfo='name',
-            opacity=0.9,
-        ))
+        fig.add_trace(
+            go.Surface(
+                x=x,
+                y=y,
+                z=z,
+                colorscale=[[0, "#4d69bb"], [1, "#4d69bb"]],
+                showscale=False,
+                name="Earth",
+                hoverinfo="name",
+                opacity=0.9,
+            )
+        )
 
     # Add orbit path
-    fig.add_trace(go.Scatter3d(
-        x=positions_km[:, 0],
-        y=positions_km[:, 1],
-        z=positions_km[:, 2],
-        mode='lines',
-        line=dict(color='red', width=3),
-        name='Orbit',
-    ))
+    fig.add_trace(
+        go.Scatter3d(
+            x=positions_km[:, 0],
+            y=positions_km[:, 1],
+            z=positions_km[:, 2],
+            mode="lines",
+            line=dict(color="red", width=3),
+            name="Orbit",
+        )
+    )
 
     # Add start/end markers
-    fig.add_trace(go.Scatter3d(
-        x=[positions_km[0, 0]],
-        y=[positions_km[0, 1]],
-        z=[positions_km[0, 2]],
-        mode='markers',
-        marker=dict(size=8, color='green'),
-        name='Start',
-    ))
+    fig.add_trace(
+        go.Scatter3d(
+            x=[positions_km[0, 0]],
+            y=[positions_km[0, 1]],
+            z=[positions_km[0, 2]],
+            mode="markers",
+            marker=dict(size=8, color="green"),
+            name="Start",
+        )
+    )
 
-    fig.add_trace(go.Scatter3d(
-        x=[positions_km[-1, 0]],
-        y=[positions_km[-1, 1]],
-        z=[positions_km[-1, 2]],
-        mode='markers',
-        marker=dict(size=8, color='red'),
-        name='End',
-    ))
+    fig.add_trace(
+        go.Scatter3d(
+            x=[positions_km[-1, 0]],
+            y=[positions_km[-1, 1]],
+            z=[positions_km[-1, 2]],
+            mode="markers",
+            marker=dict(size=8, color="red"),
+            name="End",
+        )
+    )
 
     # Configure layout
     fig.update_layout(
         scene=dict(
-            xaxis_title='x (km)',
-            yaxis_title='y (km)',
-            zaxis_title='z (km)',
-            aspectmode='data',
+            xaxis_title="x (km)",
+            yaxis_title="y (km)",
+            zaxis_title="z (km)",
+            aspectmode="data",
         ),
-        title='3D Ground Track Visualization',
+        title="3D Ground Track Visualization",
         showlegend=True,
     )
 

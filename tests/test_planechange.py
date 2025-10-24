@@ -1,5 +1,7 @@
 """Tests for plane change maneuver calculations."""
+
 import math
+
 import pytest
 from astrora import _core
 
@@ -205,9 +207,7 @@ class TestOptimalPlaneChangeLocation:
 
         angle = math.radians(28.5)
 
-        result = optimal_plane_change_location(
-            v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle
-        )
+        result = optimal_plane_change_location(v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle)
 
         # Check structure
         assert "total_angle" in result
@@ -251,9 +251,7 @@ class TestOptimalPlaneChangeLocation:
 
         angle = math.radians(5.0)  # Small angle
 
-        result = optimal_plane_change_location(
-            v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle
-        )
+        result = optimal_plane_change_location(v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle)
 
         # For small angles, optimal might be a more even split
         # (documented ~2-3° at low altitude for such cases)
@@ -274,9 +272,7 @@ class TestOptimalPlaneChangeLocation:
 
         angle = 0.0
 
-        result = optimal_plane_change_location(
-            v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle
-        )
+        result = optimal_plane_change_location(v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle)
 
         # With zero plane change, both splits should be zero
         assert abs(result["angle_at_first"]) < 1e-6
@@ -297,9 +293,7 @@ class TestOptimalPlaneChangeLocation:
 
         angle = math.radians(60.0)  # Large angle
 
-        result = optimal_plane_change_location(
-            v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle
-        )
+        result = optimal_plane_change_location(v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle)
 
         # For large angles, should do almost all at high altitude
         # (velocity is much lower there)
@@ -396,9 +390,7 @@ class TestValidationAgainstLiterature:
 
         angle = math.radians(28.6)
 
-        result = optimal_plane_change_location(
-            v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle
-        )
+        result = optimal_plane_change_location(v_leo, v_geo, v_transfer_leo, v_transfer_geo, angle)
 
         # Published optimal value: 4.233 km/s
         assert abs(result["delta_v_total"] - 4233.0) < 100.0

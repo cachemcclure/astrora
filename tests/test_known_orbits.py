@@ -15,9 +15,9 @@ These tests ensure that our implementation matches established reference
 implementations and textbook solutions.
 """
 
-import pytest
 import numpy as np
-from astrora._core import OrbitalElements, rv_to_coe, coe_to_rv, constants
+import pytest
+from astrora._core import OrbitalElements, coe_to_rv, constants, rv_to_coe
 
 
 class TestCurtisExamples:
@@ -35,39 +35,45 @@ class TestCurtisExamples:
         """
         # Input state vectors from Example 4.3
         r = np.array([-6045.0e3, -3490.0e3, 2500.0e3])  # meters
-        v = np.array([-3.457e3, 6.618e3, 2.533e3])      # m/s
+        v = np.array([-3.457e3, 6.618e3, 2.533e3])  # m/s
 
         # Convert to orbital elements
         elements = rv_to_coe(r, v, constants.GM_EARTH)
 
         # Expected values from textbook (converted to SI units)
-        expected_e = 0.1712      # eccentricity
-        expected_i = 153.25      # degrees
-        expected_raan = 255.28   # degrees
-        expected_argp = 20.07    # degrees
-        expected_nu = 28.45      # degrees
+        expected_e = 0.1712  # eccentricity
+        expected_i = 153.25  # degrees
+        expected_raan = 255.28  # degrees
+        expected_argp = 20.07  # degrees
+        expected_nu = 28.45  # degrees
 
         # Validate results (allowing reasonable tolerances for numerical precision)
-        assert abs(elements.e - expected_e) < 0.001, \
-            f"Eccentricity mismatch: got {elements.e}, expected {expected_e}"
+        assert (
+            abs(elements.e - expected_e) < 0.001
+        ), f"Eccentricity mismatch: got {elements.e}, expected {expected_e}"
 
-        assert abs(np.rad2deg(elements.i) - expected_i) < 0.1, \
-            f"Inclination mismatch: got {np.rad2deg(elements.i)}°, expected {expected_i}°"
+        assert (
+            abs(np.rad2deg(elements.i) - expected_i) < 0.1
+        ), f"Inclination mismatch: got {np.rad2deg(elements.i)}°, expected {expected_i}°"
 
-        assert abs(np.rad2deg(elements.raan) - expected_raan) < 0.1, \
-            f"RAAN mismatch: got {np.rad2deg(elements.raan)}°, expected {expected_raan}°"
+        assert (
+            abs(np.rad2deg(elements.raan) - expected_raan) < 0.1
+        ), f"RAAN mismatch: got {np.rad2deg(elements.raan)}°, expected {expected_raan}°"
 
-        assert abs(np.rad2deg(elements.argp) - expected_argp) < 0.1, \
-            f"Argument of periapsis mismatch: got {np.rad2deg(elements.argp)}°, expected {expected_argp}°"
+        assert (
+            abs(np.rad2deg(elements.argp) - expected_argp) < 0.1
+        ), f"Argument of periapsis mismatch: got {np.rad2deg(elements.argp)}°, expected {expected_argp}°"
 
-        assert abs(np.rad2deg(elements.nu) - expected_nu) < 0.1, \
-            f"True anomaly mismatch: got {np.rad2deg(elements.nu)}°, expected {expected_nu}°"
+        assert (
+            abs(np.rad2deg(elements.nu) - expected_nu) < 0.1
+        ), f"True anomaly mismatch: got {np.rad2deg(elements.nu)}°, expected {expected_nu}°"
 
         # Also verify the semi-latus rectum from the example
         expected_p = 8530.47e3  # meters (from textbook)
         actual_p = elements.p  # Property in Python interface
-        assert abs(actual_p - expected_p) < 100.0, \
-            f"Semi-latus rectum mismatch: got {actual_p/1e3} km, expected {expected_p/1e3} km"
+        assert (
+            abs(actual_p - expected_p) < 100.0
+        ), f"Semi-latus rectum mismatch: got {actual_p/1e3} km, expected {expected_p/1e3} km"
 
 
 class TestMolniyaOrbit:
@@ -104,22 +110,26 @@ class TestMolniyaOrbit:
         expected_i_max = 66.0  # degrees
 
         # Validate semi-major axis
-        assert expected_a_min < elements.a < expected_a_max, \
-            f"Semi-major axis out of Molniya range: got {elements.a/1e3} km"
+        assert (
+            expected_a_min < elements.a < expected_a_max
+        ), f"Semi-major axis out of Molniya range: got {elements.a/1e3} km"
 
         # Validate eccentricity
-        assert expected_e_min < elements.e < expected_e_max, \
-            f"Eccentricity out of Molniya range: got {elements.e}"
+        assert (
+            expected_e_min < elements.e < expected_e_max
+        ), f"Eccentricity out of Molniya range: got {elements.e}"
 
         # Validate inclination
-        assert expected_i_min < np.rad2deg(elements.i) < expected_i_max, \
-            f"Inclination out of Molniya range: got {np.rad2deg(elements.i)}°"
+        assert (
+            expected_i_min < np.rad2deg(elements.i) < expected_i_max
+        ), f"Inclination out of Molniya range: got {np.rad2deg(elements.i)}°"
 
         # Verify orbital period is approximately 12 hours (Molniya characteristic)
         period = elements.orbital_period(constants.GM_EARTH)
         expected_period = 12.0 * 3600.0  # 12 hours in seconds
-        assert abs(period - expected_period) < 600.0, \
-            f"Orbital period mismatch: got {period/3600} hours, expected ~12 hours"
+        assert (
+            abs(period - expected_period) < 600.0
+        ), f"Orbital period mismatch: got {period/3600} hours, expected ~12 hours"
 
     def test_molniya_apogee_perigee(self):
         """
@@ -131,7 +141,7 @@ class TestMolniyaOrbit:
         """
         # Typical Molniya orbital elements
         a = 26564e3  # meters (semi-major axis)
-        e = 0.74     # eccentricity
+        e = 0.74  # eccentricity
         i = np.deg2rad(63.4)  # critical inclination
 
         elements = OrbitalElements(
@@ -140,7 +150,7 @@ class TestMolniyaOrbit:
             i=i,
             raan=0.0,
             argp=np.deg2rad(-90.0),  # Perigee over southern hemisphere
-            nu=0.0
+            nu=0.0,
         )
 
         # Calculate apogee and perigee altitudes
@@ -152,11 +162,9 @@ class TestMolniyaOrbit:
         altitude_p = (r_p - constants.R_EARTH) / 1e3  # km
 
         # Typical Molniya altitudes
-        assert 35000 < altitude_a < 45000, \
-            f"Apogee altitude out of range: {altitude_a} km"
+        assert 35000 < altitude_a < 45000, f"Apogee altitude out of range: {altitude_a} km"
 
-        assert 400 < altitude_p < 1500, \
-            f"Perigee altitude out of range: {altitude_p} km"
+        assert 400 < altitude_p < 1500, f"Perigee altitude out of range: {altitude_p} km"
 
 
 class TestGeostationary:
@@ -176,12 +184,7 @@ class TestGeostationary:
         a_geo = 42164e3  # meters (from Earth's center)
 
         elements = OrbitalElements(
-            a=a_geo,
-            e=0.0,  # Circular
-            i=0.0,  # Equatorial
-            raan=0.0,
-            argp=0.0,
-            nu=0.0
+            a=a_geo, e=0.0, i=0.0, raan=0.0, argp=0.0, nu=0.0  # Circular  # Equatorial
         )
 
         # Orbital period should be one sidereal day
@@ -189,29 +192,33 @@ class TestGeostationary:
         period = elements.orbital_period(constants.GM_EARTH)
         sidereal_day = 86164.0916  # seconds
 
-        assert abs(period - sidereal_day) < 1.0, \
-            f"GEO period mismatch: got {period} s, expected {sidereal_day} s"
+        assert (
+            abs(period - sidereal_day) < 1.0
+        ), f"GEO period mismatch: got {period} s, expected {sidereal_day} s"
 
         # Convert to state vectors
         r, v = coe_to_rv(elements, constants.GM_EARTH)
 
         # Verify position magnitude equals semi-major axis
-        assert abs(np.linalg.norm(r) - a_geo) < 1.0, \
-            "Position magnitude doesn't match semi-major axis"
+        assert (
+            abs(np.linalg.norm(r) - a_geo) < 1.0
+        ), "Position magnitude doesn't match semi-major axis"
 
         # GEO altitude should be 35,786 km above Earth's surface
         altitude = (np.linalg.norm(r) - constants.R_EARTH) / 1e3
         expected_altitude = 35786.0  # km
 
-        assert abs(altitude - expected_altitude) < 10.0, \
-            f"GEO altitude mismatch: got {altitude} km, expected {expected_altitude} km"
+        assert (
+            abs(altitude - expected_altitude) < 10.0
+        ), f"GEO altitude mismatch: got {altitude} km, expected {expected_altitude} km"
 
         # Orbital velocity at GEO
         v_mag = np.linalg.norm(v)
         expected_v = 3.0747e3  # m/s (from v = √(μ/r))
 
-        assert abs(v_mag - expected_v) < 1.0, \
-            f"GEO velocity mismatch: got {v_mag} m/s, expected {expected_v} m/s"
+        assert (
+            abs(v_mag - expected_v) < 1.0
+        ), f"GEO velocity mismatch: got {v_mag} m/s, expected {expected_v} m/s"
 
 
 class TestLEOOrbits:
@@ -239,15 +246,13 @@ class TestLEOOrbits:
         period = elements.orbital_period(constants.GM_EARTH)
         period_minutes = period / 60.0
 
-        assert 90.0 < period_minutes < 95.0, \
-            f"ISS period out of range: {period_minutes} minutes"
+        assert 90.0 < period_minutes < 95.0, f"ISS period out of range: {period_minutes} minutes"
 
         # Verify orbital velocity (ISS travels at ~7.66 km/s)
         r, v = coe_to_rv(elements, constants.GM_EARTH)
         v_mag = np.linalg.norm(v) / 1e3  # km/s
 
-        assert 7.5 < v_mag < 7.8, \
-            f"ISS velocity out of range: {v_mag} km/s"
+        assert 7.5 < v_mag < 7.8, f"ISS velocity out of range: {v_mag} km/s"
 
     def test_polar_sun_synchronous_orbit(self):
         """
@@ -274,12 +279,12 @@ class TestLEOOrbits:
         period = elements.orbital_period(constants.GM_EARTH)
         period_minutes = period / 60.0
 
-        assert 97.0 < period_minutes < 101.0, \
-            f"Sun-synchronous orbit period out of range: {period_minutes} minutes"
+        assert (
+            97.0 < period_minutes < 101.0
+        ), f"Sun-synchronous orbit period out of range: {period_minutes} minutes"
 
         # Verify inclination is in sun-synchronous range
-        assert 97.0 < np.rad2deg(elements.i) < 99.0, \
-            "Inclination not in sun-synchronous range"
+        assert 97.0 < np.rad2deg(elements.i) < 99.0, "Inclination not in sun-synchronous range"
 
 
 class TestRoundtripConsistency:
@@ -312,20 +317,19 @@ class TestRoundtripConsistency:
         r_error = np.linalg.norm(r_new - r_orig)
         v_error = np.linalg.norm(v_new - v_orig)
 
-        assert r_error < 100.0, \
-            f"Position error in roundtrip: {r_error} m"
+        assert r_error < 100.0, f"Position error in roundtrip: {r_error} m"
 
-        assert v_error < 0.1, \
-            f"Velocity error in roundtrip: {v_error} m/s"
+        assert v_error < 0.1, f"Velocity error in roundtrip: {v_error} m/s"
 
         # Verify orbital energy is conserved
-        energy_orig = (np.linalg.norm(v_orig)**2 / 2.0 -
-                      constants.GM_EARTH / np.linalg.norm(r_orig))
-        energy_new = (np.linalg.norm(v_new)**2 / 2.0 -
-                     constants.GM_EARTH / np.linalg.norm(r_new))
+        energy_orig = np.linalg.norm(v_orig) ** 2 / 2.0 - constants.GM_EARTH / np.linalg.norm(
+            r_orig
+        )
+        energy_new = np.linalg.norm(v_new) ** 2 / 2.0 - constants.GM_EARTH / np.linalg.norm(r_new)
 
-        assert abs(energy_new - energy_orig) / abs(energy_orig) < 1e-10, \
-            "Energy not conserved in roundtrip"
+        assert (
+            abs(energy_new - energy_orig) / abs(energy_orig) < 1e-10
+        ), "Energy not conserved in roundtrip"
 
     def test_roundtrip_molniya_orbit(self):
         """Roundtrip test for Molniya orbit."""
@@ -342,11 +346,9 @@ class TestRoundtripConsistency:
         r_error = np.linalg.norm(r_new - r_orig)
         v_error = np.linalg.norm(v_new - v_orig)
 
-        assert r_error < 200.0, \
-            f"Position error in Molniya roundtrip: {r_error} m"
+        assert r_error < 200.0, f"Position error in Molniya roundtrip: {r_error} m"
 
-        assert v_error < 1.0, \
-            f"Velocity error in Molniya roundtrip: {v_error} m/s"
+        assert v_error < 1.0, f"Velocity error in Molniya roundtrip: {v_error} m/s"
 
 
 class TestConservationLaws:
@@ -378,8 +380,7 @@ class TestConservationLaws:
 
         # Energy should be conserved to machine precision
         relative_error = abs(energy_new - energy_orig) / abs(energy_orig)
-        assert relative_error < 1e-10, \
-            f"Energy not conserved: relative error = {relative_error}"
+        assert relative_error < 1e-10, f"Energy not conserved: relative error = {relative_error}"
 
     def test_angular_momentum_conservation_curtis_example(self):
         """Verify specific angular momentum is conserved for Curtis example."""
@@ -400,16 +401,18 @@ class TestConservationLaws:
 
         # Angular momentum magnitude should be conserved
         relative_error = abs(h_mag_new - h_mag_orig) / h_mag_orig
-        assert relative_error < 1e-10, \
-            f"Angular momentum not conserved: relative error = {relative_error}"
+        assert (
+            relative_error < 1e-10
+        ), f"Angular momentum not conserved: relative error = {relative_error}"
 
         # Angular momentum direction should also be preserved
         h_orig_unit = h_orig / h_mag_orig
         h_new_unit = h_new / h_mag_new
         direction_error = np.linalg.norm(h_orig_unit - h_new_unit)
 
-        assert direction_error < 1e-10, \
-            f"Angular momentum direction not conserved: error = {direction_error}"
+        assert (
+            direction_error < 1e-10
+        ), f"Angular momentum direction not conserved: error = {direction_error}"
 
 
 class TestEdgeCasesWithKnownOrbits:
@@ -424,7 +427,7 @@ class TestEdgeCasesWithKnownOrbits:
         """
         # Create a highly eccentric orbit similar to a comet
         a = 20000e3  # meters
-        e = 0.85     # High eccentricity
+        e = 0.85  # High eccentricity
         i = np.deg2rad(45.0)
 
         elements = OrbitalElements(a=a, e=e, i=i, raan=0.0, argp=0.0, nu=0.0)
@@ -462,8 +465,9 @@ class TestEdgeCasesWithKnownOrbits:
         elements_new = rv_to_coe(r, v, constants.GM_EARTH)
 
         # Verify inclination is preserved (critical for polar orbits)
-        assert abs(elements_new.i - i) < 1e-6, \
-            f"Polar orbit inclination not preserved: {np.rad2deg(elements_new.i)}°"
+        assert (
+            abs(elements_new.i - i) < 1e-6
+        ), f"Polar orbit inclination not preserved: {np.rad2deg(elements_new.i)}°"
 
 
 if __name__ == "__main__":

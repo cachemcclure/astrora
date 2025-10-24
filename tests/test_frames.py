@@ -4,17 +4,17 @@ Integration tests for coordinate reference frames (ICRS, GCRS, J2000, ITRS)
 
 import numpy as np
 import pytest
-from numpy.testing import assert_array_almost_equal, assert_allclose
 
 # Import the Rust extension module
 from astrora._core import (
-    ICRS,
     GCRS,
-    J2000,
+    ICRS,
     ITRS,
-    Perifocal,
+    J2000,
     Epoch,
+    Perifocal,
 )
+from numpy.testing import assert_allclose, assert_array_almost_equal
 
 
 class TestICRS:

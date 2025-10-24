@@ -61,21 +61,29 @@ Use SkyCoord for high-level operations:
 """
 
 from typing import Union
+
 import numpy as np
 
 try:
+    from astropy import units as u
     from astropy.coordinates import (
-        SkyCoord,
-        ICRS as AstropyICRS,
         GCRS as AstropyGCRS,
+    )
+    from astropy.coordinates import (
+        ICRS as AstropyICRS,
+    )
+    from astropy.coordinates import (
         ITRS as AstropyITRS,
     )
+    from astropy.coordinates import (
+        SkyCoord,
+    )
     from astropy.time import Time
-    from astropy import units as u
 
     ASTROPY_AVAILABLE = True
 except ImportError:
     ASTROPY_AVAILABLE = False
+
     # Provide helpful error messages
     class _AstropyNotAvailable:
         def __init__(self, *args, **kwargs):
@@ -92,12 +100,17 @@ except ImportError:
     u = None
 
 from astrora._core import (
-    ICRS as AstroraICRS,
     GCRS as AstroraGCRS,
+)
+from astrora._core import (
+    ICRS as AstroraICRS,
+)
+from astrora._core import (
     ITRS as AstroraITRS,
+)
+from astrora._core import (
     TEME as AstroraTEME,
 )
-from astrora.time import epoch_to_astropy_time, astropy_time_to_epoch
 
 
 def _check_astropy():
@@ -163,7 +176,7 @@ def to_astropy_coord(
 
     # Set default obstime to J2000.0 if not provided
     if obstime is None:
-        obstime = Time('J2000.0', scale='tt')
+        obstime = Time("J2000.0", scale="tt")
 
     # Determine frame type and create corresponding astropy frame
     if isinstance(frame, AstroraICRS):
@@ -175,8 +188,8 @@ def to_astropy_coord(
             v_x=vx * u.km / u.s,
             v_y=vy * u.km / u.s,
             v_z=vz * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
+            representation_type="cartesian",
+            differential_type="cartesian",
         )
 
     elif isinstance(frame, AstroraGCRS):
@@ -187,8 +200,8 @@ def to_astropy_coord(
             v_x=vx * u.km / u.s,
             v_y=vy * u.km / u.s,
             v_z=vz * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
+            representation_type="cartesian",
+            differential_type="cartesian",
             obstime=obstime,
         )
 
@@ -200,8 +213,8 @@ def to_astropy_coord(
             v_x=vx * u.km / u.s,
             v_y=vy * u.km / u.s,
             v_z=vz * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
+            representation_type="cartesian",
+            differential_type="cartesian",
             obstime=obstime,
         )
 
@@ -210,11 +223,12 @@ def to_astropy_coord(
         # Convert to GCRS as approximation (user should do proper conversion)
         # Note: For precise work, user should convert TEME → GCRS in astrora first
         import warnings
+
         warnings.warn(
             "TEME frame is not natively supported in astropy. "
             "Converting to GCRS as approximation. For precise transformations, "
             "use astrora's TEME.to_gcrs() method before converting to astropy.",
-            UserWarning
+            UserWarning,
         )
         return AstropyGCRS(
             x=x * u.km,
@@ -223,8 +237,8 @@ def to_astropy_coord(
             v_x=vx * u.km / u.s,
             v_y=vy * u.km / u.s,
             v_z=vz * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
+            representation_type="cartesian",
+            differential_type="cartesian",
             obstime=obstime,
         )
 
@@ -286,7 +300,7 @@ def from_astropy_coord(astropy_frame) -> Union[AstroraICRS, AstroraGCRS, Astrora
     # Extract velocity (convert km/s → m/s)
     # Check if velocity is available
     if cartesian.differentials:
-        velocity_data = cartesian.differentials['s']  # 's' is the standard key for velocity
+        velocity_data = cartesian.differentials["s"]  # 's' is the standard key for velocity
         vx = velocity_data.d_x.to(u.km / u.s).value * 1000.0
         vy = velocity_data.d_y.to(u.km / u.s).value * 1000.0
         vz = velocity_data.d_z.to(u.km / u.s).value * 1000.0
@@ -299,12 +313,14 @@ def from_astropy_coord(astropy_frame) -> Union[AstroraICRS, AstroraGCRS, Astrora
     frame_name = astropy_frame.__class__.__name__
 
     # Extract obstime if available (needed for GCRS and ITRS)
-    if hasattr(astropy_frame, 'obstime') and astropy_frame.obstime is not None:
+    if hasattr(astropy_frame, "obstime") and astropy_frame.obstime is not None:
         from astrora.time import astropy_time_to_epoch
+
         epoch = astropy_time_to_epoch(astropy_frame.obstime)
     else:
         # Default to J2000.0 for frames that don't require obstime
         from astrora._core import Epoch
+
         epoch = Epoch.j2000_epoch()
 
     if isinstance(astropy_frame, AstropyICRS):
@@ -410,8 +426,8 @@ def from_skycoord(skycoord: SkyCoord) -> Union[AstroraICRS, AstroraGCRS, Astrora
 
 
 __all__ = [
-    'to_astropy_coord',
-    'from_astropy_coord',
-    'to_skycoord',
-    'from_skycoord',
+    "to_astropy_coord",
+    "from_astropy_coord",
+    "to_skycoord",
+    "from_skycoord",
 ]

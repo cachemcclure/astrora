@@ -140,26 +140,24 @@ try:
     # Verify core module version matches
     if _core_version != __version__:
         import warnings
+
         warnings.warn(
             f"Version mismatch: Python package is {__version__}, "
             f"but Rust core is {_core_version}",
-            RuntimeWarning
+            RuntimeWarning,
         )
-except ImportError as e:
+except ImportError:
     import warnings
+
     warnings.warn(
         "Rust core module not found. Please build the extension with 'maturin develop'",
-        ImportWarning
+        ImportWarning,
     )
 
 # High-level API
-from astrora import bodies
-from astrora import twobody
-from astrora import time
-from astrora import units
-from astrora import coordinates
-from astrora.twobody import Orbit
+from astrora import bodies, coordinates, time, twobody, units
 from astrora.maneuver import Maneuver
+from astrora.twobody import Orbit
 
 __all__ = [
     "__version__",

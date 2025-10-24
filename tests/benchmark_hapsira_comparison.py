@@ -8,24 +8,28 @@ Expected performance gain: 10-100x for computational operations
 """
 
 import time
+from typing import Any, Callable, Tuple
+
 import numpy as np
-from typing import Callable, Tuple, Any
 
 # Astrora imports
 from astrora import _core as astrora
 
 # Hapsira imports
 try:
+    from astropy import units as u
     from hapsira.core.elements import coe2rv, rv2coe
     from hapsira.core.propagation import markley  # Keplerian propagator
-    from astropy import units as u
+
     HAPSIRA_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Hapsira import failed: {e}")
     HAPSIRA_AVAILABLE = False
 
 
-def benchmark_function(func: Callable, *args, n_runs: int = 100, warmup: int = 10) -> Tuple[float, Any]:
+def benchmark_function(
+    func: Callable, *args, n_runs: int = 100, warmup: int = 10
+) -> Tuple[float, Any]:
     """
     Benchmark a function with warmup runs.
 
@@ -63,10 +67,15 @@ def print_benchmark_header(title: str):
     print("=" * 80)
 
 
-def print_comparison(name: str, astrora_time: float, hapsira_time: float,
-                    astrora_std: float = 0, hapsira_std: float = 0):
+def print_comparison(
+    name: str,
+    astrora_time: float,
+    hapsira_time: float,
+    astrora_std: float = 0,
+    hapsira_std: float = 0,
+):
     """Print formatted comparison results."""
-    speedup = hapsira_time / astrora_time if astrora_time > 0 else float('inf')
+    speedup = hapsira_time / astrora_time if astrora_time > 0 else float("inf")
 
     print(f"\n{name}:")
     print(f"  Astrora:  {astrora_time:8.4f} ms  (±{astrora_std:.4f} ms)")
@@ -78,6 +87,7 @@ def print_comparison(name: str, astrora_time: float, hapsira_time: float,
 # Benchmark 1: State Vector to Classical Orbital Elements (rv2coe)
 # =============================================================================
 
+
 def bench_rv_to_coe():
     """Benchmark state vector to classical orbital elements conversion."""
     if not HAPSIRA_AVAILABLE:
@@ -88,7 +98,7 @@ def bench_rv_to_coe():
 
     # Test case: ISS orbit (LEO)
     r = np.array([6778137.0, 0.0, 0.0])  # meters
-    v = np.array([0.0, 7668.63, 0.0])     # m/s
+    v = np.array([0.0, 7668.63, 0.0])  # m/s
     mu = 3.986004418e14  # Earth's GM (m³/s²)
 
     # Astrora benchmark
@@ -127,6 +137,7 @@ def bench_rv_to_coe():
 # Benchmark 2: Classical Orbital Elements to State Vector (coe2rv)
 # =============================================================================
 
+
 def bench_coe_to_rv():
     """Benchmark classical orbital elements to state vector conversion."""
     if not HAPSIRA_AVAILABLE:
@@ -137,11 +148,11 @@ def bench_coe_to_rv():
 
     # Test case: Circular LEO orbit
     a = 6778137.0  # m (semi-major axis)
-    e = 0.001      # eccentricity
+    e = 0.001  # eccentricity
     i = np.deg2rad(51.6)  # inclination (radians)
     raan = np.deg2rad(0.0)  # RAAN (radians)
     argp = np.deg2rad(0.0)  # argument of perigee (radians)
-    nu = np.deg2rad(45.0)   # true anomaly (radians)
+    nu = np.deg2rad(45.0)  # true anomaly (radians)
     mu = 3.986004418e14  # Earth's GM (m³/s²)
 
     # Astrora benchmark
@@ -169,6 +180,7 @@ def bench_coe_to_rv():
 # Benchmark 3: Anomaly Conversions (Mean ↔ Eccentric ↔ True)
 # =============================================================================
 
+
 def bench_anomaly_conversions():
     """Benchmark anomaly conversion functions."""
     print_benchmark_header("Anomaly Conversions (Mean → True)")
@@ -181,7 +193,9 @@ def bench_anomaly_conversions():
     def astrora_mean_to_true():
         return astrora.mean_to_true_anomaly(M, e)
 
-    astrora_time, astrora_std, astrora_result = benchmark_function(astrora_mean_to_true, n_runs=10000)
+    astrora_time, astrora_std, astrora_result = benchmark_function(
+        astrora_mean_to_true, n_runs=10000
+    )
 
     print(f"\nMean → True Anomaly (single):")
     print(f"  Astrora:  {astrora_time:8.4f} ms  (±{astrora_std:.4f} ms)")
@@ -189,7 +203,7 @@ def bench_anomaly_conversions():
 
     # Batch conversion benchmark
     n_batch = 10000
-    M_batch = np.random.uniform(0, 2*np.pi, n_batch)
+    M_batch = np.random.uniform(0, 2 * np.pi, n_batch)
     e_vals = np.full(n_batch, e)
 
     def astrora_batch_mean_to_true():
@@ -207,6 +221,7 @@ def bench_anomaly_conversions():
 # Benchmark 4: Keplerian Orbit Propagation
 # =============================================================================
 
+
 def bench_keplerian_propagation():
     """Benchmark Keplerian (two-body) orbit propagation."""
     if not HAPSIRA_AVAILABLE:
@@ -217,13 +232,13 @@ def bench_keplerian_propagation():
 
     # Test case: ISS orbit, propagate for 1 orbital period
     r0 = np.array([6778137.0, 0.0, 0.0])  # m
-    v0 = np.array([0.0, 7668.63, 0.0])    # m/s
+    v0 = np.array([0.0, 7668.63, 0.0])  # m/s
     mu = 3.986004418e14  # m³/s²
 
     # Calculate orbital period
     r_mag = np.linalg.norm(r0)
     v_mag = np.linalg.norm(v0)
-    a = 1 / (2/r_mag - v_mag**2/mu)  # semi-major axis
+    a = 1 / (2 / r_mag - v_mag**2 / mu)  # semi-major axis
     period = 2 * np.pi * np.sqrt(a**3 / mu)
     dt = period  # propagate for 1 full orbit
 
@@ -237,6 +252,7 @@ def bench_keplerian_propagation():
 
     # Hapsira benchmark (using markley propagator)
     try:
+
         def hapsira_propagate():
             # Convert to km for hapsira
             r0_km = r0 / 1000.0
@@ -246,10 +262,13 @@ def bench_keplerian_propagation():
             k = np.sqrt(mu_km)
             return markley(k, r0_km, v0_km, dt)
 
-        hapsira_time, hapsira_std, hapsira_result = benchmark_function(hapsira_propagate, n_runs=1000)
+        hapsira_time, hapsira_std, hapsira_result = benchmark_function(
+            hapsira_propagate, n_runs=1000
+        )
 
-        print_comparison("Keplerian propagation (1 orbit)", astrora_time, hapsira_time,
-                        astrora_std, hapsira_std)
+        print_comparison(
+            "Keplerian propagation (1 orbit)", astrora_time, hapsira_time, astrora_std, hapsira_std
+        )
 
     except Exception as e:
         print(f"\nHapsira propagation failed: {e}")
@@ -259,6 +278,7 @@ def bench_keplerian_propagation():
 # =============================================================================
 # Benchmark 5: Batch Propagation (Parallel Processing)
 # =============================================================================
+
 
 def bench_batch_propagation():
     """Benchmark batch orbit propagation (showcases Rust parallelization)."""
@@ -272,9 +292,9 @@ def bench_batch_propagation():
     a_vals = np.random.uniform(6700e3, 42000e3, n_orbits)  # 6700-42000 km
     e_vals = np.random.uniform(0.001, 0.3, n_orbits)
     i_vals = np.random.uniform(0, np.pi, n_orbits)
-    raan_vals = np.random.uniform(0, 2*np.pi, n_orbits)
-    argp_vals = np.random.uniform(0, 2*np.pi, n_orbits)
-    nu_vals = np.random.uniform(0, 2*np.pi, n_orbits)
+    raan_vals = np.random.uniform(0, 2 * np.pi, n_orbits)
+    argp_vals = np.random.uniform(0, 2 * np.pi, n_orbits)
+    nu_vals = np.random.uniform(0, 2 * np.pi, n_orbits)
 
     mu = 3.986004418e14  # m³/s²
     dt = 3600.0  # propagate for 1 hour
@@ -282,8 +302,9 @@ def bench_batch_propagation():
     # Convert to state vectors
     states = []
     for i in range(n_orbits):
-        elements = astrora.OrbitalElements(a_vals[i], e_vals[i], i_vals[i],
-                                          raan_vals[i], argp_vals[i], nu_vals[i])
+        elements = astrora.OrbitalElements(
+            a_vals[i], e_vals[i], i_vals[i], raan_vals[i], argp_vals[i], nu_vals[i]
+        )
         r, v = astrora.coe_to_rv(elements, mu)
         states.append((r, v))
 
@@ -311,13 +332,14 @@ def bench_batch_propagation():
 # Benchmark 6: J2 Perturbed Propagation
 # =============================================================================
 
+
 def bench_j2_propagation():
     """Benchmark J2-perturbed orbit propagation."""
     print_benchmark_header("J2-Perturbed Orbit Propagation")
 
     # Test case: LEO orbit with J2 perturbation
     r0 = np.array([6778137.0, 0.0, 0.0])  # m
-    v0 = np.array([0.0, 7668.63, 0.0])    # m/s
+    v0 = np.array([0.0, 7668.63, 0.0])  # m/s
     mu = 3.986004418e14  # m³/s²
     j2 = 1.08262668e-3  # Earth's J2
     R = 6378137.0  # Earth's equatorial radius (m)
@@ -339,6 +361,7 @@ def bench_j2_propagation():
 # =============================================================================
 # Main Benchmark Suite
 # =============================================================================
+
 
 def main():
     """Run all benchmarks."""

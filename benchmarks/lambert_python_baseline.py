@@ -9,8 +9,9 @@ References:
 - Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications. Ch. 7
 """
 
+from typing import Tuple
+
 import numpy as np
-from typing import Tuple, Optional
 
 
 def stumpff_c(z: float) -> float:
@@ -251,10 +252,12 @@ def lambert_batch(
 # Optional: Try to import poliastro/hapsira for comparison
 try:
     from poliastro.iod import izzo as poliastro_lambert
+
     POLIASTRO_AVAILABLE = True
 except ImportError:
     try:
         from hapsira.iod import izzo as poliastro_lambert
+
         POLIASTRO_AVAILABLE = True
     except ImportError:
         POLIASTRO_AVAILABLE = False
@@ -291,7 +294,7 @@ if __name__ == "__main__":
     r1 = np.array([r_leo, 0.0, 0.0])
     r2 = np.array([0.0, r_leo, 0.0])
 
-    period = 2.0 * np.pi * (r_leo**3 / EARTH_MU)**0.5
+    period = 2.0 * np.pi * (r_leo**3 / EARTH_MU) ** 0.5
     tof = period / 4.0
 
     print("Python Lambert Baseline Implementation")

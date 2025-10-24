@@ -11,9 +11,9 @@ This module tests the high-level Orbit class implementation, including:
 
 import numpy as np
 import pytest
+from astrora._core import Duration, Epoch
+from astrora.bodies import Earth, Mars, Sun
 from astrora.twobody import Orbit
-from astrora.bodies import Earth, Sun, Mars
-from astrora._core import Epoch, Duration
 
 
 class TestOrbitCreation:
@@ -23,7 +23,7 @@ class TestOrbitCreation:
         """Test creating orbit from position and velocity vectors."""
         # Circular orbit at 7000 km altitude
         r = np.array([7000e3, 0, 0])  # meters
-        v = np.array([0, 7546, 0])     # m/s (approximately circular)
+        v = np.array([0, 7546, 0])  # m/s (approximately circular)
 
         orbit = Orbit.from_vectors(Earth, r, v)
 
@@ -55,7 +55,7 @@ class TestOrbitCreation:
     def test_from_classical_circular(self):
         """Test creating circular orbit from classical elements."""
         a = 7000e3  # meters
-        ecc = 0.0   # circular
+        ecc = 0.0  # circular
         inc = np.deg2rad(28.5)
         raan = 0.0
         argp = 0.0
@@ -359,7 +359,7 @@ class TestOrbitPropagation:
 
         # True anomaly should increase by ~90 degrees
         delta_nu = future.nu - iss_orbit.nu
-        assert np.isclose(delta_nu, np.pi/2, rtol=0.1)  # Approximate
+        assert np.isclose(delta_nu, np.pi / 2, rtol=0.1)  # Approximate
 
 
 class TestOrbitSampling:
@@ -466,7 +466,7 @@ class TestOrbitManeuvers:
 
         # Should have non-zero inclination now
         assert new_orbit.inc > 0
-        assert new_orbit.inc < np.pi/2  # Not too large for 50 m/s
+        assert new_orbit.inc < np.pi / 2  # Not too large for 50 m/s
 
     def test_apply_zero_maneuver(self, leo_orbit):
         """Test applying zero delta-v (should be no change)."""
@@ -532,13 +532,13 @@ class TestOrbitEdgeCases:
             Earth,
             a=7000e3,
             ecc=0.0,
-            inc=np.pi/2,  # Polar
+            inc=np.pi / 2,  # Polar
             raan=0.0,
             argp=0.0,
             nu=0.0,
         )
 
-        assert np.isclose(orbit.inc, np.pi/2, rtol=1e-8)
+        assert np.isclose(orbit.inc, np.pi / 2, rtol=1e-8)
 
     def test_high_eccentricity(self):
         """Test highly elliptical orbit."""

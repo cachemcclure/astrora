@@ -3,11 +3,11 @@
 import numpy as np
 import pytest
 from astrora._core import (
-    j2_perturbation,
-    propagate_j2_rk4,
-    propagate_j2_dopri5,
-    propagate_state_keplerian,
     constants,
+    j2_perturbation,
+    propagate_j2_dopri5,
+    propagate_j2_rk4,
+    propagate_state_keplerian,
 )
 
 
@@ -71,11 +71,7 @@ class TestJ2Propagation:
         dt = 100.0  # 100 seconds
 
         r1, v1 = propagate_j2_rk4(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=10
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=10
         )
 
         # Verify orbit hasn't degraded unrealistically
@@ -89,11 +85,7 @@ class TestJ2Propagation:
         dt = 100.0
 
         r1, v1 = propagate_j2_dopri5(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            tol=1e-8
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, tol=1e-8
         )
 
         # Verify orbit is reasonable
@@ -112,11 +104,7 @@ class TestJ2Propagation:
 
         # J2-perturbed propagation
         r_j2, v_j2 = propagate_j2_rk4(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=100
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=100
         )
 
         # Positions should differ due to J2
@@ -132,19 +120,11 @@ class TestJ2Propagation:
 
         # Propagate with both methods
         r_rk4, v_rk4 = propagate_j2_rk4(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=100
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=100
         )
 
         r_dopri, v_dopri = propagate_j2_dopri5(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            tol=1e-8
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, tol=1e-8
         )
 
         # Results should be very close
@@ -165,11 +145,7 @@ class TestJ2Propagation:
         dt = 90.0 * 60.0
 
         r1, v1 = propagate_j2_dopri5(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            tol=1e-8
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, tol=1e-8
         )
 
         # Verify orbital radius is approximately maintained
@@ -193,20 +169,12 @@ class TestJ2Propagation:
         # Propagate both with two-body and J2
         r_eq_twobody, _ = propagate_state_keplerian(r_eq, v_eq, dt, constants.GM_EARTH)
         r_eq_j2, _ = propagate_j2_rk4(
-            r_eq, v_eq, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=100
+            r_eq, v_eq, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=100
         )
 
         r_inc_twobody, _ = propagate_state_keplerian(r_inc, v_inc, dt, constants.GM_EARTH)
         r_inc_j2, _ = propagate_j2_rk4(
-            r_inc, v_inc, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=100
+            r_inc, v_inc, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=100
         )
 
         diff_eq = np.linalg.norm(r_eq_twobody - r_eq_j2)
@@ -226,20 +194,12 @@ class TestJ2Propagation:
 
         # Propagate forward
         r_fwd, v_fwd = propagate_j2_rk4(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=50
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=50
         )
 
         # Propagate backward from result
         r_back, v_back = propagate_j2_rk4(
-            r_fwd, v_fwd, -dt,
-            constants.GM_EARTH,
-            constants.J2_EARTH,
-            constants.R_EARTH,
-            n_steps=50
+            r_fwd, v_fwd, -dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, n_steps=50
         )
 
         # Should get back close to original position
@@ -267,10 +227,7 @@ class TestJ2EdgeCases:
 
         with pytest.raises(ValueError, match="exactly 3 components"):
             propagate_j2_rk4(
-                r0_invalid, v0, 100.0,
-                constants.GM_EARTH,
-                constants.J2_EARTH,
-                constants.R_EARTH
+                r0_invalid, v0, 100.0, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH
             )
 
     def test_j2_with_zero_j2_coefficient(self):
@@ -281,11 +238,7 @@ class TestJ2EdgeCases:
 
         # Propagate with J2=0 (should be two-body)
         r_j2_zero, v_j2_zero = propagate_j2_rk4(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            0.0,  # J2 = 0
-            constants.R_EARTH,
-            n_steps=100
+            r0, v0, dt, constants.GM_EARTH, 0.0, constants.R_EARTH, n_steps=100  # J2 = 0
         )
 
         # Propagate with true two-body

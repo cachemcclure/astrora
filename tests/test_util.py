@@ -9,13 +9,12 @@ import numpy as np
 import pytest
 from astropy import units as u
 from astropy.time import Time, TimeDelta
-
 from astrora.util import (
-    time_range,
-    norm,
-    wrap_angle,
     alinspace,
     find_closest_value,
+    norm,
+    time_range,
+    wrap_angle,
 )
 
 

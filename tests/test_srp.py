@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 from astrora._core import (
     constants,
+    propagate_srp_dopri5,
+    propagate_srp_rk4,
+    propagate_state_keplerian,
     shadow_function,
     srp_acceleration,
-    propagate_srp_rk4,
-    propagate_srp_dopri5,
     sun_position_simple,
-    propagate_state_keplerian,
 )
 
 
@@ -235,12 +235,15 @@ class TestSRPPropagation:
         t0 = 0.0
 
         r1, v1 = propagate_srp_rk4(
-            r0, v0, 3600.0,  # 1 hour
+            r0,
+            v0,
+            3600.0,  # 1 hour
             constants.GM_EARTH,
-            area_mass_ratio, C_r,
+            area_mass_ratio,
+            C_r,
             constants.R_EARTH,
             t0,
-            n_steps=100
+            n_steps=100,
         )
 
         # Orbit should still be valid
@@ -256,12 +259,15 @@ class TestSRPPropagation:
         t0 = 0.0
 
         r1, v1 = propagate_srp_dopri5(
-            r0, v0, 3600.0,
+            r0,
+            v0,
+            3600.0,
             constants.GM_EARTH,
-            area_mass_ratio, C_r,
+            area_mass_ratio,
+            C_r,
             constants.R_EARTH,
             t0,
-            tol=1e-8
+            tol=1e-8,
         )
 
         assert np.linalg.norm(r1) > 40e6
@@ -281,12 +287,15 @@ class TestSRPPropagation:
 
         # SRP propagation
         r_srp, v_srp = propagate_srp_rk4(
-            r0, v0, dt,
+            r0,
+            v0,
+            dt,
             constants.GM_EARTH,
-            area_mass_ratio, C_r,
+            area_mass_ratio,
+            C_r,
             constants.R_EARTH,
             t0,
-            n_steps=1000
+            n_steps=1000,
         )
 
         # Positions should differ due to SRP
@@ -307,22 +316,28 @@ class TestSRPPropagation:
 
         # Propagate for 1 day
         r_1day, v_1day = propagate_srp_rk4(
-            r0, v0, 86400.0,
+            r0,
+            v0,
+            86400.0,
             constants.GM_EARTH,
-            area_mass_ratio, C_r,
+            area_mass_ratio,
+            C_r,
             constants.R_EARTH,
             t0,
-            n_steps=1000
+            n_steps=1000,
         )
 
         # Propagate for 2 days
         r_2day, v_2day = propagate_srp_rk4(
-            r0, v0, 2 * 86400.0,
+            r0,
+            v0,
+            2 * 86400.0,
             constants.GM_EARTH,
-            area_mass_ratio, C_r,
+            area_mass_ratio,
+            C_r,
             constants.R_EARTH,
             t0,
-            n_steps=2000
+            n_steps=2000,
         )
 
         # Compare to two-body propagation
@@ -346,22 +361,12 @@ class TestSRPPropagation:
 
         # RK4 with many steps
         r_rk4, v_rk4 = propagate_srp_rk4(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            area_mass_ratio, C_r,
-            constants.R_EARTH,
-            t0,
-            n_steps=200
+            r0, v0, dt, constants.GM_EARTH, area_mass_ratio, C_r, constants.R_EARTH, t0, n_steps=200
         )
 
         # DOPRI5 with tight tolerance
         r_dopri5, v_dopri5 = propagate_srp_dopri5(
-            r0, v0, dt,
-            constants.GM_EARTH,
-            area_mass_ratio, C_r,
-            constants.R_EARTH,
-            t0,
-            tol=1e-10
+            r0, v0, dt, constants.GM_EARTH, area_mass_ratio, C_r, constants.R_EARTH, t0, tol=1e-10
         )
 
         # Should agree reasonably well
@@ -409,11 +414,7 @@ class TestSRPPropagation:
 
         with pytest.raises(ValueError):
             propagate_srp_rk4(
-                r0, v0, 3600.0,
-                constants.GM_EARTH,
-                area_mass_ratio, C_r,
-                constants.R_EARTH,
-                t0
+                r0, v0, 3600.0, constants.GM_EARTH, area_mass_ratio, C_r, constants.R_EARTH, t0
             )
 
 

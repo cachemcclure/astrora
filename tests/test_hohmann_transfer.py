@@ -7,8 +7,9 @@ optimal transfer window calculations.
 """
 
 import math
-import pytest
+
 import numpy as np
+import pytest
 from astrora import _core
 
 # Import functions
@@ -138,14 +139,10 @@ class TestHohmannTransferProperties:
         result = hohmann_transfer(r1, r2, GM_EARTH)
 
         # Specific energy at periapsis
-        e_peri = (
-            0.5 * result["v_transfer_periapsis"] ** 2 - GM_EARTH / r1
-        )
+        e_peri = 0.5 * result["v_transfer_periapsis"] ** 2 - GM_EARTH / r1
 
         # Specific energy at apoapsis
-        e_apo = (
-            0.5 * result["v_transfer_apoapsis"] ** 2 - GM_EARTH / r2
-        )
+        e_apo = 0.5 * result["v_transfer_apoapsis"] ** 2 - GM_EARTH / r2
 
         # Should be equal (energy conservation)
         assert e_peri == pytest.approx(e_apo, rel=1e-3)

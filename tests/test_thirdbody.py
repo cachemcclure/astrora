@@ -3,14 +3,14 @@
 import numpy as np
 import pytest
 from astrora._core import (
-    sun_position_simple,
-    moon_position_simple,
-    third_body_perturbation,
-    sun_moon_perturbation,
-    propagate_thirdbody_rk4,
-    propagate_thirdbody_dopri5,
-    propagate_state_keplerian,
     constants,
+    moon_position_simple,
+    propagate_state_keplerian,
+    propagate_thirdbody_dopri5,
+    propagate_thirdbody_rk4,
+    sun_moon_perturbation,
+    sun_position_simple,
+    third_body_perturbation,
 )
 
 
@@ -171,8 +171,7 @@ class TestThirdBodyPropagation:
         t0 = 0.0
 
         r1, v1 = propagate_thirdbody_rk4(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=False, n_steps=10
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=False, n_steps=10
         )
 
         # Orbit should still be valid
@@ -187,8 +186,7 @@ class TestThirdBodyPropagation:
         t0 = 0.0
 
         r1, v1 = propagate_thirdbody_rk4(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=False, include_moon=True, n_steps=10
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=False, include_moon=True, n_steps=10
         )
 
         assert np.linalg.norm(r1) > 6e6
@@ -202,8 +200,7 @@ class TestThirdBodyPropagation:
         t0 = 0.0
 
         r1, v1 = propagate_thirdbody_rk4(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=True, n_steps=10
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=True, n_steps=10
         )
 
         assert np.linalg.norm(r1) > 6e6
@@ -217,8 +214,7 @@ class TestThirdBodyPropagation:
         t0 = 0.0
 
         r1, v1 = propagate_thirdbody_dopri5(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=True, tol=1e-8
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=True, tol=1e-8
         )
 
         assert np.linalg.norm(r1) > 6e6
@@ -236,8 +232,7 @@ class TestThirdBodyPropagation:
 
         # Third-body propagation
         r_thirdbody, v_thirdbody = propagate_thirdbody_rk4(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=True, n_steps=100
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=True, n_steps=100
         )
 
         # Positions should differ
@@ -260,8 +255,7 @@ class TestThirdBodyPropagation:
 
         # Third-body propagation
         r_thirdbody, v_thirdbody = propagate_thirdbody_rk4(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=True, n_steps=1000
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=True, n_steps=1000
         )
 
         # At GEO over 1 day, difference should be significant
@@ -281,14 +275,12 @@ class TestThirdBodyPropagation:
 
         # RK4 with many steps
         r_rk4, v_rk4 = propagate_thirdbody_rk4(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=True, n_steps=100
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=True, n_steps=100
         )
 
         # DOPRI5 with tight tolerance
         r_dopri5, v_dopri5 = propagate_thirdbody_dopri5(
-            r0, v0, dt, constants.GM_EARTH, t0,
-            include_sun=True, include_moon=True, tol=1e-10
+            r0, v0, dt, constants.GM_EARTH, t0, include_sun=True, include_moon=True, tol=1e-10
         )
 
         # Should agree to within reasonable tolerance
@@ -317,8 +309,7 @@ class TestEdgeCases:
 
         with pytest.raises(ValueError):
             propagate_thirdbody_rk4(
-                r0, v0, 600.0, constants.GM_EARTH, 0.0,
-                include_sun=True, include_moon=True
+                r0, v0, 600.0, constants.GM_EARTH, 0.0, include_sun=True, include_moon=True
             )
 
 

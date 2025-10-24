@@ -12,15 +12,16 @@ The module supports:
 - Export to GIF, MP4, HTML, and other formats
 """
 
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
-from typing import Union, List, Optional, Tuple
-from astropy import units as u
 
 try:
-    import matplotlib.pyplot as plt
     import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
     from matplotlib.patches import Circle
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -28,15 +29,16 @@ except ImportError:
 
 try:
     import plotly.graph_objects as go
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
     go = None
 
 try:
-    from ..twobody import Orbit
+    from .._core import Duration, Epoch
     from ..bodies import Body
-    from .._core import Epoch, Duration
+    from ..twobody import Orbit
 except ImportError:
     # For standalone testing
     Orbit = None
@@ -56,7 +58,7 @@ def animate_orbit(
     dark: bool = False,
     show_time: bool = True,
     save_to: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> animation.FuncAnimation:
     """
     Create an animated 2D visualization of orbit propagation using matplotlib.
@@ -147,8 +149,7 @@ def animate_orbit(
     """
     if not HAS_MATPLOTLIB:
         raise ImportError(
-            "Matplotlib is required for 2D animations. "
-            "Install it with: pip install matplotlib"
+            "Matplotlib is required for 2D animations. " "Install it with: pip install matplotlib"
         )
 
     # Normalize to list of orbits
@@ -159,7 +160,7 @@ def animate_orbit(
 
     # Determine duration (default to first orbit's period)
     if duration is None:
-        if hasattr(orbits[0].period, 'value'):
+        if hasattr(orbits[0].period, "value"):
             duration = orbits[0].period.value  # Extract from Quantity
         else:
             duration = orbits[0].period
@@ -172,7 +173,7 @@ def animate_orbit(
     for orb in orbits:
         positions, velocities = orb.sample(times)
         # Convert to km for plotting
-        if hasattr(positions, 'value'):
+        if hasattr(positions, "value"):
             positions = positions.value / 1000  # m to km
         else:
             positions = positions / 1000
@@ -184,39 +185,39 @@ def animate_orbit(
     else:
         fig = ax.figure
 
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
     ax.grid(True, alpha=0.3)
-    ax.set_xlabel('x (km)', fontsize=12)
-    ax.set_ylabel('y (km)', fontsize=12)
-    ax.set_title('Orbit Animation', fontsize=14, fontweight='bold')
+    ax.set_xlabel("x (km)", fontsize=12)
+    ax.set_ylabel("y (km)", fontsize=12)
+    ax.set_title("Orbit Animation", fontsize=14, fontweight="bold")
 
     # Dark mode
     if dark:
-        fig.patch.set_facecolor('#1a1a1a')
-        ax.set_facecolor('#1a1a1a')
-        ax.spines['bottom'].set_color('white')
-        ax.spines['top'].set_color('white')
-        ax.spines['left'].set_color('white')
-        ax.spines['right'].set_color('white')
-        ax.tick_params(colors='white')
-        ax.xaxis.label.set_color('white')
-        ax.yaxis.label.set_color('white')
-        ax.title.set_color('white')
-        text_color = 'white'
+        fig.patch.set_facecolor("#1a1a1a")
+        ax.set_facecolor("#1a1a1a")
+        ax.spines["bottom"].set_color("white")
+        ax.spines["top"].set_color("white")
+        ax.spines["left"].set_color("white")
+        ax.spines["right"].set_color("white")
+        ax.tick_params(colors="white")
+        ax.xaxis.label.set_color("white")
+        ax.yaxis.label.set_color("white")
+        ax.title.set_color("white")
+        text_color = "white"
     else:
-        text_color = 'black'
+        text_color = "black"
 
     # Plot central body
     attractor = orbits[0].attractor
-    if hasattr(attractor, 'R'):
-        if hasattr(attractor.R, 'value'):
+    if hasattr(attractor, "R"):
+        if hasattr(attractor.R, "value"):
             body_radius = attractor.R.value / 1000  # m to km
         else:
             body_radius = attractor.R / 1000
     else:
         body_radius = 6371  # Default Earth radius in km
 
-    body_circle = Circle((0, 0), body_radius, color='#4169E1', zorder=10, label=attractor.name)
+    body_circle = Circle((0, 0), body_radius, color="#4169E1", zorder=10, label=attractor.name)
     ax.add_patch(body_circle)
 
     # Set axis limits based on max orbit size
@@ -234,44 +235,51 @@ def animate_orbit(
 
         # Trail line (shows full orbit if trail=True)
         if trail:
-            trail_line, = ax.plot([], [], '-', color=color, alpha=0.6, linewidth=1.5, zorder=5)
+            (trail_line,) = ax.plot([], [], "-", color=color, alpha=0.6, linewidth=1.5, zorder=5)
         else:
             trail_line = None
 
         # Current position marker
-        position_marker, = ax.plot([], [], 'o', color=color, markersize=8, zorder=20,
-                                    label=f'Orbit {i+1}' if len(orbits) > 1 else 'Satellite')
+        (position_marker,) = ax.plot(
+            [],
+            [],
+            "o",
+            color=color,
+            markersize=8,
+            zorder=20,
+            label=f"Orbit {i+1}" if len(orbits) > 1 else "Satellite",
+        )
 
-        orbit_artists.append({
-            'trail': trail_line,
-            'marker': position_marker,
-            'data': data
-        })
+        orbit_artists.append({"trail": trail_line, "marker": position_marker, "data": data})
 
     # Time annotation
     if show_time:
         time_text = ax.text(
-            0.02, 0.98, '', transform=ax.transAxes,
-            fontsize=12, verticalalignment='top',
-            bbox=dict(boxstyle='round', facecolor='wheat' if not dark else 'gray', alpha=0.5),
-            color=text_color
+            0.02,
+            0.98,
+            "",
+            transform=ax.transAxes,
+            fontsize=12,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round", facecolor="wheat" if not dark else "gray", alpha=0.5),
+            color=text_color,
         )
     else:
         time_text = None
 
-    ax.legend(loc='upper right')
+    ax.legend(loc="upper right")
 
     def init():
         """Initialize animation."""
         artists = []
         for art in orbit_artists:
-            if art['trail'] is not None:
-                art['trail'].set_data([], [])
-                artists.append(art['trail'])
-            art['marker'].set_data([], [])
-            artists.append(art['marker'])
+            if art["trail"] is not None:
+                art["trail"].set_data([], [])
+                artists.append(art["trail"])
+            art["marker"].set_data([], [])
+            artists.append(art["marker"])
         if time_text is not None:
-            time_text.set_text('')
+            time_text.set_text("")
             artists.append(time_text)
         return artists
 
@@ -280,42 +288,46 @@ def animate_orbit(
         artists = []
 
         for art in orbit_artists:
-            data = art['data']
+            data = art["data"]
 
             # Update trail (show path up to current frame)
-            if art['trail'] is not None:
-                art['trail'].set_data(data[:frame+1, 0], data[:frame+1, 1])
-                artists.append(art['trail'])
+            if art["trail"] is not None:
+                art["trail"].set_data(data[: frame + 1, 0], data[: frame + 1, 1])
+                artists.append(art["trail"])
 
             # Update position marker
-            art['marker'].set_data([data[frame, 0]], [data[frame, 1]])
-            artists.append(art['marker'])
+            art["marker"].set_data([data[frame, 0]], [data[frame, 1]])
+            artists.append(art["marker"])
 
         # Update time display
         if time_text is not None:
             current_time = times[frame]
             hours = current_time / 3600
-            time_text.set_text(f'Time: {hours:.2f} hours')
+            time_text.set_text(f"Time: {hours:.2f} hours")
             artists.append(time_text)
 
         return artists
 
     # Create animation
     anim = animation.FuncAnimation(
-        fig, animate_frame, init_func=init,
-        frames=num_frames, interval=1000/fps,
-        blit=True, **kwargs
+        fig,
+        animate_frame,
+        init_func=init,
+        frames=num_frames,
+        interval=1000 / fps,
+        blit=True,
+        **kwargs,
     )
 
     # Save if requested
     if save_to is not None:
         print(f"Saving animation to {save_to}...")
-        if save_to.endswith('.gif'):
-            anim.save(save_to, writer='pillow', fps=fps)
-        elif save_to.endswith('.mp4'):
-            anim.save(save_to, writer='ffmpeg', fps=fps)
-        elif save_to.endswith('.html'):
-            anim.save(save_to, writer='html', fps=fps)
+        if save_to.endswith(".gif"):
+            anim.save(save_to, writer="pillow", fps=fps)
+        elif save_to.endswith(".mp4"):
+            anim.save(save_to, writer="ffmpeg", fps=fps)
+        elif save_to.endswith(".html"):
+            anim.save(save_to, writer="html", fps=fps)
         else:
             anim.save(save_to, fps=fps)
         print(f"Animation saved successfully!")
@@ -332,8 +344,8 @@ def animate_orbit_3d(
     dark: bool = False,
     show_time: bool = True,
     save_to: Optional[str] = None,
-    include_plotlyjs: str = 'cdn',
-    **kwargs
+    include_plotlyjs: str = "cdn",
+    **kwargs,
 ) -> go.Figure:
     """
     Create an interactive 3D animation of orbit propagation using plotly.
@@ -426,8 +438,7 @@ def animate_orbit_3d(
     """
     if not HAS_PLOTLY:
         raise ImportError(
-            "Plotly is required for 3D animations. "
-            "Install it with: pip install plotly"
+            "Plotly is required for 3D animations. " "Install it with: pip install plotly"
         )
 
     # Normalize to list of orbits
@@ -438,7 +449,7 @@ def animate_orbit_3d(
 
     # Determine duration
     if duration is None:
-        if hasattr(orbits[0].period, 'value'):
+        if hasattr(orbits[0].period, "value"):
             duration = orbits[0].period.value
         else:
             duration = orbits[0].period
@@ -451,7 +462,7 @@ def animate_orbit_3d(
     for orb in orbits:
         positions, velocities = orb.sample(times)
         # Convert to km
-        if hasattr(positions, 'value'):
+        if hasattr(positions, "value"):
             positions = positions.value / 1000
         else:
             positions = positions / 1000
@@ -459,15 +470,15 @@ def animate_orbit_3d(
 
     # Create frames
     frames = []
-    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F']
+    colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"]
 
     for frame_idx in range(num_frames):
         frame_data = []
 
         # Add central body (Earth sphere)
         attractor = orbits[0].attractor
-        if hasattr(attractor, 'R'):
-            if hasattr(attractor.R, 'value'):
+        if hasattr(attractor, "R"):
+            if hasattr(attractor.R, "value"):
                 body_radius = attractor.R.value / 1000
             else:
                 body_radius = attractor.R / 1000
@@ -481,13 +492,17 @@ def animate_orbit_3d(
         y_sphere = body_radius * np.outer(np.sin(u), np.sin(v))
         z_sphere = body_radius * np.outer(np.ones(np.size(u)), np.cos(v))
 
-        frame_data.append(go.Surface(
-            x=x_sphere, y=y_sphere, z=z_sphere,
-            colorscale='Blues',
-            showscale=False,
-            opacity=0.7,
-            name=attractor.name
-        ))
+        frame_data.append(
+            go.Surface(
+                x=x_sphere,
+                y=y_sphere,
+                z=z_sphere,
+                colorscale="Blues",
+                showscale=False,
+                opacity=0.7,
+                name=attractor.name,
+            )
+        )
 
         # Add each orbit
         for orbit_idx, data in enumerate(orbit_data):
@@ -495,23 +510,29 @@ def animate_orbit_3d(
 
             # Full orbital trail (if requested)
             if trail:
-                frame_data.append(go.Scatter3d(
-                    x=data[:, 0], y=data[:, 1], z=data[:, 2],
-                    mode='lines',
-                    line=dict(color=color, width=2),
-                    opacity=0.5,
-                    name=f'Orbit {orbit_idx + 1} trail'
-                ))
+                frame_data.append(
+                    go.Scatter3d(
+                        x=data[:, 0],
+                        y=data[:, 1],
+                        z=data[:, 2],
+                        mode="lines",
+                        line=dict(color=color, width=2),
+                        opacity=0.5,
+                        name=f"Orbit {orbit_idx + 1} trail",
+                    )
+                )
 
             # Current position marker
-            frame_data.append(go.Scatter3d(
-                x=[data[frame_idx, 0]],
-                y=[data[frame_idx, 1]],
-                z=[data[frame_idx, 2]],
-                mode='markers',
-                marker=dict(size=8, color=color),
-                name=f'Satellite {orbit_idx + 1}'
-            ))
+            frame_data.append(
+                go.Scatter3d(
+                    x=[data[frame_idx, 0]],
+                    y=[data[frame_idx, 1]],
+                    z=[data[frame_idx, 2]],
+                    mode="markers",
+                    marker=dict(size=8, color=color),
+                    name=f"Satellite {orbit_idx + 1}",
+                )
+            )
 
         frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
 
@@ -519,73 +540,86 @@ def animate_orbit_3d(
     fig = go.Figure(data=frames[0].data, frames=frames)
 
     # Configure layout
-    template = 'plotly_dark' if dark else 'plotly_white'
+    template = "plotly_dark" if dark else "plotly_white"
 
     # Calculate axis range
     max_r = max(np.max(np.abs(data)) for data in orbit_data)
     margin = max_r * 0.1
     axis_range = [-max_r - margin, max_r + margin]
 
-    title_text = 'Orbit Animation'
+    title_text = "Orbit Animation"
     if show_time:
-        title_text += ' (Time: 0.00 hours)'
+        title_text += " (Time: 0.00 hours)"
 
     fig.update_layout(
         template=template,
         title=title_text,
         scene=dict(
-            xaxis=dict(title='x (km)', range=axis_range),
-            yaxis=dict(title='y (km)', range=axis_range),
-            zaxis=dict(title='z (km)', range=axis_range),
-            aspectmode='cube'
+            xaxis=dict(title="x (km)", range=axis_range),
+            yaxis=dict(title="y (km)", range=axis_range),
+            zaxis=dict(title="z (km)", range=axis_range),
+            aspectmode="cube",
         ),
-        updatemenus=[{
-            'type': 'buttons',
-            'showactive': False,
-            'buttons': [
-                {
-                    'label': 'Play',
-                    'method': 'animate',
-                    'args': [None, {
-                        'frame': {'duration': 1000/fps, 'redraw': True},
-                        'fromcurrent': True,
-                        'mode': 'immediate',
-                        'transition': {'duration': 0}
-                    }]
-                },
-                {
-                    'label': 'Pause',
-                    'method': 'animate',
-                    'args': [[None], {
-                        'frame': {'duration': 0, 'redraw': False},
-                        'mode': 'immediate',
-                        'transition': {'duration': 0}
-                    }]
-                }
-            ],
-            'x': 0.1,
-            'y': 0
-        }],
-        sliders=[{
-            'active': 0,
-            'steps': [
-                {
-                    'args': [[f.name], {
-                        'frame': {'duration': 0, 'redraw': True},
-                        'mode': 'immediate',
-                        'transition': {'duration': 0}
-                    }],
-                    'label': f'{times[int(f.name)]/3600:.2f}h' if show_time else str(i),
-                    'method': 'animate'
-                }
-                for i, f in enumerate(frames)
-            ],
-            'x': 0.1,
-            'len': 0.9,
-            'xanchor': 'left',
-            'y': 0,
-            'yanchor': 'top'
-        }]
+        updatemenus=[
+            {
+                "type": "buttons",
+                "showactive": False,
+                "buttons": [
+                    {
+                        "label": "Play",
+                        "method": "animate",
+                        "args": [
+                            None,
+                            {
+                                "frame": {"duration": 1000 / fps, "redraw": True},
+                                "fromcurrent": True,
+                                "mode": "immediate",
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    },
+                    {
+                        "label": "Pause",
+                        "method": "animate",
+                        "args": [
+                            [None],
+                            {
+                                "frame": {"duration": 0, "redraw": False},
+                                "mode": "immediate",
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    },
+                ],
+                "x": 0.1,
+                "y": 0,
+            }
+        ],
+        sliders=[
+            {
+                "active": 0,
+                "steps": [
+                    {
+                        "args": [
+                            [f.name],
+                            {
+                                "frame": {"duration": 0, "redraw": True},
+                                "mode": "immediate",
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                        "label": f"{times[int(f.name)]/3600:.2f}h" if show_time else str(i),
+                        "method": "animate",
+                    }
+                    for i, f in enumerate(frames)
+                ],
+                "x": 0.1,
+                "len": 0.9,
+                "xanchor": "left",
+                "y": 0,
+                "yanchor": "top",
+            }
+        ],
     )
 
     # Save if requested
@@ -593,7 +627,7 @@ def animate_orbit_3d(
         print(f"Saving animation to {save_to}...")
         # Use specified include_plotlyjs option (default: 'cdn' for smaller files)
         fig.write_html(save_to, include_plotlyjs=include_plotlyjs)
-        if include_plotlyjs == 'cdn':
+        if include_plotlyjs == "cdn":
             print(f"Animation saved successfully! (Using CDN - requires internet to view)")
         elif include_plotlyjs is True:
             print(f"Animation saved successfully! (Standalone - works offline)")
@@ -604,6 +638,6 @@ def animate_orbit_3d(
 
 
 __all__ = [
-    'animate_orbit',
-    'animate_orbit_3d',
+    "animate_orbit",
+    "animate_orbit_3d",
 ]

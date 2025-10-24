@@ -22,9 +22,6 @@ transfer to Mars typically requires:
 """
 
 import numpy as np
-from astropy.time import Time
-from astropy.coordinates import get_body_barycentric, solar_system_ephemeris
-from astropy import units as u
 from astrora._core import lambert_solve
 
 # Solar gravitational parameter (km³/s²)
@@ -53,10 +50,10 @@ def get_planet_state_simple(body_name, angle_deg):
         Velocity vector [vx, vy, vz] in km/s
     """
     # Orbital parameters (circular orbit approximation)
-    if body_name.lower() == 'earth':
+    if body_name.lower() == "earth":
         a = 149.6e6  # km (1 AU)
         mu = MU_SUN
-    elif body_name.lower() == 'mars':
+    elif body_name.lower() == "mars":
         a = 227.9e6  # km (1.52 AU)
         mu = MU_SUN
     else:
@@ -69,18 +66,10 @@ def get_planet_state_simple(body_name, angle_deg):
     theta = np.deg2rad(angle_deg)
 
     # Position in orbital plane
-    position = np.array([
-        a * np.cos(theta),
-        a * np.sin(theta),
-        0.0
-    ])
+    position = np.array([a * np.cos(theta), a * np.sin(theta), 0.0])
 
     # Velocity perpendicular to radius
-    velocity = np.array([
-        -v_circ * np.sin(theta),
-        v_circ * np.cos(theta),
-        0.0
-    ])
+    velocity = np.array([-v_circ * np.sin(theta), v_circ * np.cos(theta), 0.0])
 
     return position, velocity
 
@@ -113,7 +102,7 @@ def compute_earth_mars_transfer_simple(tof_days, earth_angle=0, short_way=True):
     print(f"{'='*60}\n")
 
     # Get Earth state at departure
-    r_earth, v_earth = get_planet_state_simple('earth', earth_angle)
+    r_earth, v_earth = get_planet_state_simple("earth", earth_angle)
     print(f"Earth at departure:")
     print(f"  Position: [{r_earth[0]:,.0f}, {r_earth[1]:,.0f}, {r_earth[2]:,.0f}] km")
     print(f"  Velocity: [{v_earth[0]:.3f}, {v_earth[1]:.3f}, {v_earth[2]:.3f}] km/s")
@@ -137,7 +126,7 @@ def compute_earth_mars_transfer_simple(tof_days, earth_angle=0, short_way=True):
     mars_angle = earth_angle + (mars_angular_vel * tof_days)
 
     # Get Mars state at arrival
-    r_mars, v_mars = get_planet_state_simple('mars', mars_angle)
+    r_mars, v_mars = get_planet_state_simple("mars", mars_angle)
     print(f"Mars at arrival:")
     print(f"  Position: [{r_mars[0]:,.0f}, {r_mars[1]:,.0f}, {r_mars[2]:,.0f}] km")
     print(f"  Velocity: [{v_mars[0]:.3f}, {v_mars[1]:.3f}, {v_mars[2]:.3f}] km/s")
@@ -147,17 +136,12 @@ def compute_earth_mars_transfer_simple(tof_days, earth_angle=0, short_way=True):
     # Solve Lambert's problem
     print(f"Solving Lambert's problem...")
     result = lambert_solve(
-        r1=r_earth,
-        r2=r_mars,
-        tof=tof_seconds,
-        mu=MU_SUN,
-        short_way=short_way,
-        revs=0
+        r1=r_earth, r2=r_mars, tof=tof_seconds, mu=MU_SUN, short_way=short_way, revs=0
     )
 
     # Extract velocities
-    v1 = result['v1']  # Departure velocity
-    v2 = result['v2']  # Arrival velocity
+    v1 = result["v1"]  # Departure velocity
+    v2 = result["v2"]  # Arrival velocity
 
     print(f"Transfer orbit solution:")
     print(f"  v1: [{v1[0]:.3f}, {v1[1]:.3f}, {v1[2]:.3f}] km/s")
@@ -172,7 +156,7 @@ def compute_earth_mars_transfer_simple(tof_days, earth_angle=0, short_way=True):
 
     # Compute C3 characteristic energy
     v_infinity = v1 - v_earth
-    c3 = np.linalg.norm(v_infinity)**2
+    c3 = np.linalg.norm(v_infinity) ** 2
 
     print(f"Delta-v Requirements:")
     print(f"{'='*60}")
@@ -209,11 +193,11 @@ def compute_earth_mars_transfer_simple(tof_days, earth_angle=0, short_way=True):
     print(f"  Eccentricity:       {result['e']:.4f}")
 
     # Check if elliptic, parabolic, or hyperbolic
-    e = result['e']
+    e = result["e"]
     if e < 1:
         print(f"  Orbit type:         Elliptic (e < 1)")
         # Calculate period
-        a = result['a']
+        a = result["a"]
         period_seconds = 2 * np.pi * np.sqrt(a**3 / MU_SUN)
         period_days = period_seconds / 86400
         print(f"  Orbital period:     {period_days:.1f} days ({period_days/365.25:.2f} years)")
@@ -225,19 +209,19 @@ def compute_earth_mars_transfer_simple(tof_days, earth_angle=0, short_way=True):
     print(f"\n{'='*60}\n")
 
     return {
-        'r_earth': r_earth,
-        'v_earth': v_earth,
-        'r_mars': r_mars,
-        'v_mars': v_mars,
-        'v1': v1,
-        'v2': v2,
-        'dv_departure': dv_departure,
-        'dv_arrival': dv_arrival,
-        'dv_total': dv_total,
-        'c3': c3,
-        'v_infinity': np.sqrt(c3),
-        'tof_days': tof_days,
-        'transfer_orbit': result
+        "r_earth": r_earth,
+        "v_earth": v_earth,
+        "r_mars": r_mars,
+        "v_mars": v_mars,
+        "v1": v1,
+        "v2": v2,
+        "dv_departure": dv_departure,
+        "dv_arrival": dv_arrival,
+        "dv_total": dv_total,
+        "c3": c3,
+        "v_infinity": np.sqrt(c3),
+        "tof_days": tof_days,
+        "transfer_orbit": result,
     }
 
 
@@ -249,16 +233,12 @@ def example_hohmann_transfer():
     minimum-energy transfer. For precise mission planning with real
     planetary positions, use actual ephemeris data and porkchop plots.
     """
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 1: Hohmann Transfer to Mars")
-    print("="*60)
+    print("=" * 60)
 
     # Hohmann transfer time for Earth-Mars is ~259 days
-    result = compute_earth_mars_transfer_simple(
-        tof_days=259,
-        earth_angle=0,
-        short_way=True
-    )
+    result = compute_earth_mars_transfer_simple(tof_days=259, earth_angle=0, short_way=True)
 
     print("\nMission Summary:")
     print(f"  This represents a Hohmann transfer to Mars.")
@@ -272,15 +252,11 @@ def example_fast_transfer():
     """
     Example: Faster transfer to Mars (higher energy, more delta-v).
     """
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 2: Fast Transfer to Mars (200 days)")
-    print("="*60)
+    print("=" * 60)
 
-    result = compute_earth_mars_transfer_simple(
-        tof_days=200,
-        earth_angle=0,
-        short_way=True
-    )
+    result = compute_earth_mars_transfer_simple(tof_days=200, earth_angle=0, short_way=True)
 
     print("\nMission Summary:")
     print(f"  Faster transfer requires more delta-v than Hohmann transfer.")
@@ -292,8 +268,9 @@ def example_fast_transfer():
     print(f"  Trade-off: Higher C3 may require larger launch vehicle")
 
 
-if __name__ == '__main__':
-    print("""
+if __name__ == "__main__":
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════╗
 ║     Earth-Mars Transfer Mission Planning Example            ║
 ║     Using Astrora's Lambert Solver                           ║
@@ -301,14 +278,16 @@ if __name__ == '__main__':
 
 This example demonstrates interplanetary trajectory design using
 Lambert's problem to solve for transfer orbits between planets.
-""")
+"""
+    )
 
     # Run examples
     example_hohmann_transfer()
-    print("\n" + "="*60 + "\n")
+    print("\n" + "=" * 60 + "\n")
     example_fast_transfer()
 
-    print("""
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════╗
 ║  Next Steps                                                  ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -322,4 +301,5 @@ For more examples, see:
   - examples/porkchop_plot.py - Launch window optimization
   - examples/gravity_assist.py - Multi-planet flybys
   - examples/hohmann_transfer.py - Simple orbital transfers
-""")
+"""
+    )

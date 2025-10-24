@@ -12,21 +12,23 @@ Usage:
     python benchmarks/lambert_benchmark.py
 """
 
-import numpy as np
-import time
-from typing import Callable, List, Tuple, Dict
 import sys
+import time
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple
+
+import numpy as np
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import Python baseline
-from lambert_python_baseline import lambert_universal_variable, lambert_batch, POLIASTRO_AVAILABLE
+from lambert_python_baseline import POLIASTRO_AVAILABLE, lambert_batch, lambert_universal_variable
 
 # Import Rust implementation
 try:
     import astrora._core as astrora_core
+
     RUST_AVAILABLE = True
 except ImportError:
     print("WARNING: Rust astrora_core not available. Build with 'maturin develop' first.")
@@ -36,16 +38,17 @@ except ImportError:
 EARTH_MU = 3.986004418e14
 SUN_MU = 1.32712440018e20
 
-#=============================================================================
+# =============================================================================
 # Test Case Definitions
-#=============================================================================
+# =============================================================================
+
 
 def leo_to_leo_quarter():
     """LEO to LEO quarter-orbit transfer"""
     r_leo = 7000e3
     r1 = np.array([r_leo, 0.0, 0.0])
     r2 = np.array([0.0, r_leo, 0.0])
-    period = 2.0 * np.pi * (r_leo**3 / EARTH_MU)**0.5
+    period = 2.0 * np.pi * (r_leo**3 / EARTH_MU) ** 0.5
     tof = period / 4.0
     return r1, r2, tof, EARTH_MU
 
@@ -57,7 +60,7 @@ def leo_to_geo_transfer():
     r1 = np.array([r_leo, 0.0, 0.0])
     r2 = np.array([0.0, r_geo, 0.0])
     a_transfer = (r_leo + r_geo) / 2.0
-    tof = np.pi * (a_transfer**3 / EARTH_MU)**0.5
+    tof = np.pi * (a_transfer**3 / EARTH_MU) ** 0.5
     return r1, r2, tof, EARTH_MU
 
 
@@ -69,9 +72,10 @@ def complex_3d_transfer():
     return r1, r2, tof, EARTH_MU
 
 
-#=============================================================================
+# =============================================================================
 # Benchmark Utilities
-#=============================================================================
+# =============================================================================
+
 
 def timeit(func: Callable, *args, iterations: int = 100, **kwargs) -> Tuple[float, float]:
     """
@@ -118,9 +122,10 @@ def format_speedup(speedup: float) -> str:
         return f"{1.0 / speedup:.1f}x slower"
 
 
-#=============================================================================
+# =============================================================================
 # Benchmark 1: Single Lambert Solve
-#=============================================================================
+# =============================================================================
+
 
 def bench_single_solve(test_name: str, r1, r2, tof, mu, iterations: int = 100) -> Dict:
     """Benchmark single Lambert solve"""
@@ -136,7 +141,7 @@ def bench_single_solve(test_name: str, r1, r2, tof, mu, iterations: int = 100) -
         lambert_universal_variable, r1, r2, tof, mu, iterations=iterations
     )
     print(f"{format_time(python_time)} ± {format_time(python_std)}")
-    results['python'] = {'mean': python_time, 'std': python_std}
+    results["python"] = {"mean": python_time, "std": python_std}
 
     # Rust implementation
     if RUST_AVAILABLE:
@@ -151,20 +156,21 @@ def bench_single_solve(test_name: str, r1, r2, tof, mu, iterations: int = 100) -
 
         rust_time, rust_std = timeit(rust_lambert, iterations=iterations)
         print(f"{format_time(rust_time)} ± {format_time(rust_std)}")
-        results['rust'] = {'mean': rust_time, 'std': rust_std}
+        results["rust"] = {"mean": rust_time, "std": rust_std}
 
         speedup = python_time / rust_time
         print(f"\nSpeedup: {format_speedup(speedup)}")
-        results['speedup'] = speedup
+        results["speedup"] = speedup
     else:
         print("Rust implementation: NOT AVAILABLE")
 
     return results
 
 
-#=============================================================================
+# =============================================================================
 # Benchmark 2: Batch Operations (Porkchop Plot)
-#=============================================================================
+# =============================================================================
+
 
 def bench_batch_operations(test_name: str, r1, r2, tof_base, mu, batch_sizes: List[int]) -> Dict:
     """Benchmark batch Lambert solves for porkchop plots"""
@@ -178,16 +184,11 @@ def bench_batch_operations(test_name: str, r1, r2, tof_base, mu, batch_sizes: Li
         print(f"\nBatch size: {batch_size}")
 
         # Create TOF array (varying ±20%)
-        tofs = np.array([
-            tof_base * (0.8 + 0.4 * i / batch_size)
-            for i in range(batch_size)
-        ])
+        tofs = np.array([tof_base * (0.8 + 0.4 * i / batch_size) for i in range(batch_size)])
 
         # Python baseline
         print(f"  Python baseline... ", end="", flush=True)
-        python_time, python_std = timeit(
-            lambert_batch, r1, r2, tofs, mu, iterations=10
-        )
+        python_time, python_std = timeit(lambert_batch, r1, r2, tofs, mu, iterations=10)
         print(f"{format_time(python_time)} ± {format_time(python_std)}")
 
         # Rust implementation
@@ -208,16 +209,17 @@ def bench_batch_operations(test_name: str, r1, r2, tof_base, mu, batch_sizes: Li
 
             if batch_size not in results:
                 results[batch_size] = {}
-            results[batch_size]['python'] = python_time
-            results[batch_size]['rust'] = rust_time
-            results[batch_size]['speedup'] = speedup
+            results[batch_size]["python"] = python_time
+            results[batch_size]["rust"] = rust_time
+            results[batch_size]["speedup"] = speedup
 
     return results
 
 
-#=============================================================================
+# =============================================================================
 # Main Benchmark Runner
-#=============================================================================
+# =============================================================================
+
 
 def run_all_benchmarks():
     """Run all benchmarks and generate report"""
@@ -254,10 +256,8 @@ def run_all_benchmarks():
 
     r1, r2, tof, mu = leo_to_geo_transfer()
     batch_sizes = [10, 50, 100, 500, 1000]
-    batch_results = bench_batch_operations(
-        "LEO to GEO", r1, r2, tof, mu, batch_sizes
-    )
-    all_results['batch'] = batch_results
+    batch_results = bench_batch_operations("LEO to GEO", r1, r2, tof, mu, batch_sizes)
+    all_results["batch"] = batch_results
 
     # Generate markdown report
     generate_report(all_results)
@@ -287,85 +287,87 @@ def generate_report(results: Dict):
 
     # Add single solve results
     for test_name, data in results.items():
-        if test_name != 'batch':
-            if 'python' in data and 'rust' in data:
-                python_ms = data['python']['mean'] * 1000
-                rust_us = data['rust']['mean'] * 1e6
-                speedup = data.get('speedup', 0)
+        if test_name != "batch":
+            if "python" in data and "rust" in data:
+                python_ms = data["python"]["mean"] * 1000
+                rust_us = data["rust"]["mean"] * 1e6
+                speedup = data.get("speedup", 0)
                 report_lines.append(
                     f"| {test_name} | {python_ms:.3f} | {rust_us:.3f} | {speedup:.1f}x |"
                 )
 
     # Add batch results
-    if 'batch' in results:
-        report_lines.extend([
-            "",
-            "## Batch Operations (Porkchop Plot Simulation)",
-            "",
-            "| Batch Size | Python (ms) | Rust (ms) | Speedup |",
-            "|------------|-------------|-----------|---------|",
-        ])
+    if "batch" in results:
+        report_lines.extend(
+            [
+                "",
+                "## Batch Operations (Porkchop Plot Simulation)",
+                "",
+                "| Batch Size | Python (ms) | Rust (ms) | Speedup |",
+                "|------------|-------------|-----------|---------|",
+            ]
+        )
 
-        for batch_size, data in sorted(results['batch'].items()):
-            python_ms = data['python'] * 1000
-            rust_ms = data['rust'] * 1000
-            speedup = data['speedup']
+        for batch_size, data in sorted(results["batch"].items()):
+            python_ms = data["python"] * 1000
+            rust_ms = data["rust"] * 1000
+            speedup = data["speedup"]
             report_lines.append(
                 f"| {batch_size} | {python_ms:.1f} | {rust_ms:.1f} | {speedup:.1f}x |"
             )
 
     # Add analysis
-    report_lines.extend([
-        "",
-        "## Analysis",
-        "",
-        "### Key Findings",
-        "",
-    ])
+    report_lines.extend(
+        [
+            "",
+            "## Analysis",
+            "",
+            "### Key Findings",
+            "",
+        ]
+    )
 
     # Calculate average speedup
-    if any(k != 'batch' for k in results.keys()):
+    if any(k != "batch" for k in results.keys()):
         speedups = [
-            data.get('speedup', 0)
+            data.get("speedup", 0)
             for test_name, data in results.items()
-            if test_name != 'batch' and 'speedup' in data
+            if test_name != "batch" and "speedup" in data
         ]
         if speedups:
             avg_speedup = np.mean(speedups)
-            report_lines.append(
-                f"- **Average speedup for single solves:** {avg_speedup:.1f}x"
-            )
+            report_lines.append(f"- **Average speedup for single solves:** {avg_speedup:.1f}x")
 
-    if 'batch' in results and results['batch']:
-        batch_speedups = [data['speedup'] for data in results['batch'].values()]
+    if "batch" in results and results["batch"]:
+        batch_speedups = [data["speedup"] for data in results["batch"].values()]
         avg_batch_speedup = np.mean(batch_speedups)
-        report_lines.append(
-            f"- **Average speedup for batch operations:** {avg_batch_speedup:.1f}x"
-        )
+        report_lines.append(f"- **Average speedup for batch operations:** {avg_batch_speedup:.1f}x")
 
-    report_lines.extend([
-        "",
-        "### Implications",
-        "",
-        "- Single Lambert solves are significantly faster in Rust due to compiled code",
-        "  and optimized numerical algorithms.",
-        "",
-        "- Batch operations show even greater speedup due to reduced Python-Rust",
-        "  boundary crossings and better memory locality.",
-        "",
-        "- For porkchop plot generation (1000+ solves), the Rust implementation",
-        "  provides substantial performance benefits for mission analysis workflows.",
-        "",
-        "### Methodology",
-        "",
-        "- Each benchmark was run with multiple iterations (100-200 for single solves,",
-        "  10 for batch operations) to ensure statistical significance.",
-        "",
-        "- Times reported are mean ± standard deviation.",
-        "",
-        "- All benchmarks were run on the same machine to ensure fair comparison.",
-        "",
-    ])
+    report_lines.extend(
+        [
+            "",
+            "### Implications",
+            "",
+            "- Single Lambert solves are significantly faster in Rust due to compiled code",
+            "  and optimized numerical algorithms.",
+            "",
+            "- Batch operations show even greater speedup due to reduced Python-Rust",
+            "  boundary crossings and better memory locality.",
+            "",
+            "- For porkchop plot generation (1000+ solves), the Rust implementation",
+            "  provides substantial performance benefits for mission analysis workflows.",
+            "",
+            "### Methodology",
+            "",
+            "- Each benchmark was run with multiple iterations (100-200 for single solves,",
+            "  10 for batch operations) to ensure statistical significance.",
+            "",
+            "- Times reported are mean ± standard deviation.",
+            "",
+            "- All benchmarks were run on the same machine to ensure fair comparison.",
+            "",
+        ]
+    )
 
     # Write report
     with open("LAMBERT_BENCHMARK_RESULTS.md", "w") as f:

@@ -291,7 +291,7 @@ pub fn batch_normalize_vectors(vectors: ArrayView2<f64>) -> PoliastroResult<Arra
         let magnitude = vector.dot(&vector).sqrt();
         if magnitude == 0.0 {
             return Err(PoliastroError::DivisionByZero {
-                context: format!("vector normalization at row {}", i),
+                context: format!("vector normalization at row {i}"),
                 divisor: magnitude,
             });
         }

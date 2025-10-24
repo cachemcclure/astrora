@@ -5,14 +5,14 @@ This module tests the eclipse detection, solar beta angle, and sun-synchronous
 orbit calculations exposed from the Rust backend.
 """
 
-import pytest
 import numpy as np
+import pytest
 from astrora._core import (
     compute_eclipse_state,
+    eclipse_duration,
     solar_beta_angle,
     solar_beta_angle_precise,
     sun_synchronous_inclination,
-    eclipse_duration,
 )
 
 

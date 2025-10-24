@@ -456,7 +456,7 @@ impl Epoch {
             "TDB" => TimeScale::TDB,
             "GPST" => TimeScale::GPST,
             _ => return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("Unsupported time scale: {}. Use UTC, TAI, TT, TDB, or GPST", scale)
+                format!("Unsupported time scale: {scale}. Use UTC, TAI, TT, TDB, or GPST")
             )),
         };
         Ok(Self::from_jd(jd, time_scale))
@@ -482,7 +482,7 @@ impl Epoch {
             "TDB" => TimeScale::TDB,
             "GPST" => TimeScale::GPST,
             _ => return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("Unsupported time scale: {}. Use UTC, TAI, TT, TDB, or GPST", scale)
+                format!("Unsupported time scale: {scale}. Use UTC, TAI, TT, TDB, or GPST")
             )),
         };
         Ok(Self::from_mjd(mjd, time_scale))
@@ -720,7 +720,7 @@ impl Duration {
     fn __str__(&self) -> String {
         let days = self.to_days();
         if days.abs() >= 1.0 {
-            format!("{:.6} days", days)
+            format!("{days:.6} days")
         } else {
             format!("{:.9} s", self.to_seconds())
         }

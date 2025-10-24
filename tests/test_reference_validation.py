@@ -17,22 +17,19 @@ All tests use reference data fixtures from test_reference_data.py
 import numpy as np
 import pytest
 from astrora._core import (
-    CartesianState,
-    OrbitalElements,
-    Epoch,
     Duration,
+    Epoch,
+    coe_to_rv,
     constants,
     rv_to_coe,
-    coe_to_rv,
 )
+from astrora.bodies import Earth
 from astrora.twobody import Orbit
-from astrora.bodies import Earth, Sun
-from astrora.maneuver import Maneuver
-
 
 # =============================================================================
 # Orbit Propagation Validation
 # =============================================================================
+
 
 @pytest.mark.validation
 @pytest.mark.propagation
@@ -131,6 +128,7 @@ class TestPropagationAgainstReferences:
 # State Vector Conversion Validation
 # =============================================================================
 
+
 @pytest.mark.validation
 @pytest.mark.unit
 class TestStateConversionAgainstReferences:
@@ -155,9 +153,9 @@ class TestStateConversionAgainstReferences:
         tol = ref["tolerance"]
 
         # Validate eccentricity
-        assert abs(elements.e - expected["e"]) < tol["e"], (
-            f"Eccentricity: got {elements.e:.6f}, expected {expected['e']:.6f}"
-        )
+        assert (
+            abs(elements.e - expected["e"]) < tol["e"]
+        ), f"Eccentricity: got {elements.e:.6f}, expected {expected['e']:.6f}"
 
         # Validate angles (convert from radians to degrees)
         i_deg = np.rad2deg(elements.i)
@@ -165,27 +163,26 @@ class TestStateConversionAgainstReferences:
         argp_deg = np.rad2deg(elements.argp)
         nu_deg = np.rad2deg(elements.nu)
 
-        assert abs(i_deg - expected["i"]) < tol["angles_deg"], (
-            f"Inclination: got {i_deg:.2f}°, expected {expected['i']:.2f}°"
-        )
+        assert (
+            abs(i_deg - expected["i"]) < tol["angles_deg"]
+        ), f"Inclination: got {i_deg:.2f}°, expected {expected['i']:.2f}°"
 
-        assert abs(raan_deg - expected["raan"]) < tol["angles_deg"], (
-            f"RAAN: got {raan_deg:.2f}°, expected {expected['raan']:.2f}°"
-        )
+        assert (
+            abs(raan_deg - expected["raan"]) < tol["angles_deg"]
+        ), f"RAAN: got {raan_deg:.2f}°, expected {expected['raan']:.2f}°"
 
-        assert abs(argp_deg - expected["argp"]) < tol["angles_deg"], (
-            f"Arg of periapsis: got {argp_deg:.2f}°, expected {expected['argp']:.2f}°"
-        )
+        assert (
+            abs(argp_deg - expected["argp"]) < tol["angles_deg"]
+        ), f"Arg of periapsis: got {argp_deg:.2f}°, expected {expected['argp']:.2f}°"
 
-        assert abs(nu_deg - expected["nu"]) < tol["angles_deg"], (
-            f"True anomaly: got {nu_deg:.2f}°, expected {expected['nu']:.2f}°"
-        )
+        assert (
+            abs(nu_deg - expected["nu"]) < tol["angles_deg"]
+        ), f"True anomaly: got {nu_deg:.2f}°, expected {expected['nu']:.2f}°"
 
         # Validate semi-latus rectum
         p_actual = elements.p
         assert abs(p_actual - expected["p"]) < tol["p"], (
-            f"Semi-latus rectum: got {p_actual/1e3:.2f} km, "
-            f"expected {expected['p']/1e3:.2f} km"
+            f"Semi-latus rectum: got {p_actual/1e3:.2f} km, " f"expected {expected['p']/1e3:.2f} km"
         )
 
     def test_curtis_4_3_roundtrip(self, curtis_4_3):
@@ -214,6 +211,7 @@ class TestStateConversionAgainstReferences:
 # =============================================================================
 # Lambert Problem Validation
 # =============================================================================
+
 
 @pytest.mark.validation
 @pytest.mark.maneuvers
@@ -245,13 +243,9 @@ class TestLambertAgainstReferences:
 
         tol = ref["tolerance"]["velocity"]
 
-        assert v1_error < tol, (
-            f"v1 error: {v1_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
-        )
+        assert v1_error < tol, f"v1 error: {v1_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
 
-        assert v2_error < tol, (
-            f"v2 error: {v2_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
-        )
+        assert v2_error < tol, f"v2 error: {v2_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
 
     def test_curtis52_lambert(self, curtis52_lambert):
         """Test Lambert solver against Curtis test case 52."""
@@ -276,13 +270,9 @@ class TestLambertAgainstReferences:
 
         tol = ref["tolerance"]["velocity"]
 
-        assert v1_error < tol, (
-            f"v1 error: {v1_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
-        )
+        assert v1_error < tol, f"v1 error: {v1_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
 
-        assert v2_error < tol, (
-            f"v2 error: {v2_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
-        )
+        assert v2_error < tol, f"v2 error: {v2_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
 
     @pytest.mark.xfail(reason="High-altitude Lambert cases need solver improvements")
     def test_curtis53_lambert(self, curtis53_lambert):
@@ -304,14 +294,13 @@ class TestLambertAgainstReferences:
         v1_error = np.linalg.norm(v1_computed - v1_expected)
         tol = ref["tolerance"]["velocity"]
 
-        assert v1_error < tol, (
-            f"v1 error: {v1_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
-        )
+        assert v1_error < tol, f"v1 error: {v1_error:.3f} m/s exceeds tolerance {tol:.3f} m/s"
 
 
 # =============================================================================
 # Maneuver Validation
 # =============================================================================
+
 
 @pytest.mark.validation
 @pytest.mark.maneuvers
@@ -353,11 +342,13 @@ class TestManeuversAgainstReferences:
         # Validate transfer orbit eccentricity is reasonable (Hohmann transfer orbit is elliptical)
         e_final = result["transfer_eccentricity"]
         # For Hohmann transfer, eccentricity should be between 0 and 1 (elliptical)
-        assert 0.0 < e_final < 1.0, (
-            f"Transfer orbit should be elliptical (0 < e < 1), got {e_final:.6f}"
-        )
+        assert (
+            0.0 < e_final < 1.0
+        ), f"Transfer orbit should be elliptical (0 < e < 1), got {e_final:.6f}"
 
-    @pytest.mark.skip(reason="Bielliptic reference data needs correction - intermediate altitude specification")
+    @pytest.mark.skip(
+        reason="Bielliptic reference data needs correction - intermediate altitude specification"
+    )
     def test_bielliptic_transfer(self, bielliptic_transfer):
         """Test bielliptic transfer against reference values."""
         ref = bielliptic_transfer
@@ -369,9 +360,7 @@ class TestManeuversAgainstReferences:
         r_final = constants.R_EARTH + ref["final_altitude"]
 
         # Compute bielliptic transfer
-        result = compute_bielliptic(
-            r_initial, r_intermediate, r_final, constants.GM_EARTH
-        )
+        result = compute_bielliptic(r_initial, r_intermediate, r_final, constants.GM_EARTH)
 
         # Validate delta-v total
         dv_total = result["delta_v_total"]
@@ -397,6 +386,7 @@ class TestManeuversAgainstReferences:
 # =============================================================================
 # Basic Formula Validation
 # =============================================================================
+
 
 @pytest.mark.validation
 @pytest.mark.unit
@@ -426,6 +416,7 @@ class TestBasicFormulas:
 # =============================================================================
 # Summary Test
 # =============================================================================
+
 
 @pytest.mark.validation
 class TestReferenceSummary:

@@ -431,7 +431,7 @@ impl Lambert {
             return Err(PoliastroError::invalid_parameter(
                 "revs",
                 revs as f64,
-                &format!("exceeds maximum {} revolutions for given TOF", n_max),
+                format!("exceeds maximum {n_max} revolutions for given TOF"),
             ));
         }
 

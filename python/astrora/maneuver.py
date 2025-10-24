@@ -5,12 +5,14 @@ This module provides the Maneuver class for representing impulsive maneuvers
 (instantaneous velocity changes) and factory methods for common orbital transfers.
 """
 
+from typing import List, Tuple, Union
+
 import numpy as np
-from typing import List, Tuple, Union, Optional
+
 from astrora._core import (
     Duration,
-    hohmann_transfer,
     bielliptic_transfer,
+    hohmann_transfer,
     lambert_solve,
 )
 
@@ -84,9 +86,7 @@ class Maneuver:
             # Ensure delta_v is a numpy array
             delta_v = np.asarray(delta_v, dtype=np.float64)
             if delta_v.shape != (3,):
-                raise ValueError(
-                    f"delta_v must be 3-element array, got shape {delta_v.shape}"
-                )
+                raise ValueError(f"delta_v must be 3-element array, got shape {delta_v.shape}")
 
             self._impulses.append((float(time_offset), delta_v))
 
@@ -274,14 +274,14 @@ class Maneuver:
         v_hat = v_vec / np.linalg.norm(v_vec)  # Velocity direction
 
         # First impulse: apply delta_v1 in velocity direction
-        dv1 = result['delta_v1'] * v_hat
+        dv1 = result["delta_v1"] * v_hat
 
         # Second impulse: apply delta_v2 in velocity direction at apoapsis/periapsis
         # (velocity direction remains the same for coplanar transfer)
-        dv2 = result['delta_v2'] * v_hat
+        dv2 = result["delta_v2"] * v_hat
 
         # Transfer time is when second burn occurs
-        transfer_time = result['transfer_time']
+        transfer_time = result["transfer_time"]
 
         return cls((0.0, dv1), (transfer_time, dv2))
 
@@ -347,18 +347,20 @@ class Maneuver:
         v_hat = orbit_i.v / np.linalg.norm(orbit_i.v)
 
         # Three impulses
-        dv1 = result['delta_v1'] * v_hat
-        dv2 = result['delta_v2'] * v_hat
-        dv3 = result['delta_v3'] * v_hat
+        dv1 = result["delta_v1"] * v_hat
+        dv2 = result["delta_v2"] * v_hat
+        dv3 = result["delta_v3"] * v_hat
 
         # Times for each burn
         # First burn at t=0
         # Second burn at first half-period (at apoapsis r_b)
         time_1 = 0.0
-        time_2 = result['transfer_time'] * (result['transfer1_sma']**1.5) / (
-            result['transfer1_sma']**1.5 + result['transfer2_sma']**1.5
+        time_2 = (
+            result["transfer_time"]
+            * (result["transfer1_sma"] ** 1.5)
+            / (result["transfer1_sma"] ** 1.5 + result["transfer2_sma"] ** 1.5)
         )
-        time_3 = result['transfer_time']
+        time_3 = result["transfer_time"]
 
         return cls((time_1, dv1), (time_2, dv2), (time_3, dv3))
 
@@ -422,8 +424,7 @@ class Maneuver:
 
         if dt <= 0:
             raise ValueError(
-                f"Final epoch must be after initial epoch. "
-                f"Time difference: {dt:.1f} seconds"
+                f"Final epoch must be after initial epoch. " f"Time difference: {dt:.1f} seconds"
             )
 
         # Get position vectors
@@ -434,8 +435,8 @@ class Maneuver:
         result = lambert_solve(r1, r2, dt, orbit_i.attractor.mu, short_way, num_revs)
 
         # Extract velocity vectors from Lambert solution
-        v1_transfer = np.array(result['v1'])  # Required initial velocity
-        v2_transfer = np.array(result['v2'])  # Required final velocity
+        v1_transfer = np.array(result["v1"])  # Required initial velocity
+        v2_transfer = np.array(result["v2"])  # Required final velocity
 
         # Calculate delta-v impulses
         dv1 = v1_transfer - orbit_i.v  # Departure burn

@@ -11,13 +11,13 @@ import numpy as np
 import pytest
 from astrora._core import (
     batch_mean_to_eccentric_anomaly,
-    batch_mean_to_true_anomaly,
     batch_mean_to_hyperbolic_anomaly,
+    batch_mean_to_true_anomaly,
     batch_mean_to_true_anomaly_hyperbolic,
     batch_mean_to_true_anomaly_parabolic,
     mean_to_eccentric_anomaly,
-    mean_to_true_anomaly,
     mean_to_hyperbolic_anomaly,
+    mean_to_true_anomaly,
     mean_to_true_anomaly_hyperbolic,
     mean_to_true_anomaly_parabolic,
 )
@@ -31,9 +31,7 @@ class TestBatchEllipticalBenchmark:
         mean_anomalies = np.linspace(0, 2 * np.pi, 10)
         eccentricity = np.array([0.5])
 
-        result = benchmark(
-            batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity)
         assert result.shape == mean_anomalies.shape
 
     def test_benchmark_sequential_mean_to_eccentric_small(self, benchmark):
@@ -42,9 +40,7 @@ class TestBatchEllipticalBenchmark:
         eccentricity = 0.5
 
         def sequential():
-            return np.array(
-                [mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == mean_anomalies.shape
@@ -54,9 +50,7 @@ class TestBatchEllipticalBenchmark:
         mean_anomalies = np.linspace(0, 20 * np.pi, 100)
         eccentricity = np.array([0.6])
 
-        result = benchmark(
-            batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity)
         assert result.shape == mean_anomalies.shape
 
     def test_benchmark_sequential_mean_to_eccentric_medium(self, benchmark):
@@ -65,9 +59,7 @@ class TestBatchEllipticalBenchmark:
         eccentricity = 0.6
 
         def sequential():
-            return np.array(
-                [mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == mean_anomalies.shape
@@ -77,9 +69,7 @@ class TestBatchEllipticalBenchmark:
         mean_anomalies = np.linspace(0, 200 * np.pi, 1000)
         eccentricity = np.array([0.7])
 
-        result = benchmark(
-            batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity)
         assert result.shape == mean_anomalies.shape
 
     def test_benchmark_sequential_mean_to_eccentric_large(self, benchmark):
@@ -88,9 +78,7 @@ class TestBatchEllipticalBenchmark:
         eccentricity = 0.7
 
         def sequential():
-            return np.array(
-                [mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == mean_anomalies.shape
@@ -109,9 +97,7 @@ class TestBatchEllipticalBenchmark:
         eccentricity = 0.5
 
         def sequential():
-            return np.array(
-                [mean_to_true_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_true_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == mean_anomalies.shape
@@ -121,9 +107,7 @@ class TestBatchEllipticalBenchmark:
         mean_anomalies = np.linspace(0, 20 * np.pi, 100)
         eccentricities = np.linspace(0.1, 0.9, 100)
 
-        result = benchmark(
-            batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricities
-        )
+        result = benchmark(batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricities)
         assert result.shape == mean_anomalies.shape
 
     def test_benchmark_sequential_variable_eccentricities(self, benchmark):
@@ -151,9 +135,7 @@ class TestBatchHyperbolicBenchmark:
         mean_anomalies = np.linspace(0.5, 10, 100)
         eccentricity = np.array([1.5])
 
-        result = benchmark(
-            batch_mean_to_hyperbolic_anomaly, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_hyperbolic_anomaly, mean_anomalies, eccentricity)
         assert result.shape == mean_anomalies.shape
 
     def test_benchmark_sequential_mean_to_hyperbolic_medium(self, benchmark):
@@ -162,9 +144,7 @@ class TestBatchHyperbolicBenchmark:
         eccentricity = 1.5
 
         def sequential():
-            return np.array(
-                [mean_to_hyperbolic_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_hyperbolic_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == mean_anomalies.shape
@@ -174,9 +154,7 @@ class TestBatchHyperbolicBenchmark:
         mean_anomalies = np.linspace(0.5, 10, 100)
         eccentricity = np.array([2.0])
 
-        result = benchmark(
-            batch_mean_to_true_anomaly_hyperbolic, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_true_anomaly_hyperbolic, mean_anomalies, eccentricity)
         assert result.shape == mean_anomalies.shape
 
     def test_benchmark_sequential_mean_to_true_hyperbolic(self, benchmark):
@@ -186,10 +164,7 @@ class TestBatchHyperbolicBenchmark:
 
         def sequential():
             return np.array(
-                [
-                    mean_to_true_anomaly_hyperbolic(M, eccentricity)
-                    for M in mean_anomalies
-                ]
+                [mean_to_true_anomaly_hyperbolic(M, eccentricity) for M in mean_anomalies]
             )
 
         result = benchmark(sequential)
@@ -211,9 +186,7 @@ class TestBatchParabolicBenchmark:
         mean_anomalies = np.linspace(-5, 5, 100)
 
         def sequential():
-            return np.array(
-                [mean_to_true_anomaly_parabolic(M) for M in mean_anomalies]
-            )
+            return np.array([mean_to_true_anomaly_parabolic(M) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == mean_anomalies.shape
@@ -229,9 +202,7 @@ class TestBatchLargeScaleBenchmark:
         mean_anomalies = np.random.uniform(0, 2 * np.pi, n)
         eccentricity = np.array([0.001])  # Near-circular LEO
 
-        result = benchmark(
-            batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_eccentric_anomaly, mean_anomalies, eccentricity)
         assert result.shape == (n,)
 
     def test_benchmark_sequential_constellation_analysis(self, benchmark):
@@ -242,9 +213,7 @@ class TestBatchLargeScaleBenchmark:
         eccentricity = 0.001
 
         def sequential():
-            return np.array(
-                [mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_eccentric_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == (n,)
@@ -256,9 +225,7 @@ class TestBatchLargeScaleBenchmark:
         mean_anomalies = np.linspace(0, 1000 * np.pi, n)
         eccentricity = np.array([0.5])
 
-        result = benchmark(
-            batch_mean_to_true_anomaly, mean_anomalies, eccentricity
-        )
+        result = benchmark(batch_mean_to_true_anomaly, mean_anomalies, eccentricity)
         assert result.shape == (n,)
 
     def test_benchmark_sequential_propagation_grid(self, benchmark):
@@ -269,9 +236,7 @@ class TestBatchLargeScaleBenchmark:
         eccentricity = 0.5
 
         def sequential():
-            return np.array(
-                [mean_to_true_anomaly(M, eccentricity) for M in mean_anomalies]
-            )
+            return np.array([mean_to_true_anomaly(M, eccentricity) for M in mean_anomalies])
 
         result = benchmark(sequential)
         assert result.shape == (n,)

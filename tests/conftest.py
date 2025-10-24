@@ -11,20 +11,22 @@ This file provides:
 7. Reference data fixtures from test_reference_data.py
 """
 
+from typing import Dict
+
 import numpy as np
 import pytest
-from typing import Dict, Tuple
 
 # Import astrora modules
 try:
     import astrora._core as core
     from astrora._core import (
         CartesianState,
-        OrbitalElements,
-        Epoch,
         Duration,
+        Epoch,
+        OrbitalElements,
         constants,
     )
+
     ASTRORA_AVAILABLE = True
 except ImportError:
     ASTRORA_AVAILABLE = False
@@ -39,6 +41,7 @@ pytest_plugins = ["tests.test_reference_data"]
 # Test Configuration Fixtures
 # ============================================================================
 
+
 @pytest.fixture(scope="session")
 def numerical_tolerances() -> Dict[str, float]:
     """
@@ -48,19 +51,19 @@ def numerical_tolerances() -> Dict[str, float]:
         Dictionary of tolerance values for various test types
     """
     return {
-        "position_m": 1e-6,           # 1 micrometer position tolerance
-        "velocity_m_s": 1e-9,          # 1 nanometer/second velocity tolerance
-        "angle_rad": 1e-12,            # Sub-milliarcsecond angular tolerance
-        "energy_relative": 1e-10,      # Energy conservation tolerance
-        "momentum_relative": 1e-10,    # Angular momentum conservation tolerance
-        "time_s": 1e-9,                # 1 nanosecond time tolerance
-        "mass_kg": 1e-12,              # Mass tolerance
+        "position_m": 1e-6,  # 1 micrometer position tolerance
+        "velocity_m_s": 1e-9,  # 1 nanometer/second velocity tolerance
+        "angle_rad": 1e-12,  # Sub-milliarcsecond angular tolerance
+        "energy_relative": 1e-10,  # Energy conservation tolerance
+        "momentum_relative": 1e-10,  # Angular momentum conservation tolerance
+        "time_s": 1e-9,  # 1 nanosecond time tolerance
+        "mass_kg": 1e-12,  # Mass tolerance
         # Looser tolerances for integration tests
-        "integration_position_m": 1e-3,     # 1 mm for numerical integration
-        "integration_velocity_m_s": 1e-6,   # 1 micrometer/s for integration
+        "integration_position_m": 1e-3,  # 1 mm for numerical integration
+        "integration_velocity_m_s": 1e-6,  # 1 micrometer/s for integration
         # Very loose for validation against external tools
-        "validation_position_m": 1.0,       # 1 meter for GMAT/STK comparison
-        "validation_velocity_m_s": 1e-3,    # 1 mm/s for external validation
+        "validation_position_m": 1.0,  # 1 meter for GMAT/STK comparison
+        "validation_velocity_m_s": 1e-3,  # 1 mm/s for external validation
     }
 
 
@@ -84,6 +87,7 @@ def standard_epochs() -> Dict[str, Epoch]:
 # ============================================================================
 # Celestial Body Fixtures
 # ============================================================================
+
 
 @pytest.fixture(scope="session")
 def earth_params() -> Dict[str, float]:
@@ -117,6 +121,7 @@ def moon_params() -> Dict[str, float]:
 # ============================================================================
 # Orbit Regime Fixtures - State Vectors
 # ============================================================================
+
 
 @pytest.fixture
 def leo_state(earth_params: Dict[str, float]) -> CartesianState:
@@ -159,7 +164,7 @@ def geo_state(earth_params: Dict[str, float]) -> CartesianState:
     """
     gm = earth_params["gm"]
     # Geostationary radius
-    r = (gm / (earth_params["angular_velocity"]**2))**(1/3)
+    r = (gm / (earth_params["angular_velocity"] ** 2)) ** (1 / 3)
     v = np.sqrt(gm / r)
 
     return CartesianState([r, 0.0, 0.0], [0.0, v, 0.0])
@@ -175,13 +180,13 @@ def gto_state(earth_params: Dict[str, float]) -> CartesianState:
     gm = earth_params["gm"]
     r_earth = earth_params["radius"]
     r_perigee = r_earth + 300000.0  # 300 km
-    r_apogee = (gm / (earth_params["angular_velocity"]**2))**(1/3)
+    r_apogee = (gm / (earth_params["angular_velocity"] ** 2)) ** (1 / 3)
 
     a = (r_perigee + r_apogee) / 2
     e = (r_apogee - r_perigee) / (r_apogee + r_perigee)
 
     # Velocity at perigee
-    v = np.sqrt(gm * (2/r_perigee - 1/a))
+    v = np.sqrt(gm * (2 / r_perigee - 1 / a))
 
     return CartesianState([r_perigee, 0.0, 0.0], [0.0, v, 0.0])
 
@@ -198,16 +203,18 @@ def heo_state(earth_params: Dict[str, float]) -> CartesianState:
 
     # Molniya orbit parameters
     period = 43200.0  # 12 hours in seconds
-    a = (gm * (period / (2 * np.pi))**2)**(1/3)
+    a = (gm * (period / (2 * np.pi)) ** 2) ** (1 / 3)
     e = 0.74
     i = np.radians(63.4)
 
     # State at perigee
     r_perigee = a * (1 - e)
-    v_perigee = np.sqrt(gm * (2/r_perigee - 1/a))
+    v_perigee = np.sqrt(gm * (2 / r_perigee - 1 / a))
 
     # Apply inclination
-    return CartesianState([r_perigee, 0.0, 0.0], [0.0, v_perigee * np.cos(i), v_perigee * np.sin(i)])
+    return CartesianState(
+        [r_perigee, 0.0, 0.0], [0.0, v_perigee * np.cos(i), v_perigee * np.sin(i)]
+    )
 
 
 @pytest.fixture
@@ -241,7 +248,7 @@ def lunar_transfer_state(earth_params: Dict[str, float]) -> CartesianState:
     # Hohmann transfer from LEO to lunar distance
     r_departure = r_earth + 200000.0  # 200 km altitude
     a = (r_departure + r_moon) / 2
-    v = np.sqrt(gm * (2/r_departure - 1/a))
+    v = np.sqrt(gm * (2 / r_departure - 1 / a))
 
     return CartesianState([r_departure, 0.0, 0.0], [0.0, v, 0.0])
 
@@ -250,20 +257,14 @@ def lunar_transfer_state(earth_params: Dict[str, float]) -> CartesianState:
 # Orbit Regime Fixtures - Orbital Elements
 # ============================================================================
 
+
 @pytest.fixture
 def circular_equatorial_elements(earth_params: Dict[str, float]) -> OrbitalElements:
     """Circular equatorial orbit elements (e=0, i=0)."""
     r_earth = earth_params["radius"]
     a = r_earth + 500000.0  # 500 km altitude
 
-    return OrbitalElements(
-        a=a,
-        e=0.0,
-        i=0.0,
-        raan=0.0,
-        argp=0.0,
-        nu=0.0
-    )
+    return OrbitalElements(a=a, e=0.0, i=0.0, raan=0.0, argp=0.0, nu=0.0)
 
 
 @pytest.fixture
@@ -278,7 +279,7 @@ def eccentric_inclined_elements(earth_params: Dict[str, float]) -> OrbitalElemen
         i=np.radians(45.0),
         raan=np.radians(30.0),
         argp=np.radians(60.0),
-        nu=np.radians(90.0)
+        nu=np.radians(90.0),
     )
 
 
@@ -288,19 +289,13 @@ def polar_orbit_elements(earth_params: Dict[str, float]) -> OrbitalElements:
     r_earth = earth_params["radius"]
     a = r_earth + 700000.0  # 700 km altitude
 
-    return OrbitalElements(
-        a=a,
-        e=0.001,
-        i=np.radians(90.0),
-        raan=0.0,
-        argp=0.0,
-        nu=0.0
-    )
+    return OrbitalElements(a=a, e=0.001, i=np.radians(90.0), raan=0.0, argp=0.0, nu=0.0)
 
 
 # ============================================================================
 # Test Data Arrays
 # ============================================================================
+
 
 @pytest.fixture
 def test_true_anomalies() -> np.ndarray:
@@ -324,6 +319,7 @@ def test_inclinations() -> np.ndarray:
 # Propagation Time Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def short_propagation_times() -> np.ndarray:
     """Short propagation times for quick tests (0 to 1 orbit)."""
@@ -345,6 +341,7 @@ def long_propagation_times() -> np.ndarray:
 # ============================================================================
 # Pytest Hooks
 # ============================================================================
+
 
 def pytest_configure(config):
     """Pytest configuration hook for custom setup."""
@@ -387,7 +384,12 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.coordinates)
         if "maneuver" in fspath_str or "transfer" in fspath_str:
             item.add_marker(pytest.mark.maneuvers)
-        if "perturbation" in fspath_str or "_j2" in fspath_str or "drag" in fspath_str or "srp" in fspath_str:
+        if (
+            "perturbation" in fspath_str
+            or "_j2" in fspath_str
+            or "drag" in fspath_str
+            or "srp" in fspath_str
+        ):
             item.add_marker(pytest.mark.perturbations)
         if "satellite" in fspath_str or "sgp4" in fspath_str or "tle" in fspath_str:
             item.add_marker(pytest.mark.satellite)
@@ -406,6 +408,7 @@ def pytest_report_header(config):
 # ============================================================================
 # Benchmark Fixtures (for pytest-benchmark)
 # ============================================================================
+
 
 @pytest.fixture
 def benchmark_arrays():

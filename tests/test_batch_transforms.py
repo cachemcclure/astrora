@@ -8,11 +8,14 @@ parallel processing for improved performance with large datasets.
 import numpy as np
 import pytest
 from astrora._core import (
+    GCRS,
     Epoch,
-    GCRS, ITRS, TEME,
-    batch_gcrs_to_itrs, batch_itrs_to_gcrs,
-    batch_gcrs_to_teme, batch_teme_to_gcrs,
-    batch_teme_to_itrs, batch_itrs_to_teme,
+    batch_gcrs_to_itrs,
+    batch_gcrs_to_teme,
+    batch_itrs_to_gcrs,
+    batch_itrs_to_teme,
+    batch_teme_to_gcrs,
+    batch_teme_to_itrs,
 )
 
 
@@ -24,10 +27,12 @@ class TestBatchGCRSITRS:
         # Create 10 test positions in GCRS
         n = 10
         r_mag = 7000e3  # 7000 km
-        positions = np.array([
-            [r_mag * np.cos(2*np.pi*i/n), r_mag * np.sin(2*np.pi*i/n), 0]
-            for i in range(n)
-        ])
+        positions = np.array(
+            [
+                [r_mag * np.cos(2 * np.pi * i / n), r_mag * np.sin(2 * np.pi * i / n), 0]
+                for i in range(n)
+            ]
+        )
         velocities = np.zeros((n, 3))
         velocities[:, 1] = 7500.0  # Approximate circular velocity
 
@@ -52,10 +57,12 @@ class TestBatchGCRSITRS:
         # Create 10 test positions in ITRS
         n = 10
         r_mag = 7000e3  # 7000 km
-        positions = np.array([
-            [r_mag * np.cos(2*np.pi*i/n), r_mag * np.sin(2*np.pi*i/n), 0]
-            for i in range(n)
-        ])
+        positions = np.array(
+            [
+                [r_mag * np.cos(2 * np.pi * i / n), r_mag * np.sin(2 * np.pi * i / n), 0]
+                for i in range(n)
+            ]
+        )
         velocities = np.zeros((n, 3))
 
         # All at J2000 epoch
@@ -78,12 +85,8 @@ class TestBatchGCRSITRS:
         """Test that GCRS → ITRS → GCRS preserves coordinates."""
         n = 20
         r_mag = 8000e3  # 8000 km altitude
-        positions = np.array([
-            [r_mag, 0, 1000e3 * i] for i in range(n)
-        ])
-        velocities = np.array([
-            [0, 7500.0, 0] for _ in range(n)
-        ])
+        positions = np.array([[r_mag, 0, 1000e3 * i] for i in range(n)])
+        velocities = np.array([[0, 7500.0, 0] for _ in range(n)])
 
         # Different epochs for each point
         epochs = [Epoch.j2000_epoch() for i in range(n)]
@@ -102,12 +105,8 @@ class TestBatchGCRSITRS:
     def test_batch_vs_sequential_gcrs_itrs(self):
         """Verify batch transformation matches sequential single transforms."""
         n = 5
-        positions = np.array([
-            [7000e3, 1000e3 * i, 500e3] for i in range(n)
-        ])
-        velocities = np.array([
-            [100.0 * i, 7500.0, 50.0] for i in range(n)
-        ])
+        positions = np.array([[7000e3, 1000e3 * i, 500e3] for i in range(n)])
+        velocities = np.array([[100.0 * i, 7500.0, 50.0] for i in range(n)])
         epochs = [Epoch.j2000_epoch() for i in range(n)]
 
         # Batch transformation
@@ -168,12 +167,8 @@ class TestBatchGCRSTEME:
     def test_batch_gcrs_teme_roundtrip(self):
         """Test that GCRS → TEME → GCRS preserves coordinates."""
         n = 15
-        positions = np.array([
-            [7e6 + 100e3 * i, 100e3 * i, 50e3 * i] for i in range(n)
-        ])
-        velocities = np.array([
-            [7500.0, 100.0 * i, 50.0] for i in range(n)
-        ])
+        positions = np.array([[7e6 + 100e3 * i, 100e3 * i, 50e3 * i] for i in range(n)])
+        velocities = np.array([[7500.0, 100.0 * i, 50.0] for i in range(n)])
         epochs = [Epoch.j2000_epoch() for i in range(n)]
 
         # GCRS → TEME → GCRS
@@ -224,12 +219,8 @@ class TestBatchTEMEITRS:
     def test_batch_teme_itrs_roundtrip(self):
         """Test that TEME → ITRS → TEME preserves coordinates."""
         n = 12
-        positions = np.array([
-            [7e6, i * 100e3, 0] for i in range(n)
-        ])
-        velocities = np.array([
-            [0, 7500.0 + i * 10, 0] for i in range(n)
-        ])
+        positions = np.array([[7e6, i * 100e3, 0] for i in range(n)])
+        velocities = np.array([[0, 7500.0 + i * 10, 0] for i in range(n)])
         epochs = [Epoch.j2000_epoch() for i in range(n)]
 
         # TEME → ITRS → TEME
@@ -251,12 +242,8 @@ class TestBatchValidation:
         """Test batch transformation with a large array (1000 points)."""
         n = 1000
         r_mag = 7000e3
-        theta = np.linspace(0, 2*np.pi, n)
-        positions = np.column_stack([
-            r_mag * np.cos(theta),
-            r_mag * np.sin(theta),
-            np.zeros(n)
-        ])
+        theta = np.linspace(0, 2 * np.pi, n)
+        positions = np.column_stack([r_mag * np.cos(theta), r_mag * np.sin(theta), np.zeros(n)])
         velocities = np.zeros((n, 3))
         velocities[:, 2] = 7500.0
 
@@ -310,17 +297,9 @@ class TestBatchValidation:
         v_mag = 7500.0
 
         # Create circular orbit positions
-        theta = np.linspace(0, 2*np.pi, n, endpoint=False)
-        positions = np.column_stack([
-            r_mag * np.cos(theta),
-            r_mag * np.sin(theta),
-            np.zeros(n)
-        ])
-        velocities = np.column_stack([
-            -v_mag * np.sin(theta),
-            v_mag * np.cos(theta),
-            np.zeros(n)
-        ])
+        theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        positions = np.column_stack([r_mag * np.cos(theta), r_mag * np.sin(theta), np.zeros(n)])
+        velocities = np.column_stack([-v_mag * np.sin(theta), v_mag * np.cos(theta), np.zeros(n)])
 
         epochs = [Epoch.j2000_epoch() for _ in range(n)]
 

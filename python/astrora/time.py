@@ -6,12 +6,14 @@ and hifitime Epoch objects, enabling poliastro/hapsira API compatibility
 while maintaining the high-precision benefits of hifitime internally.
 """
 
-from typing import Union, Optional
+from typing import Optional, Union
+
 from astrora._core import Epoch
 
 # Try to import astropy.time - it's an optional dependency for time integration
 try:
     from astropy.time import Time as AstropyTime
+
     ASTROPY_AVAILABLE = True
 except ImportError:
     AstropyTime = None
@@ -20,24 +22,24 @@ except ImportError:
 
 # Time scale mapping between astropy and hifitime
 ASTROPY_TO_HIFI_SCALE = {
-    'utc': 'UTC',
-    'tai': 'TAI',
-    'tt': 'TT',
-    'tdb': 'TDB',
-    'tcb': 'TDB',  # Map TCB to TDB (approximation)
-    'tcg': 'TT',   # Map TCG to TT (approximation)
+    "utc": "UTC",
+    "tai": "TAI",
+    "tt": "TT",
+    "tdb": "TDB",
+    "tcb": "TDB",  # Map TCB to TDB (approximation)
+    "tcg": "TT",  # Map TCG to TT (approximation)
 }
 
 HIFI_TO_ASTROPY_SCALE = {
-    'UTC': 'utc',
-    'TAI': 'tai',
-    'TT': 'tt',
-    'TDB': 'tdb',
-    'GPST': 'tai',  # GPS time is close to TAI (19 second offset)
+    "UTC": "utc",
+    "TAI": "tai",
+    "TT": "tt",
+    "TDB": "tdb",
+    "GPST": "tai",  # GPS time is close to TAI (19 second offset)
 }
 
 
-def astropy_time_to_epoch(time: 'AstropyTime') -> Epoch:
+def astropy_time_to_epoch(time: "AstropyTime") -> Epoch:
     """
     Convert an astropy.time.Time object to a hifitime Epoch.
 
@@ -82,8 +84,7 @@ def astropy_time_to_epoch(time: 'AstropyTime') -> Epoch:
     """
     if not ASTROPY_AVAILABLE:
         raise ImportError(
-            "astropy is required for Time integration. "
-            "Install it with: uv pip install astropy"
+            "astropy is required for Time integration. " "Install it with: uv pip install astropy"
         )
 
     # Get the time scale
@@ -107,7 +108,7 @@ def astropy_time_to_epoch(time: 'AstropyTime') -> Epoch:
     return Epoch.from_jd_scale(jd, hifi_scale_str)
 
 
-def epoch_to_astropy_time(epoch: Epoch, scale: Optional[str] = None) -> 'AstropyTime':
+def epoch_to_astropy_time(epoch: Epoch, scale: Optional[str] = None) -> "AstropyTime":
     """
     Convert a hifitime Epoch to an astropy.time.Time object.
 
@@ -152,41 +153,37 @@ def epoch_to_astropy_time(epoch: Epoch, scale: Optional[str] = None) -> 'Astropy
     """
     if not ASTROPY_AVAILABLE:
         raise ImportError(
-            "astropy is required for Time integration. "
-            "Install it with: uv pip install astropy"
+            "astropy is required for Time integration. " "Install it with: uv pip install astropy"
         )
 
     # Default to TT if no scale specified
     if scale is None:
-        scale = 'tt'
+        scale = "tt"
 
     scale = scale.lower()
-    if scale not in ['utc', 'tai', 'tt', 'tdb']:
-        raise ValueError(
-            f"Unsupported scale: {scale}. "
-            f"Supported: utc, tai, tt, tdb"
-        )
+    if scale not in ["utc", "tai", "tt", "tdb"]:
+        raise ValueError(f"Unsupported scale: {scale}. " f"Supported: utc, tai, tt, tdb")
 
     # Get JD from Epoch in the requested scale
-    if scale == 'utc':
+    if scale == "utc":
         jd = epoch.jd_utc
-    elif scale == 'tai':
+    elif scale == "tai":
         # Use TT as proxy and convert (hifitime doesn't expose JD in TAI directly)
         # Get MJD in TAI and convert to JD
         mjd_tai = epoch.mjd_tai
         jd = mjd_tai + 2400000.5
-    elif scale == 'tt':
+    elif scale == "tt":
         jd = epoch.jd_tt
-    elif scale == 'tdb':
+    elif scale == "tdb":
         # Similar for TDB
         mjd_tdb = epoch.mjd_tdb
         jd = mjd_tdb + 2400000.5
 
     # Create astropy Time from JD
-    return AstropyTime(jd, format='jd', scale=scale)
+    return AstropyTime(jd, format="jd", scale=scale)
 
 
-def to_epoch(time_input: Union[Epoch, 'AstropyTime', None]) -> Optional[Epoch]:
+def to_epoch(time_input: Union[Epoch, "AstropyTime", None]) -> Optional[Epoch]:
     """
     Convert various time representations to a hifitime Epoch.
 
@@ -241,15 +238,13 @@ def to_epoch(time_input: Union[Epoch, 'AstropyTime', None]) -> Optional[Epoch]:
         return astropy_time_to_epoch(time_input)
 
     raise TypeError(
-        f"Unsupported time type: {type(time_input)}. "
-        f"Expected Epoch, astropy.time.Time, or None"
+        f"Unsupported time type: {type(time_input)}. " f"Expected Epoch, astropy.time.Time, or None"
     )
 
 
 def to_astropy_time(
-    time_input: Union[Epoch, 'AstropyTime', None],
-    scale: Optional[str] = None
-) -> Optional['AstropyTime']:
+    time_input: Union[Epoch, "AstropyTime", None], scale: Optional[str] = None
+) -> Optional["AstropyTime"]:
     """
     Convert various time representations to astropy.time.Time.
 
@@ -284,8 +279,7 @@ def to_astropy_time(
     """
     if not ASTROPY_AVAILABLE:
         raise ImportError(
-            "astropy is required for Time integration. "
-            "Install it with: uv pip install astropy"
+            "astropy is required for Time integration. " "Install it with: uv pip install astropy"
         )
 
     if time_input is None:
@@ -302,6 +296,5 @@ def to_astropy_time(
         return epoch_to_astropy_time(time_input, scale)
 
     raise TypeError(
-        f"Unsupported time type: {type(time_input)}. "
-        f"Expected Epoch, astropy.time.Time, or None"
+        f"Unsupported time type: {type(time_input)}. " f"Expected Epoch, astropy.time.Time, or None"
     )

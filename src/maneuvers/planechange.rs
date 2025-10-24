@@ -176,7 +176,7 @@ impl PlaneChange {
                 "must be positive",
             ));
         }
-        if delta_angle < 0.0 || delta_angle > PI {
+        if !(0.0..=PI).contains(&delta_angle) {
             return Err(PoliastroError::out_of_range(
                 "delta_angle",
                 delta_angle,
@@ -251,7 +251,7 @@ impl PlaneChange {
                 "must be positive",
             ));
         }
-        if delta_angle < 0.0 || delta_angle > PI {
+        if !(0.0..=PI).contains(&delta_angle) {
             return Err(PoliastroError::out_of_range(
                 "delta_angle",
                 delta_angle,
@@ -363,7 +363,7 @@ impl PlaneChange {
                 "must be positive",
             ));
         }
-        if total_angle < 0.0 || total_angle > PI {
+        if !(0.0..=PI).contains(&total_angle) {
             return Err(PoliastroError::out_of_range(
                 "total_angle",
                 total_angle,
@@ -446,7 +446,7 @@ impl PlaneChange {
                 "must be positive",
             ));
         }
-        if delta_angle < 0.0 || delta_angle > PI {
+        if !(0.0..=PI).contains(&delta_angle) {
             return Err(PoliastroError::out_of_range(
                 "delta_angle",
                 delta_angle,

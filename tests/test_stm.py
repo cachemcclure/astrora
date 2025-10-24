@@ -19,9 +19,9 @@ class TestSTMTwoBody:
 
     def test_stm_import(self):
         """Test that STM functions are available"""
-        assert hasattr(core, 'propagate_stm_rk4')
-        assert hasattr(core, 'propagate_stm_dopri5')
-        assert hasattr(core, 'propagate_stm_j2_rk4')
+        assert hasattr(core, "propagate_stm_rk4")
+        assert hasattr(core, "propagate_stm_dopri5")
+        assert hasattr(core, "propagate_stm_j2_rk4")
 
     def test_stm_basic_propagation(self):
         """Test basic STM propagation"""
@@ -98,9 +98,7 @@ class TestSTMTwoBody:
         mu = core.constants.GM_EARTH
 
         r_rk4, v_rk4, stm_rk4 = core.propagate_stm_rk4(r0, v0, dt, mu, n_steps=100)
-        r_dopri5, v_dopri5, stm_dopri5 = core.propagate_stm_dopri5(
-            r0, v0, dt, mu, tol=1e-10
-        )
+        r_dopri5, v_dopri5, stm_dopri5 = core.propagate_stm_dopri5(r0, v0, dt, mu, tol=1e-10)
 
         # States should be very close
         assert np.linalg.norm(r_rk4 - r_dopri5) < 100.0  # < 100 m
@@ -132,9 +130,7 @@ class TestSTMTwoBody:
         r_fwd, v_fwd, stm_fwd = core.propagate_stm_rk4(r0, v0, dt, mu, n_steps=100)
 
         # Backward propagation from forward result
-        r_back, v_back, stm_back = core.propagate_stm_rk4(
-            r_fwd, v_fwd, -dt, mu, n_steps=100
-        )
+        r_back, v_back, stm_back = core.propagate_stm_rk4(r_fwd, v_fwd, -dt, mu, n_steps=100)
 
         # Should return to initial state (approximately)
         assert np.linalg.norm(r_back - r0) < 1000.0  # < 1 km error
@@ -183,9 +179,7 @@ class TestSTMJ2:
         r_tb, v_tb, stm_tb = core.propagate_stm_rk4(r0, v0, dt, mu, n_steps=100)
 
         # J2 STM
-        r_j2, v_j2, stm_j2 = core.propagate_stm_j2_rk4(
-            r0, v0, dt, mu, j2, R, n_steps=100
-        )
+        r_j2, v_j2, stm_j2 = core.propagate_stm_j2_rk4(r0, v0, dt, mu, j2, R, n_steps=100)
 
         # States should differ due to J2
         assert np.linalg.norm(r_tb - r_j2) > 10.0  # > 10 m after 1 hour
@@ -297,5 +291,5 @@ class TestSTMEdgeCases:
         assert diff_100_200 < diff_50_100
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

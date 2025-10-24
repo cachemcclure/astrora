@@ -9,10 +9,8 @@ import numpy as np
 import pytest
 from astropy import units as u
 from astropy.time import Time
-
+from astrora.bodies import Earth, Jupiter, Mars
 from astrora.twobody import Orbit
-from astrora.bodies import Earth, Mars, Jupiter, Saturn
-from astrora._core import Epoch
 
 
 class TestCircularOrbit:
@@ -99,7 +97,7 @@ class TestGeostationary:
         assert orbit.inc.to(u.deg).value < 1e-3, "GEO should be equatorial"
 
         # Check altitude is approximately 35,786 km
-        altitude_km = (orbit.a.to(u.km).value - Earth.R / 1000)
+        altitude_km = orbit.a.to(u.km).value - Earth.R / 1000
         np.testing.assert_allclose(altitude_km, 35786, rtol=0.01)  # Within 1%
 
     def test_geostationary_period(self):
@@ -250,7 +248,9 @@ class TestParabolic:
         energy = orbit.energy.to(u.MJ / u.kg).value
         # Energy should be small (close to zero for parabolic)
         # For e=0.9999, energy will be slightly negative but < 0.5 MJ/kg in magnitude
-        assert abs(energy) < 0.5, f"Nearly-parabolic orbit energy should be ~0, got {energy:.3f} MJ/kg"
+        assert (
+            abs(energy) < 0.5
+        ), f"Nearly-parabolic orbit energy should be ~0, got {energy:.3f} MJ/kg"
 
     def test_parabolic_escape_trajectory(self):
         """Test that parabolic orbit represents escape trajectory."""
@@ -293,7 +293,9 @@ class TestHelperIntegration:
 
         # Compare positions (should be identical)
         np.testing.assert_allclose(orbit1.r.to(u.m).value, orbit2.r.to(u.m).value, rtol=1e-6)
-        np.testing.assert_allclose(orbit1.v.to(u.m/u.s).value, orbit2.v.to(u.m/u.s).value, rtol=1e-6)
+        np.testing.assert_allclose(
+            orbit1.v.to(u.m / u.s).value, orbit2.v.to(u.m / u.s).value, rtol=1e-6
+        )
 
     def test_geostationary_altitude_consistency(self):
         """Test that geostationary altitude is consistent with period."""

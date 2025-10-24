@@ -228,7 +228,7 @@ impl CoordinateFrame for ITRS {
     }
 
     fn from_gcrs_frame(gcrs: &GCRS) -> PoliastroResult<Self> {
-        Ok(gcrs.to_itrs()?)
+        gcrs.to_itrs()
     }
 }
 

@@ -11,10 +11,10 @@ from astrora._core import (
     EquinoctialElements,
     OrbitalElements,
     coe_to_equinoctial,
-    equinoctial_to_coe,
-    rv_to_equinoctial,
-    equinoctial_to_rv,
     constants,
+    equinoctial_to_coe,
+    equinoctial_to_rv,
+    rv_to_equinoctial,
 )
 
 
@@ -69,9 +69,7 @@ class TestConversionKeplerianEquinoctial:
 
     def test_coe_to_equinoctial_circular_equatorial(self):
         """Test conversion of circular equatorial orbit"""
-        coe = OrbitalElements(
-            a=7000e3, e=0.0, i=0.0, raan=0.0, argp=0.0, nu=0.0
-        )
+        coe = OrbitalElements(a=7000e3, e=0.0, i=0.0, raan=0.0, argp=0.0, nu=0.0)
         eq = coe_to_equinoctial(coe)
 
         # For circular equatorial: f=g=h=k=0
@@ -83,9 +81,7 @@ class TestConversionKeplerianEquinoctial:
 
     def test_coe_to_equinoctial_elliptical(self):
         """Test conversion of elliptical orbit"""
-        coe = OrbitalElements(
-            a=8000e3, e=0.1, i=0.0, raan=0.0, argp=0.0, nu=0.0
-        )
+        coe = OrbitalElements(a=8000e3, e=0.1, i=0.0, raan=0.0, argp=0.0, nu=0.0)
         eq = coe_to_equinoctial(coe)
 
         # Check semi-latus rectum
@@ -199,9 +195,7 @@ class TestSingularityFreeProperty:
     def test_near_equatorial_orbit(self):
         """Test with extremely small inclination"""
         # Near-equatorial orbit (i = 1e-10)
-        coe = OrbitalElements(
-            a=7000e3, e=0.1, i=1e-10, raan=0.0, argp=0.3, nu=0.5
-        )
+        coe = OrbitalElements(a=7000e3, e=0.1, i=1e-10, raan=0.0, argp=0.3, nu=0.5)
 
         # Convert to equinoctial (should not have issues)
         eq = coe_to_equinoctial(coe)
@@ -213,9 +207,7 @@ class TestSingularityFreeProperty:
 
     def test_90_degree_inclination(self):
         """Test polar orbit (i = 90°) - should have no singularity"""
-        coe = OrbitalElements(
-            a=7000e3, e=0.1, i=np.pi / 2.0, raan=0.5, argp=0.3, nu=0.7
-        )
+        coe = OrbitalElements(a=7000e3, e=0.1, i=np.pi / 2.0, raan=0.5, argp=0.3, nu=0.7)
 
         # Convert to equinoctial and back
         eq = coe_to_equinoctial(coe)
@@ -230,9 +222,7 @@ class TestEquinoctialClassMethods:
 
     def test_from_classical(self):
         """Test creating equinoctial from classical elements"""
-        coe = OrbitalElements(
-            a=8000e3, e=0.1, i=np.pi / 6.0, raan=0.5, argp=0.3, nu=0.7
-        )
+        coe = OrbitalElements(a=8000e3, e=0.1, i=np.pi / 6.0, raan=0.5, argp=0.3, nu=0.7)
 
         eq = EquinoctialElements.from_classical(coe)
 

@@ -7,10 +7,10 @@ high-level Python API to accept quantities with units while maintaining
 backward compatibility with raw floats/arrays.
 """
 
-import numpy as np
-from typing import Union, Tuple
-from astropy import units as u
+from typing import Union
 
+import numpy as np
+from astropy import units as u
 
 # Common unit types for validation
 LENGTH_UNITS = u.m  # Base SI unit for distance
@@ -34,7 +34,7 @@ def _is_quantity(value) -> bool:
     bool
         True if value is a Quantity, False otherwise
     """
-    return hasattr(value, 'unit') and hasattr(value, 'value')
+    return hasattr(value, "unit") and hasattr(value, "value")
 
 
 def _to_si_value(quantity, target_unit: u.Unit, name: str = "value") -> Union[float, np.ndarray]:
@@ -194,10 +194,8 @@ def to_dimensionless(value, name: str = "value") -> float:
     """
     if _is_quantity(value):
         # Check that it's dimensionless
-        if value.unit.physical_type != 'dimensionless':
-            raise ValueError(
-                f"{name} must be dimensionless, got units: {value.unit}"
-            )
+        if value.unit.physical_type != "dimensionless":
+            raise ValueError(f"{name} must be dimensionless, got units: {value.unit}")
         return float(value.value)
 
     return float(value)
@@ -247,9 +245,7 @@ def to_si_vector(vector, target_unit: u.Unit, name: str = "vector") -> np.ndarra
 
     # Validate shape
     if result.shape != (3,):
-        raise ValueError(
-            f"{name} must be a 3-element vector, got shape: {result.shape}"
-        )
+        raise ValueError(f"{name} must be a 3-element vector, got shape: {result.shape}")
 
     return result
 
@@ -358,9 +354,9 @@ def as_quantity_vector(vector: np.ndarray, unit_type: str) -> u.Quantity:
     Quantity
         Vector as Quantity with appropriate units
     """
-    if unit_type == 'position':
+    if unit_type == "position":
         return vector * u.m
-    elif unit_type == 'velocity':
+    elif unit_type == "velocity":
         return vector * u.m / u.s
     else:
         raise ValueError(f"Unknown unit_type: {unit_type}")

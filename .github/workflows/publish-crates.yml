@@ -1,0 +1,51 @@
+# Optional: Publish Rust crate to crates.io
+#
+# This workflow is OPTIONAL and only needed if you want to publish the Rust
+# library separately for use by other Rust projects.
+#
+# The primary distribution method is via PyPI (see release.yml).
+#
+# To enable this workflow:
+# 1. Uncomment the workflow below
+# 2. Add CARGO_REGISTRY_TOKEN to GitHub Secrets
+#    (Settings → Secrets → Actions → New repository secret)
+# 3. Push a tag matching the pattern below
+
+# Uncomment below to enable crates.io publishing:
+
+# name: Publish to crates.io
+#
+# on:
+#   push:
+#     tags:
+#       - 'v*.*.*'  # Only publish on version tags
+#   workflow_dispatch:  # Allow manual trigger
+#
+# jobs:
+#   publish:
+#     name: Publish to crates.io
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#
+#       - name: Install Rust toolchain
+#         uses: dtolnay/rust-toolchain@stable
+#
+#       - name: Verify package
+#         run: cargo package --all-features
+#
+#       - name: Publish to crates.io
+#         run: cargo publish --all-features
+#         env:
+#           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+# Notes:
+# - Requires CARGO_REGISTRY_TOKEN secret in GitHub repository settings
+# - Get your token from: https://crates.io/settings/tokens
+# - Automatically publishes when you push a version tag
+#
+# For more information:
+# - Cargo Publishing Guide: https://doc.rust-lang.org/cargo/reference/publishing.html

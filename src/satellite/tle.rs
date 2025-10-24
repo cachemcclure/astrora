@@ -110,7 +110,7 @@ pub fn parse_tle(tle_string: &str) -> Result<Elements, Sgp4Error> {
 /// Parse 2-line TLE format (no satellite name)
 fn parse_2line_tle(line1: &str, line2: &str) -> Result<Elements, Sgp4Error> {
     // Use sgp4 crate's built-in parser (returns Vec<Elements>)
-    let tle_string = format!("{}\n{}", line1, line2);
+    let tle_string = format!("{line1}\n{line2}");
     let elements_vec = sgp4::parse_2les(&tle_string)
         .map_err(|e| Sgp4Error::TleParsingFailed(e.to_string()))?;
 
@@ -122,7 +122,7 @@ fn parse_2line_tle(line1: &str, line2: &str) -> Result<Elements, Sgp4Error> {
 /// Parse 3-line TLE format (with satellite name)
 fn parse_3line_tle(name: &str, line1: &str, line2: &str) -> Result<Elements, Sgp4Error> {
     // Use sgp4 crate's built-in parser (returns Vec<Elements>)
-    let tle_string = format!("{}\n{}\n{}", name, line1, line2);
+    let tle_string = format!("{name}\n{line1}\n{line2}");
     let elements_vec = sgp4::parse_3les(&tle_string)
         .map_err(|e| Sgp4Error::TleParsingFailed(e.to_string()))?;
 
@@ -160,7 +160,7 @@ pub fn validate_checksum(line: &str) -> bool {
         // Letters, blanks, periods, plus signs count as 0
     }
 
-    (sum % 10) == expected_checksum as u32
+    (sum % 10) == expected_checksum
 }
 
 #[cfg(test)]

@@ -7,8 +7,8 @@ and validation against known mission data.
 """
 
 import math
+
 import pytest
-import numpy as np
 from astrora import _core
 
 # Import functions

@@ -5,13 +5,13 @@ Tests for Keplerian orbit propagator
 import numpy as np
 import pytest
 from astrora._core import (
-    OrbitalElements,
-    propagate_keplerian,
-    propagate_state_keplerian,
-    propagate_lagrange,
-    propagate_keplerian_duration,
     Duration,
+    OrbitalElements,
     constants,
+    propagate_keplerian,
+    propagate_keplerian_duration,
+    propagate_lagrange,
+    propagate_state_keplerian,
 )
 
 # Use Earth's GM for all tests

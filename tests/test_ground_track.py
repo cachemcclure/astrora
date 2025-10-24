@@ -96,11 +96,13 @@ class TestComputeGroundTrack:
     def test_compute_ground_track_basic(self):
         """Test basic ground track computation"""
         # Simple ground track with 3 points
-        positions = np.array([
-            [6778.0, 0.0, 0.0],
-            [6778.0, 100.0, 50.0],
-            [6750.0, 200.0, 100.0],
-        ])
+        positions = np.array(
+            [
+                [6778.0, 0.0, 0.0],
+                [6778.0, 100.0, 50.0],
+                [6750.0, 200.0, 100.0],
+            ]
+        )
         times = np.array([0.0, 1.0, 2.0])
 
         result = _core.compute_ground_track(positions, times)
@@ -140,10 +142,7 @@ class TestComputeGroundTrack:
 
         # 5 points along equator
         angles = np.linspace(0, np.pi / 4, 5)
-        positions = np.array([
-            [r * np.cos(ang), r * np.sin(ang), 0.0]
-            for ang in angles
-        ])
+        positions = np.array([[r * np.cos(ang), r * np.sin(ang), 0.0] for ang in angles])
         times = np.linspace(0, 10, 5)
 
         result = _core.compute_ground_track(positions, times)
@@ -168,10 +167,7 @@ class TestComputeGroundTrack:
 
         # 5 points from south to north
         lats_rad = np.linspace(-np.pi / 3, np.pi / 3, 5)
-        positions = np.array([
-            [r * np.cos(lat), 0.0, r * np.sin(lat)]
-            for lat in lats_rad
-        ])
+        positions = np.array([[r * np.cos(lat), 0.0, r * np.sin(lat)] for lat in lats_rad])
         times = np.linspace(0, 15, 5)
 
         result = _core.compute_ground_track(positions, times)
@@ -314,10 +310,7 @@ class TestIntegration:
 
         # Full circle in equatorial plane
         angles = np.linspace(0, 2 * np.pi, 20)
-        positions = np.array([
-            [r * np.cos(ang), r * np.sin(ang), 0.0]
-            for ang in angles
-        ])
+        positions = np.array([[r * np.cos(ang), r * np.sin(ang), 0.0] for ang in angles])
         times = np.linspace(0, 90, 20)
 
         result = _core.compute_ground_track(positions, times)

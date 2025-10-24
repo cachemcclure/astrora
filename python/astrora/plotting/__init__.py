@@ -38,19 +38,19 @@ Orbit animation:
 >>> plt.show()
 """
 
-from .static import StaticOrbitPlotter
+from .animation import animate_orbit, animate_orbit_3d
+from .groundtrack import plot_ground_track, plot_ground_track_3d
 from .interactive import OrbitPlotter3D
 from .porkchop import plot_porkchop, plot_porkchop_simple
-from .groundtrack import plot_ground_track, plot_ground_track_3d
-from .animation import animate_orbit, animate_orbit_3d
+from .static import StaticOrbitPlotter
 
 __all__ = [
-    'StaticOrbitPlotter',
-    'OrbitPlotter3D',
-    'plot_porkchop',
-    'plot_porkchop_simple',
-    'plot_ground_track',
-    'plot_ground_track_3d',
-    'animate_orbit',
-    'animate_orbit_3d',
+    "StaticOrbitPlotter",
+    "OrbitPlotter3D",
+    "plot_porkchop",
+    "plot_porkchop_simple",
+    "plot_ground_track",
+    "plot_ground_track_3d",
+    "animate_orbit",
+    "animate_orbit_3d",
 ]

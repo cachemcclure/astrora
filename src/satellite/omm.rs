@@ -122,7 +122,7 @@ pub fn parse_omm_batch(json_array: &str) -> Result<Vec<Elements>, Sgp4Error> {
 
     // Parse as JSON array
     let array: Vec<Value> = serde_json::from_str(json_array)
-        .map_err(|e| Sgp4Error::OmmParsingFailed(format!("Invalid JSON array: {}", e)))?;
+        .map_err(|e| Sgp4Error::OmmParsingFailed(format!("Invalid JSON array: {e}")))?;
 
     // Parse each object
     array
@@ -130,7 +130,7 @@ pub fn parse_omm_batch(json_array: &str) -> Result<Vec<Elements>, Sgp4Error> {
         .enumerate()
         .map(|(i, obj)| {
             let obj_str = serde_json::to_string(obj)
-                .map_err(|e| Sgp4Error::OmmParsingFailed(format!("Object {} serialize error: {}", i, e)))?;
+                .map_err(|e| Sgp4Error::OmmParsingFailed(format!("Object {i} serialize error: {e}")))?;
             parse_omm(&obj_str)
         })
         .collect()

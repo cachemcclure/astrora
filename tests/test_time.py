@@ -9,7 +9,7 @@ Tests cover:
 """
 
 import pytest
-from astrora._core import Epoch, Duration
+from astrora._core import Duration, Epoch
 
 
 class TestEpochCreation:
@@ -371,7 +371,7 @@ class TestAstrodynamicsWorkflow:
 
         # Verify spacing
         for i in range(1, len(epochs)):
-            diff = epochs[i] - epochs[i-1]
+            diff = epochs[i] - epochs[i - 1]
             assert abs(diff.seconds - 60.0) < 1e-6
 
     def test_mission_duration(self):

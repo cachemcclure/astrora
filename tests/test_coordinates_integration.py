@@ -9,20 +9,26 @@ and astropy.coordinates, including:
 - Precision and roundtrip accuracy
 """
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_allclose
 
 # Test if astropy is available
 try:
+    from astropy import units as u
     from astropy.coordinates import (
-        SkyCoord,
-        ICRS as AstropyICRS,
         GCRS as AstropyGCRS,
+    )
+    from astropy.coordinates import (
+        ICRS as AstropyICRS,
+    )
+    from astropy.coordinates import (
         ITRS as AstropyITRS,
     )
+    from astropy.coordinates import (
+        SkyCoord,
+    )
     from astropy.time import Time
-    from astropy import units as u
 
     ASTROPY_AVAILABLE = True
 except ImportError:
@@ -30,18 +36,22 @@ except ImportError:
 
 # Astrora imports
 from astrora._core import (
-    ICRS as AstroraICRS,
     GCRS as AstroraGCRS,
+)
+from astrora._core import (
+    ICRS as AstroraICRS,
+)
+from astrora._core import (
     ITRS as AstroraITRS,
+)
+from astrora._core import (
     Epoch,
 )
-from astrora.twobody import Orbit
 from astrora.bodies import Earth
+from astrora.twobody import Orbit
 
 # Skip all tests if astropy not available
-pytestmark = pytest.mark.skipif(
-    not ASTROPY_AVAILABLE, reason="astropy not installed"
-)
+pytestmark = pytest.mark.skipif(not ASTROPY_AVAILABLE, reason="astropy not installed")
 
 
 # ============================================================================
@@ -73,7 +83,7 @@ class TestFrameConversions:
         assert_allclose(astropy_frame.cartesian.z.to(u.km).value, pos[2] / 1000.0, rtol=1e-10)
 
         # Check velocity (convert m/s → km/s)
-        velocity_data = astropy_frame.cartesian.differentials['s']
+        velocity_data = astropy_frame.cartesian.differentials["s"]
         assert_allclose(velocity_data.d_x.to(u.km / u.s).value, vel[0] / 1000.0, rtol=1e-10)
         assert_allclose(velocity_data.d_y.to(u.km / u.s).value, vel[1] / 1000.0, rtol=1e-10)
         assert_allclose(velocity_data.d_z.to(u.km / u.s).value, vel[2] / 1000.0, rtol=1e-10)
@@ -91,7 +101,7 @@ class TestFrameConversions:
         astrora_frame = AstroraGCRS(pos, vel, epoch)
 
         # Observation time for comparison
-        obstime = Time('2024-01-01 12:00:00', scale='utc')
+        obstime = Time("2024-01-01 12:00:00", scale="utc")
 
         # Convert to astropy
         astropy_frame = to_astropy_coord(astrora_frame, obstime=obstime)
@@ -108,7 +118,7 @@ class TestFrameConversions:
         assert_allclose(astropy_frame.cartesian.z.to(u.km).value, 0.0, atol=1e-10)
 
         # Check velocity
-        velocity_data = astropy_frame.cartesian.differentials['s']
+        velocity_data = astropy_frame.cartesian.differentials["s"]
         assert_allclose(velocity_data.d_x.to(u.km / u.s).value, 0.0, atol=1e-10)
         assert_allclose(velocity_data.d_y.to(u.km / u.s).value, 7.5, rtol=1e-10)
         assert_allclose(velocity_data.d_z.to(u.km / u.s).value, 0.0, atol=1e-10)
@@ -126,7 +136,7 @@ class TestFrameConversions:
         astrora_frame = AstroraITRS(pos, vel, epoch)
 
         # Observation time for comparison
-        obstime = Time('2024-01-01 12:00:00', scale='utc')
+        obstime = Time("2024-01-01 12:00:00", scale="utc")
 
         # Convert to astropy
         astropy_frame = to_astropy_coord(astrora_frame, obstime=obstime)
@@ -152,8 +162,8 @@ class TestFrameConversions:
             v_x=0 * u.km / u.s,
             v_y=29.78 * u.km / u.s,
             v_z=0 * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
+            representation_type="cartesian",
+            differential_type="cartesian",
         )
 
         # Convert to astrora
@@ -184,9 +194,9 @@ class TestFrameConversions:
             v_x=0 * u.km / u.s,
             v_y=7.5 * u.km / u.s,
             v_z=0 * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
-            obstime=Time('2024-01-01'),
+            representation_type="cartesian",
+            differential_type="cartesian",
+            obstime=Time("2024-01-01"),
         )
 
         # Convert to astrora
@@ -233,9 +243,13 @@ class TestSkyCoordIntegration:
         assert isinstance(sc.frame, AstropyICRS)
 
         # Check distance via cartesian representation (should be ~1 AU)
-        distance_m = np.linalg.norm([sc.cartesian.x.to(u.m).value,
-                                      sc.cartesian.y.to(u.m).value,
-                                      sc.cartesian.z.to(u.m).value])
+        distance_m = np.linalg.norm(
+            [
+                sc.cartesian.x.to(u.m).value,
+                sc.cartesian.y.to(u.m).value,
+                sc.cartesian.z.to(u.m).value,
+            ]
+        )
         distance_au = distance_m / 1.496e11
         assert_allclose(distance_au, 1.0, rtol=1e-6)
 
@@ -250,7 +264,7 @@ class TestSkyCoordIntegration:
         astrora_frame = AstroraGCRS(pos, vel, epoch)
 
         # Observation time for comparison
-        obstime = Time('2024-01-01 12:00:00', scale='utc')
+        obstime = Time("2024-01-01 12:00:00", scale="utc")
 
         # Convert to SkyCoord
         sc = to_skycoord(astrora_frame, obstime=obstime)
@@ -265,9 +279,13 @@ class TestSkyCoordIntegration:
         assert sc.obstime == obstime
 
         # Check distance via cartesian representation (should be 7000 km)
-        distance_m = np.linalg.norm([sc.cartesian.x.to(u.m).value,
-                                      sc.cartesian.y.to(u.m).value,
-                                      sc.cartesian.z.to(u.m).value])
+        distance_m = np.linalg.norm(
+            [
+                sc.cartesian.x.to(u.m).value,
+                sc.cartesian.y.to(u.m).value,
+                sc.cartesian.z.to(u.m).value,
+            ]
+        )
         distance_km = distance_m / 1000.0
         assert_allclose(distance_km, 7000.0, rtol=1e-6)
 
@@ -283,8 +301,8 @@ class TestSkyCoordIntegration:
             v_x=0 * u.km / u.s,
             v_y=29.78 * u.km / u.s,
             v_z=0 * u.km / u.s,
-            representation_type='cartesian',
-            frame='icrs',
+            representation_type="cartesian",
+            frame="icrs",
         )
 
         # Convert to astrora
@@ -311,9 +329,9 @@ class TestSkyCoordIntegration:
             v_x=0 * u.km / u.s,
             v_y=7.5 * u.km / u.s,
             v_z=0 * u.km / u.s,
-            representation_type='cartesian',
-            frame='gcrs',
-            obstime=Time('2024-01-01'),
+            representation_type="cartesian",
+            frame="gcrs",
+            obstime=Time("2024-01-01"),
         )
 
         # Convert to astrora
@@ -355,9 +373,13 @@ class TestOrbitIntegration:
         assert isinstance(sc.frame, AstropyGCRS)
 
         # Check distance via cartesian representation
-        distance_m = np.linalg.norm([sc.cartesian.x.to(u.m).value,
-                                      sc.cartesian.y.to(u.m).value,
-                                      sc.cartesian.z.to(u.m).value])
+        distance_m = np.linalg.norm(
+            [
+                sc.cartesian.x.to(u.m).value,
+                sc.cartesian.y.to(u.m).value,
+                sc.cartesian.z.to(u.m).value,
+            ]
+        )
         distance_km = distance_m / 1000.0
         assert_allclose(distance_km, 7000.0, rtol=1e-6)
 
@@ -369,7 +391,7 @@ class TestOrbitIntegration:
         orbit = Orbit.from_vectors(Earth, r, v)
 
         # Convert to SkyCoord in ICRS frame
-        sc = orbit.to_skycoord(frame='icrs')
+        sc = orbit.to_skycoord(frame="icrs")
 
         # Check frame type
         assert isinstance(sc.frame, AstropyICRS)
@@ -383,7 +405,7 @@ class TestOrbitIntegration:
         orbit = Orbit.from_vectors(Earth, r, v, epoch=epoch)
 
         # Convert to SkyCoord in ITRS frame
-        sc = orbit.to_skycoord(frame='itrs')
+        sc = orbit.to_skycoord(frame="itrs")
 
         # Check frame type
         assert isinstance(sc.frame, AstropyITRS)
@@ -398,9 +420,9 @@ class TestOrbitIntegration:
             v_x=0 * u.km / u.s,
             v_y=7.5 * u.km / u.s,
             v_z=0 * u.km / u.s,
-            representation_type='cartesian',
-            frame='gcrs',
-            obstime=Time('2024-01-01 12:00:00'),
+            representation_type="cartesian",
+            frame="gcrs",
+            obstime=Time("2024-01-01 12:00:00"),
         )
 
         # Create orbit from SkyCoord
@@ -413,7 +435,7 @@ class TestOrbitIntegration:
         assert_allclose(orbit.r[0].to(u.m).value, 7000e3, rtol=1e-10)
 
         # Check velocity (orbit.v returns Quantity, get value in m/s)
-        assert_allclose(orbit.v[1].to(u.m/u.s).value, 7500.0, rtol=1e-10)
+        assert_allclose(orbit.v[1].to(u.m / u.s).value, 7500.0, rtol=1e-10)
 
         # Check attractor
         assert orbit.attractor == Earth
@@ -427,7 +449,7 @@ class TestOrbitIntegration:
         orbit = Orbit.from_vectors(Earth, r, v, epoch=epoch)
 
         # Convert to astropy GCRS
-        gcrs = orbit.to_astropy_coord(frame='gcrs')
+        gcrs = orbit.to_astropy_coord(frame="gcrs")
 
         # Check type
         assert isinstance(gcrs, AstropyGCRS)
@@ -445,9 +467,9 @@ class TestOrbitIntegration:
             v_x=0 * u.km / u.s,
             v_y=7.5 * u.km / u.s,
             v_z=0 * u.km / u.s,
-            representation_type='cartesian',
-            differential_type='cartesian',
-            obstime=Time('2024-01-01 12:00:00'),
+            representation_type="cartesian",
+            differential_type="cartesian",
+            obstime=Time("2024-01-01 12:00:00"),
         )
 
         # Create orbit from astropy coord
@@ -460,7 +482,7 @@ class TestOrbitIntegration:
         assert_allclose(orbit.r[0].to(u.m).value, 7000e3, rtol=1e-10)
 
         # Check velocity (orbit.v returns Quantity, get value in m/s)
-        assert_allclose(orbit.v[1].to(u.m/u.s).value, 7500.0, rtol=1e-10)
+        assert_allclose(orbit.v[1].to(u.m / u.s).value, 7500.0, rtol=1e-10)
 
 
 # ============================================================================
@@ -473,7 +495,7 @@ class TestRoundtrip:
 
     def test_roundtrip_icrs(self):
         """Test roundtrip: astrora ICRS → astropy → astrora."""
-        from astrora.coordinates import to_astropy_coord, from_astropy_coord
+        from astrora.coordinates import from_astropy_coord, to_astropy_coord
 
         # Original astrora frame
         pos_orig = np.array([1.496e11, 1e9, 1e8])
@@ -490,7 +512,7 @@ class TestRoundtrip:
 
     def test_roundtrip_gcrs(self):
         """Test roundtrip: astrora GCRS → astropy → astrora."""
-        from astrora.coordinates import to_astropy_coord, from_astropy_coord
+        from astrora.coordinates import from_astropy_coord, to_astropy_coord
 
         # Original astrora frame
         pos_orig = np.array([7000e3, 1000e3, 500e3])
@@ -499,7 +521,7 @@ class TestRoundtrip:
         astrora_orig = AstroraGCRS(pos_orig, vel_orig, epoch)
 
         # Observation time for comparison
-        obstime = Time('2024-01-01 12:00:00', scale='utc')
+        obstime = Time("2024-01-01 12:00:00", scale="utc")
 
         # Convert to astropy and back
         astropy_frame = to_astropy_coord(astrora_orig, obstime=obstime)
@@ -525,7 +547,7 @@ class TestRoundtrip:
         assert_allclose(orbit_roundtrip.r.to(u.m).value, r_orig, rtol=1e-10)
 
         # Check velocity precision (orbit.v returns Quantity, get value in m/s)
-        assert_allclose(orbit_roundtrip.v.to(u.m/u.s).value, v_orig, rtol=1e-10)
+        assert_allclose(orbit_roundtrip.v.to(u.m / u.s).value, v_orig, rtol=1e-10)
 
 
 # ============================================================================
@@ -565,12 +587,12 @@ class TestEdgeCases:
         astropy_frame = to_astropy_coord(astrora_frame)
 
         # Check that default obstime is J2000.0
-        assert astropy_frame.obstime.scale == 'tt'
+        assert astropy_frame.obstime.scale == "tt"
         assert_allclose(astropy_frame.obstime.jd, 2451545.0, rtol=1e-10)
 
     def test_zero_velocity(self):
         """Test conversion with zero velocity."""
-        from astrora.coordinates import to_astropy_coord, from_astropy_coord
+        from astrora.coordinates import from_astropy_coord, to_astropy_coord
 
         # Create frame with zero velocity
         pos = np.array([7000e3, 0.0, 0.0])

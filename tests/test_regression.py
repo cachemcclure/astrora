@@ -32,24 +32,23 @@ Target Accuracy:
 
 """
 
-import pytest
 import numpy as np
+import pytest
 from astrora._core import (
     OrbitalElements,
-    CartesianState,
-    rv_to_coe,
     coe_to_rv,
     constants,
-    propagate_state_keplerian,
-    propagate_j2_dopri5,
     mean_to_true_anomaly,
+    propagate_j2_dopri5,
+    propagate_state_keplerian,
+    rv_to_coe,
     true_to_mean_anomaly,
 )
-
 
 # ============================================================================
 # SECTION 1: CURTIS TEXTBOOK EXAMPLES
 # ============================================================================
+
 
 class TestCurtisExamples:
     """
@@ -85,13 +84,15 @@ class TestCurtisExamples:
 
         # Verify within 0.1% (reasonable for regression test)
         rel_error = abs(T - expected_period) / expected_period
-        assert rel_error < 0.001, \
-            f"Period mismatch: got {T:.1f} s, expected {expected_period} s (error: {rel_error*100:.3f}%)"
+        assert (
+            rel_error < 0.001
+        ), f"Period mismatch: got {T:.1f} s, expected {expected_period} s (error: {rel_error*100:.3f}%)"
 
         # Also verify period is reasonable (between 90 min and 2 hours)
         T_minutes = T / 60.0
-        assert 90.0 < T_minutes < 120.0, \
-            f"Period out of reasonable range: got {T_minutes:.2f} minutes"
+        assert (
+            90.0 < T_minutes < 120.0
+        ), f"Period out of reasonable range: got {T_minutes:.2f} minutes"
 
     def test_curtis_example_2_5_eccentricity_from_apsides(self):
         """
@@ -115,11 +116,13 @@ class TestCurtisExamples:
         expected_a = 15300e3  # meters
         expected_e = 0.3725  # Corrected value from exact calculation
 
-        assert abs(a - expected_a) < 100.0, \
-            f"Semi-major axis mismatch: got {a/1e3:.1f} km, expected {expected_a/1e3:.1f} km"
+        assert (
+            abs(a - expected_a) < 100.0
+        ), f"Semi-major axis mismatch: got {a/1e3:.1f} km, expected {expected_a/1e3:.1f} km"
 
-        assert abs(e - expected_e) < 0.001, \
-            f"Eccentricity mismatch: got {e:.4f}, expected {expected_e:.4f}"
+        assert (
+            abs(e - expected_e) < 0.001
+        ), f"Eccentricity mismatch: got {e:.4f}, expected {expected_e:.4f}"
 
     def test_curtis_example_3_1_specific_energy_angular_momentum(self):
         """
@@ -143,18 +146,21 @@ class TestCurtisExamples:
         h = r * v_circular
 
         # Verify specific energy is negative (bound orbit)
-        assert epsilon < 0, \
-            f"Circular orbit should have negative specific energy, got {epsilon/1e6:.2f} MJ/kg"
+        assert (
+            epsilon < 0
+        ), f"Circular orbit should have negative specific energy, got {epsilon/1e6:.2f} MJ/kg"
 
         # Verify specific energy formula: ε = -μ/(2r) for circular orbit
         expected_epsilon = -constants.GM_EARTH / (2.0 * r)
-        assert abs(epsilon - expected_epsilon) / abs(expected_epsilon) < 1e-10, \
-            f"Specific energy formula mismatch for circular orbit"
+        assert (
+            abs(epsilon - expected_epsilon) / abs(expected_epsilon) < 1e-10
+        ), f"Specific energy formula mismatch for circular orbit"
 
         # Lock in the calculated values as regression baseline
         expected_h = 5.62e10  # m²/s (corrected value)
-        assert abs(h - expected_h) / expected_h < 0.01, \
-            f"Angular momentum: got {h/1e9:.2f} km²/s, expected ~{expected_h/1e9:.2f} km²/s"
+        assert (
+            abs(h - expected_h) / expected_h < 0.01
+        ), f"Angular momentum: got {h/1e9:.2f} km²/s, expected ~{expected_h/1e9:.2f} km²/s"
 
     def test_curtis_example_4_7_rv_from_coe(self):
         """
@@ -181,10 +187,7 @@ class TestCurtisExamples:
         a = p / (1.0 - e**2)
 
         # Create orbital elements
-        elements = OrbitalElements(
-            a=a, e=e, i=i,
-            raan=raan, argp=argp, nu=nu
-        )
+        elements = OrbitalElements(a=a, e=e, i=i, raan=raan, argp=argp, nu=nu)
 
         # Convert to state vectors
         r, v = coe_to_rv(elements, constants.GM_EARTH)
@@ -195,20 +198,23 @@ class TestCurtisExamples:
 
         # Verify position (allow 1 km tolerance for rounding in textbook)
         r_error = np.linalg.norm(r - expected_r)
-        assert r_error < 1000.0, \
-            f"Position mismatch: error = {r_error/1e3:.2f} km\n" \
+        assert r_error < 1000.0, (
+            f"Position mismatch: error = {r_error/1e3:.2f} km\n"
             f"  Got: {r/1e3}\n  Expected: {expected_r/1e3}"
+        )
 
         # Verify velocity (allow 0.01 km/s tolerance)
         v_error = np.linalg.norm(v - expected_v)
-        assert v_error < 10.0, \
-            f"Velocity mismatch: error = {v_error:.2f} m/s\n" \
+        assert v_error < 10.0, (
+            f"Velocity mismatch: error = {v_error:.2f} m/s\n"
             f"  Got: {v/1e3}\n  Expected: {expected_v/1e3}"
+        )
 
 
 # ============================================================================
 # SECTION 2: INTERPLANETARY TRANSFER SCENARIOS
 # ============================================================================
+
 
 class TestInterplanetaryTransfers:
     """
@@ -239,8 +245,8 @@ class TestInterplanetaryTransfers:
         a_transfer = (r1 + r2) / 2.0
 
         # Velocities on transfer orbit
-        v1_transfer = np.sqrt(constants.GM_EARTH * (2.0/r1 - 1.0/a_transfer))
-        v2_transfer = np.sqrt(constants.GM_EARTH * (2.0/r2 - 1.0/a_transfer))
+        v1_transfer = np.sqrt(constants.GM_EARTH * (2.0 / r1 - 1.0 / a_transfer))
+        v2_transfer = np.sqrt(constants.GM_EARTH * (2.0 / r2 - 1.0 / a_transfer))
 
         # Delta-v requirements
         delta_v1 = v1_transfer - v1_circular
@@ -255,20 +261,25 @@ class TestInterplanetaryTransfers:
         expected_total_delta_v = 3.912e3  # m/s
 
         # Verify within 1 m/s (0.03% for velocities ~3-10 km/s)
-        assert abs(v1_circular - expected_v1_circular) < 1.0, \
-            f"LEO velocity: got {v1_circular/1e3:.3f} km/s, expected {expected_v1_circular/1e3:.3f} km/s"
+        assert (
+            abs(v1_circular - expected_v1_circular) < 1.0
+        ), f"LEO velocity: got {v1_circular/1e3:.3f} km/s, expected {expected_v1_circular/1e3:.3f} km/s"
 
-        assert abs(v2_circular - expected_v2_circular) < 1.0, \
-            f"GEO velocity: got {v2_circular/1e3:.3f} km/s, expected {expected_v2_circular/1e3:.3f} km/s"
+        assert (
+            abs(v2_circular - expected_v2_circular) < 1.0
+        ), f"GEO velocity: got {v2_circular/1e3:.3f} km/s, expected {expected_v2_circular/1e3:.3f} km/s"
 
-        assert abs(v1_transfer - expected_v1_transfer) < 1.0, \
-            f"Transfer perigee velocity: got {v1_transfer/1e3:.3f} km/s, expected {expected_v1_transfer/1e3:.3f} km/s"
+        assert (
+            abs(v1_transfer - expected_v1_transfer) < 1.0
+        ), f"Transfer perigee velocity: got {v1_transfer/1e3:.3f} km/s, expected {expected_v1_transfer/1e3:.3f} km/s"
 
-        assert abs(v2_transfer - expected_v2_transfer) < 1.0, \
-            f"Transfer apogee velocity: got {v2_transfer/1e3:.3f} km/s, expected {expected_v2_transfer/1e3:.3f} km/s"
+        assert (
+            abs(v2_transfer - expected_v2_transfer) < 1.0
+        ), f"Transfer apogee velocity: got {v2_transfer/1e3:.3f} km/s, expected {expected_v2_transfer/1e3:.3f} km/s"
 
-        assert abs(total_delta_v - expected_total_delta_v) < 1.0, \
-            f"Total delta-v: got {total_delta_v/1e3:.3f} km/s, expected {expected_total_delta_v/1e3:.3f} km/s"
+        assert (
+            abs(total_delta_v - expected_total_delta_v) < 1.0
+        ), f"Total delta-v: got {total_delta_v/1e3:.3f} km/s, expected {expected_total_delta_v/1e3:.3f} km/s"
 
     def test_earth_mars_hohmann_transfer_orbit(self):
         """
@@ -296,18 +307,21 @@ class TestInterplanetaryTransfers:
 
         # Verify semi-major axis
         a_transfer_au = a_transfer / constants.AU
-        assert abs(a_transfer_au - expected_a_transfer_au) < 0.001, \
-            f"Transfer orbit semi-major axis: got {a_transfer_au:.3f} AU, expected {expected_a_transfer_au:.3f} AU"
+        assert (
+            abs(a_transfer_au - expected_a_transfer_au) < 0.001
+        ), f"Transfer orbit semi-major axis: got {a_transfer_au:.3f} AU, expected {expected_a_transfer_au:.3f} AU"
 
         # Verify transfer time
         transfer_days = transfer_time / 86400.0
-        assert abs(transfer_days - expected_transfer_days) < 1.0, \
-            f"Transfer time: got {transfer_days:.1f} days, expected {expected_transfer_days:.1f} days"
+        assert (
+            abs(transfer_days - expected_transfer_days) < 1.0
+        ), f"Transfer time: got {transfer_days:.1f} days, expected {expected_transfer_days:.1f} days"
 
 
 # ============================================================================
 # SECTION 3: HISTORICAL MISSION DATA
 # ============================================================================
+
 
 class TestHistoricalMissions:
     """
@@ -343,16 +357,20 @@ class TestHistoricalMissions:
         epsilon = v_after_tli**2 / 2.0 - constants.GM_EARTH / r_parking
 
         # For escape trajectory, specific energy should be ≥ 0
-        assert epsilon >= -1000.0, \
-            f"Apollo 11 TLI should produce near-escape trajectory (ε ≥ 0), got ε = {epsilon:.2e} J/kg"
+        assert (
+            epsilon >= -1000.0
+        ), f"Apollo 11 TLI should produce near-escape trajectory (ε ≥ 0), got ε = {epsilon:.2e} J/kg"
 
         # Verify the velocity is approximately escape velocity
-        v_after_tli_magnitude = np.linalg.norm(v_after_tli) if isinstance(v_after_tli, np.ndarray) else v_after_tli
+        v_after_tli_magnitude = (
+            np.linalg.norm(v_after_tli) if isinstance(v_after_tli, np.ndarray) else v_after_tli
+        )
         rel_diff = abs(v_after_tli_magnitude - v_escape) / v_escape
 
-        assert rel_diff < 0.01, \
-            f"TLI velocity should be close to escape velocity: " \
+        assert rel_diff < 0.01, (
+            f"TLI velocity should be close to escape velocity: "
             f"got {v_after_tli_magnitude/1e3:.3f} km/s vs v_esc = {v_escape/1e3:.3f} km/s"
+        )
 
     def test_gps_constellation_orbit(self):
         """
@@ -379,14 +397,16 @@ class TestHistoricalMissions:
 
         # Verify period within 5 minutes (0.7%)
         period_error = abs(period - expected_period_seconds)
-        assert period_error < 300.0, \
-            f"GPS orbital period: got {period/3600:.2f} hours, expected {expected_period_hours:.2f} hours"
+        assert (
+            period_error < 300.0
+        ), f"GPS orbital period: got {period/3600:.2f} hours, expected {expected_period_hours:.2f} hours"
 
         # Verify velocity (should be ~3.87 km/s)
         expected_v_gps = 3.87e3  # m/s (approximate)
         v_error = abs(v_gps - expected_v_gps)
-        assert v_error < 20.0, \
-            f"GPS orbital velocity: got {v_gps/1e3:.3f} km/s, expected ~{expected_v_gps/1e3:.3f} km/s (within 20 m/s)"
+        assert (
+            v_error < 20.0
+        ), f"GPS orbital velocity: got {v_gps/1e3:.3f} km/s, expected ~{expected_v_gps/1e3:.3f} km/s (within 20 m/s)"
 
     def test_hubble_space_telescope_orbit(self):
         """
@@ -410,13 +430,15 @@ class TestHistoricalMissions:
         expected_period_min = 95.0
         expected_period_max = 96.0
 
-        assert expected_period_min < period_minutes < expected_period_max, \
-            f"HST orbital period: got {period_minutes:.1f} minutes, expected 95-96 minutes"
+        assert (
+            expected_period_min < period_minutes < expected_period_max
+        ), f"HST orbital period: got {period_minutes:.1f} minutes, expected 95-96 minutes"
 
 
 # ============================================================================
 # SECTION 4: PERTURBATION MODEL REGRESSION TESTS
 # ============================================================================
+
 
 class TestPerturbationRegression:
     """
@@ -445,8 +467,9 @@ class TestPerturbationRegression:
         # where n = √(μ/a³) is the mean motion
         n = np.sqrt(constants.GM_EARTH / a**3)
 
-        precession_rate = -(3.0/2.0) * n * constants.J2_EARTH * \
-                         (constants.R_EARTH / a)**2 * np.cos(i)
+        precession_rate = (
+            -(3.0 / 2.0) * n * constants.J2_EARTH * (constants.R_EARTH / a) ** 2 * np.cos(i)
+        )
 
         # Convert to degrees per day
         precession_deg_per_day = np.rad2deg(precession_rate) * 86400.0
@@ -456,9 +479,10 @@ class TestPerturbationRegression:
 
         # Verify within 0.01°/day (1% tolerance)
         error = abs(precession_deg_per_day - expected_precession)
-        assert error < 0.01, \
-            f"Sun-synchronous precession rate: got {precession_deg_per_day:.4f} °/day, " \
+        assert error < 0.01, (
+            f"Sun-synchronous precession rate: got {precession_deg_per_day:.4f} °/day, "
             f"expected {expected_precession:.4f} °/day"
+        )
 
     def test_j2_propagation_10_days_leo(self):
         """
@@ -478,19 +502,14 @@ class TestPerturbationRegression:
         argp_0 = np.deg2rad(45.0)
         nu_0 = np.deg2rad(30.0)
 
-        elements = OrbitalElements(
-            a=a, e=e, i=i,
-            raan=raan_0, argp=argp_0, nu=nu_0
-        )
+        elements = OrbitalElements(a=a, e=e, i=i, raan=raan_0, argp=argp_0, nu=nu_0)
 
         r0, v0 = coe_to_rv(elements, constants.GM_EARTH)
 
         # Propagate with J2 for 10 days
         dt = 10.0 * 86400.0  # seconds
         r_final, v_final = propagate_j2_dopri5(
-            r0, v0, dt, constants.GM_EARTH,
-            constants.J2_EARTH, constants.R_EARTH,
-            tol=1e-9
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, tol=1e-9
         )
 
         # Convert back to orbital elements
@@ -498,12 +517,14 @@ class TestPerturbationRegression:
 
         # Check RAAN drift (should be negative for i < 90°)
         raan_drift = elements_final.raan - raan_0
-        assert raan_drift < 0, \
-            f"J2 RAAN drift should be negative for i < 90°, got {np.rad2deg(raan_drift):.3f}°"
+        assert (
+            raan_drift < 0
+        ), f"J2 RAAN drift should be negative for i < 90°, got {np.rad2deg(raan_drift):.3f}°"
 
         # RAAN drift should be several degrees over 10 days
-        assert abs(np.rad2deg(raan_drift)) > 1.0, \
-            f"J2 RAAN drift over 10 days should be > 1°, got {abs(np.rad2deg(raan_drift)):.3f}°"
+        assert (
+            abs(np.rad2deg(raan_drift)) > 1.0
+        ), f"J2 RAAN drift over 10 days should be > 1°, got {abs(np.rad2deg(raan_drift)):.3f}°"
 
         # Lock in the current value as regression test
         # This ensures future changes don't accidentally break J2 propagation
@@ -512,9 +533,10 @@ class TestPerturbationRegression:
         actual_raan_drift_deg = np.rad2deg(raan_drift)
 
         # Allow 1% variation (DOPRI5 with different tolerances can vary slightly)
-        assert abs(actual_raan_drift_deg - expected_raan_drift_deg) < 1.0, \
-            f"J2 RAAN drift regression: got {actual_raan_drift_deg:.2f}°, " \
+        assert abs(actual_raan_drift_deg - expected_raan_drift_deg) < 1.0, (
+            f"J2 RAAN drift regression: got {actual_raan_drift_deg:.2f}°, "
             f"expected ~{expected_raan_drift_deg:.2f}° (regression baseline, ±1.0°)"
+        )
 
     def test_j2_frozen_orbit_eccentricity_stability(self):
         """
@@ -533,10 +555,7 @@ class TestPerturbationRegression:
         argp = np.deg2rad(90.0)  # Critical argument of periapsis
 
         elements = OrbitalElements(
-            a=a, e=e, i=i,
-            raan=np.deg2rad(0.0),
-            argp=argp,
-            nu=np.deg2rad(0.0)
+            a=a, e=e, i=i, raan=np.deg2rad(0.0), argp=argp, nu=np.deg2rad(0.0)
         )
 
         r0, v0 = coe_to_rv(elements, constants.GM_EARTH)
@@ -544,9 +563,7 @@ class TestPerturbationRegression:
         # Propagate with J2 for 30 days
         dt = 30.0 * 86400.0  # seconds
         r_final, v_final = propagate_j2_dopri5(
-            r0, v0, dt, constants.GM_EARTH,
-            constants.J2_EARTH, constants.R_EARTH,
-            tol=1e-9
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, tol=1e-9
         )
 
         elements_final = rv_to_coe(r_final, v_final, constants.GM_EARTH)
@@ -556,8 +573,9 @@ class TestPerturbationRegression:
 
         # For frozen orbit, eccentricity should not change dramatically
         # (Relaxed tolerance: frozen orbit theory assumes J2-only, but numerical errors exist)
-        assert e_change < 0.01, \
-            f"Frozen orbit eccentricity change: got Δe = {e_change:.6f}, expected < 0.01"
+        assert (
+            e_change < 0.01
+        ), f"Frozen orbit eccentricity change: got Δe = {e_change:.6f}, expected < 0.01"
 
         # Argument of periapsis should oscillate around 90° (or 270°)
         # Note: For frozen orbits with very small e, numerical errors can be large
@@ -565,8 +583,9 @@ class TestPerturbationRegression:
         argp_final = np.rad2deg(elements_final.argp)
 
         # Just verify argp is defined and in valid range
-        assert 0 <= argp_final <= 360, \
-            f"Frozen orbit ω should be in valid range [0, 360°], got {argp_final:.2f}°"
+        assert (
+            0 <= argp_final <= 360
+        ), f"Frozen orbit ω should be in valid range [0, 360°], got {argp_final:.2f}°"
 
         # Note: For very low eccentricity orbits (e << 1), the argument of periapsis
         # is poorly defined and can vary widely. This is expected behavior.
@@ -575,6 +594,7 @@ class TestPerturbationRegression:
 # ============================================================================
 # SECTION 5: SPECIAL ORBITAL CASES
 # ============================================================================
+
 
 class TestSpecialOrbitalCases:
     """
@@ -593,22 +613,21 @@ class TestSpecialOrbitalCases:
         e = 1e-8  # Extremely small eccentricity
         i = np.deg2rad(45.0)
 
-        elements = OrbitalElements(
-            a=a, e=e, i=i,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        elements = OrbitalElements(a=a, e=e, i=i, raan=0.0, argp=0.0, nu=0.0)
 
         # Convert to state vectors and back
         r, v = coe_to_rv(elements, constants.GM_EARTH)
         elements_back = rv_to_coe(r, v, constants.GM_EARTH)
 
         # Verify roundtrip accuracy
-        assert abs(elements_back.e - e) < 1e-10, \
-            f"Nearly circular orbit eccentricity: got {elements_back.e:.2e}, expected {e:.2e}"
+        assert (
+            abs(elements_back.e - e) < 1e-10
+        ), f"Nearly circular orbit eccentricity: got {elements_back.e:.2e}, expected {e:.2e}"
 
         # Verify semi-major axis
-        assert abs(elements_back.a - a) / a < 1e-12, \
-            f"Nearly circular orbit semi-major axis error: {abs(elements_back.a - a):.2e} m"
+        assert (
+            abs(elements_back.a - a) / a < 1e-12
+        ), f"Nearly circular orbit semi-major axis error: {abs(elements_back.a - a):.2e} m"
 
     def test_nearly_equatorial_orbit(self):
         """
@@ -622,10 +641,12 @@ class TestSpecialOrbitalCases:
         i = np.deg2rad(0.01)  # Nearly equatorial
 
         elements = OrbitalElements(
-            a=a, e=e, i=i,
+            a=a,
+            e=e,
+            i=i,
             raan=np.deg2rad(45.0),  # Arbitrary (undefined for i=0)
             argp=np.deg2rad(60.0),
-            nu=np.deg2rad(30.0)
+            nu=np.deg2rad(30.0),
         )
 
         # Convert to state vectors and back
@@ -633,9 +654,10 @@ class TestSpecialOrbitalCases:
         elements_back = rv_to_coe(r, v, constants.GM_EARTH)
 
         # Verify inclination is preserved
-        assert abs(elements_back.i - i) < 1e-10, \
-            f"Nearly equatorial inclination: got {np.rad2deg(elements_back.i):.6f}°, " \
+        assert abs(elements_back.i - i) < 1e-10, (
+            f"Nearly equatorial inclination: got {np.rad2deg(elements_back.i):.6f}°, "
             f"expected {np.rad2deg(i):.6f}°"
+        )
 
     def test_polar_orbit(self):
         """
@@ -649,10 +671,7 @@ class TestSpecialOrbitalCases:
         i = np.deg2rad(90.0)  # Exactly polar
 
         elements = OrbitalElements(
-            a=a, e=e, i=i,
-            raan=np.deg2rad(100.0),
-            argp=np.deg2rad(45.0),
-            nu=np.deg2rad(30.0)
+            a=a, e=e, i=i, raan=np.deg2rad(100.0), argp=np.deg2rad(45.0), nu=np.deg2rad(30.0)
         )
 
         # Convert and propagate
@@ -666,8 +685,9 @@ class TestSpecialOrbitalCases:
         closure_error = np.linalg.norm(r_final - r0)
 
         # Allow 1 meter error for one full orbit
-        assert closure_error < 1.0, \
-            f"Polar orbit closure error: {closure_error:.3f} m after one period"
+        assert (
+            closure_error < 1.0
+        ), f"Polar orbit closure error: {closure_error:.3f} m after one period"
 
     def test_retrograde_orbit(self):
         """
@@ -681,10 +701,7 @@ class TestSpecialOrbitalCases:
         i = np.deg2rad(120.0)  # Retrograde
 
         elements = OrbitalElements(
-            a=a, e=e, i=i,
-            raan=np.deg2rad(50.0),
-            argp=np.deg2rad(30.0),
-            nu=np.deg2rad(0.0)
+            a=a, e=e, i=i, raan=np.deg2rad(50.0), argp=np.deg2rad(30.0), nu=np.deg2rad(0.0)
         )
 
         r0, v0 = coe_to_rv(elements, constants.GM_EARTH)
@@ -692,9 +709,7 @@ class TestSpecialOrbitalCases:
         # Propagate with J2 for 5 days
         dt = 5.0 * 86400.0
         r_final, v_final = propagate_j2_dopri5(
-            r0, v0, dt, constants.GM_EARTH,
-            constants.J2_EARTH, constants.R_EARTH,
-            tol=1e-9
+            r0, v0, dt, constants.GM_EARTH, constants.J2_EARTH, constants.R_EARTH, tol=1e-9
         )
 
         elements_final = rv_to_coe(r_final, v_final, constants.GM_EARTH)
@@ -703,8 +718,9 @@ class TestSpecialOrbitalCases:
         # (opposite of prograde orbits where cos(i) < 0 means negative drift)
         raan_drift = elements_final.raan - elements.raan
 
-        assert raan_drift > 0, \
-            f"Retrograde orbit J2 RAAN drift should be positive, got {np.rad2deg(raan_drift):.3f}°"
+        assert (
+            raan_drift > 0
+        ), f"Retrograde orbit J2 RAAN drift should be positive, got {np.rad2deg(raan_drift):.3f}°"
 
     def test_parabolic_escape_trajectory(self):
         """
@@ -727,19 +743,22 @@ class TestSpecialOrbitalCases:
         epsilon = np.dot(v, v) / 2.0 - constants.GM_EARTH / np.linalg.norm(r)
 
         # Verify parabolic trajectory (specific energy = 0)
-        assert abs(epsilon) < 1.0, \
-            f"Parabolic trajectory specific energy should be ≈0, got {epsilon:.2e} J/kg"
+        assert (
+            abs(epsilon) < 1.0
+        ), f"Parabolic trajectory specific energy should be ≈0, got {epsilon:.2e} J/kg"
 
         # Verify escape velocity formula
         v_magnitude = np.linalg.norm(v)
         expected_v_escape = np.sqrt(2.0 * constants.GM_EARTH / r_periapsis)
-        assert abs(v_magnitude - expected_v_escape) < 0.1, \
-            f"Escape velocity: got {v_magnitude/1e3:.3f} km/s, expected {expected_v_escape/1e3:.3f} km/s"
+        assert (
+            abs(v_magnitude - expected_v_escape) < 0.1
+        ), f"Escape velocity: got {v_magnitude/1e3:.3f} km/s, expected {expected_v_escape/1e3:.3f} km/s"
 
 
 # ============================================================================
 # SECTION 6: ANOMALY CONVERSION REGRESSION TESTS
 # ============================================================================
+
 
 class TestAnomalyConversionRegression:
     """
@@ -756,12 +775,12 @@ class TestAnomalyConversionRegression:
         """
         test_cases = [
             # (e, M_deg, expected_nu_deg_approx)
-            (0.0, 0.0, 0.0),       # Circular orbit: M = ν
-            (0.0, 90.0, 90.0),     # Circular orbit: M = ν
-            (0.5, 0.0, 0.0),       # At periapsis: M = ν = 0
-            (0.5, 180.0, 180.0),   # At apoapsis: M = ν = 180°
-            (0.3, 90.0, None),     # Intermediate case (lock in actual value)
-            (0.7, 120.0, None),    # High eccentricity (lock in actual value)
+            (0.0, 0.0, 0.0),  # Circular orbit: M = ν
+            (0.0, 90.0, 90.0),  # Circular orbit: M = ν
+            (0.5, 0.0, 0.0),  # At periapsis: M = ν = 0
+            (0.5, 180.0, 180.0),  # At apoapsis: M = ν = 180°
+            (0.3, 90.0, None),  # Intermediate case (lock in actual value)
+            (0.7, 120.0, None),  # High eccentricity (lock in actual value)
         ]
 
         for e, M_deg, expected_nu_deg in test_cases:
@@ -772,14 +791,16 @@ class TestAnomalyConversionRegression:
             if expected_nu_deg is not None:
                 # Test known exact values
                 error = abs(nu_deg - expected_nu_deg)
-                assert error < 0.5, \
-                    f"Mean to true anomaly (e={e}, M={M_deg}°): " \
+                assert error < 0.5, (
+                    f"Mean to true anomaly (e={e}, M={M_deg}°): "
                     f"got ν={nu_deg:.2f}°, expected {expected_nu_deg:.2f}°"
+                )
             else:
                 # Regression test: just verify it produces a reasonable value
-                assert 0 <= nu_deg <= 360, \
-                    f"Mean to true anomaly (e={e}, M={M_deg}°): " \
+                assert 0 <= nu_deg <= 360, (
+                    f"Mean to true anomaly (e={e}, M={M_deg}°): "
                     f"got ν={nu_deg:.2f}°, expected 0-360° range"
+                )
 
     def test_true_to_mean_anomaly_roundtrip(self):
         """
@@ -800,24 +821,27 @@ class TestAnomalyConversionRegression:
 
                 # Verify roundtrip accuracy
                 error = abs(nu_back - nu)
-                assert error < 1e-10, \
-                    f"Anomaly roundtrip error (e={e}, ν={nu_deg}°): " \
+                assert error < 1e-10, (
+                    f"Anomaly roundtrip error (e={e}, ν={nu_deg}°): "
                     f"Δν = {np.rad2deg(error):.2e}°"
+                )
 
 
 # ============================================================================
 # SUMMARY FIXTURE FOR REPORTING
 # ============================================================================
 
+
 @pytest.fixture(scope="session", autouse=True)
 def regression_test_summary(request):
     """
     Print a summary of regression test coverage at the end of the session.
     """
+
     def print_summary():
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("REGRESSION TEST SUITE SUMMARY")
-        print("="*70)
+        print("=" * 70)
         print("Test Categories:")
         print("  1. Curtis Textbook Examples: 4 tests")
         print("  2. Interplanetary Transfers: 2 tests")
@@ -825,8 +849,8 @@ def regression_test_summary(request):
         print("  4. Perturbation Models: 3 tests")
         print("  5. Special Orbital Cases: 6 tests")
         print("  6. Anomaly Conversions: 2 tests")
-        print("-"*70)
+        print("-" * 70)
         print("Total Regression Tests: 20")
-        print("="*70)
+        print("=" * 70)
 
     request.addfinalizer(print_summary)

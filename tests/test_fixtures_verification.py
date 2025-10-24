@@ -5,14 +5,15 @@ This test file validates that the testing infrastructure from conftest.py
 and test_utils.py is working correctly.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from tests.test_utils import (
-    assert_states_equal,
-    assert_energy_conserved,
     assert_angular_momentum_conserved,
-    compute_specific_energy,
+    assert_energy_conserved,
+    assert_states_equal,
     classify_orbit_regime,
+    compute_specific_energy,
     is_circular_orbit,
 )
 
@@ -101,12 +102,7 @@ class TestTestUtils:
     def test_energy_conservation_same_state(self, leo_state, earth_params):
         """Test that energy is conserved for same state."""
         # Should not raise
-        assert_energy_conserved(
-            leo_state,
-            leo_state,
-            earth_params["gm"],
-            rtol=1e-10
-        )
+        assert_energy_conserved(leo_state, leo_state, earth_params["gm"], rtol=1e-10)
 
     def test_angular_momentum_conservation_same_state(self, leo_state):
         """Test that angular momentum is conserved for same state."""

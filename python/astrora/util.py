@@ -5,8 +5,9 @@ This module provides various helper functions for working with orbits,
 angles, time ranges, and other common operations.
 """
 
+from typing import Optional, Union
+
 import numpy as np
-from typing import Union, Optional
 from astropy import units as u
 from astropy.time import Time, TimeDelta
 
@@ -91,15 +92,15 @@ def time_range(
     """
     # Parse start time
     if isinstance(start, str):
-        start = Time(start, format=format, scale=scale or 'utc')
+        start = Time(start, format=format, scale=scale or "utc")
 
     # Parse end time if provided
     if end is not None and isinstance(end, str):
-        end = Time(end, format=format, scale=scale or 'utc')
+        end = Time(end, format=format, scale=scale or "utc")
 
     # Convert spacing to TimeDelta if it's a Quantity
     if spacing is not None and isinstance(spacing, u.Quantity):
-        spacing = TimeDelta(spacing.to(u.s).value, format='sec')
+        spacing = TimeDelta(spacing.to(u.s).value, format="sec")
 
     # Case 1: spacing and end both provided -> ignore periods
     if spacing is not None and end is not None:
@@ -108,20 +109,20 @@ def time_range(
         spacing_sec = spacing.sec
         num_points = int(duration / spacing_sec) + 1
         offsets = np.arange(num_points) * spacing_sec
-        return start + TimeDelta(offsets, format='sec')
+        return start + TimeDelta(offsets, format="sec")
 
     # Case 2: only end provided -> compute spacing from periods
     elif end is not None:
         # Generate evenly spaced times from start to end
         duration = (end - start).sec
         offsets = np.linspace(0, duration, periods)
-        return start + TimeDelta(offsets, format='sec')
+        return start + TimeDelta(offsets, format="sec")
 
     # Case 3: only spacing provided -> use periods
     elif spacing is not None:
         spacing_sec = spacing.sec
         offsets = np.arange(periods) * spacing_sec
-        return start + TimeDelta(offsets, format='sec')
+        return start + TimeDelta(offsets, format="sec")
 
     # Case 4: neither spacing nor end provided -> error
     else:

@@ -1,7 +1,7 @@
 """Tests for delta-v budget calculations"""
 
 import pytest
-from astrora._core import delta_v_budget, constants
+from astrora._core import constants, delta_v_budget
 
 GM_EARTH = constants.GM_EARTH
 
@@ -56,9 +56,7 @@ class TestContingencyMargin:
     def test_10_percent_contingency(self):
         """Test 10% contingency margin"""
         maneuvers = [("Burn", 1000.0)]
-        result = delta_v_budget(
-            "Test Mission", maneuvers, contingency_margin=0.1
-        )
+        result = delta_v_budget("Test Mission", maneuvers, contingency_margin=0.1)
 
         assert result["total_delta_v"] == 1000.0
         assert result["contingency_margin"] == 0.1
@@ -67,9 +65,7 @@ class TestContingencyMargin:
     def test_20_percent_contingency(self):
         """Test 20% contingency margin"""
         maneuvers = [("Burn 1", 500.0), ("Burn 2", 500.0)]
-        result = delta_v_budget(
-            "Test Mission", maneuvers, contingency_margin=0.2
-        )
+        result = delta_v_budget("Test Mission", maneuvers, contingency_margin=0.2)
 
         assert result["total_delta_v"] == 1000.0
         assert result["total_with_contingency"] == 1200.0
@@ -283,36 +279,28 @@ class TestPropellantParameterValidation:
         maneuvers = [("Burn", 1000.0)]
 
         with pytest.raises(Exception):
-            delta_v_budget(
-                "Test", maneuvers, dry_mass=0.0, specific_impulse=300.0
-            )
+            delta_v_budget("Test", maneuvers, dry_mass=0.0, specific_impulse=300.0)
 
     def test_negative_dry_mass_raises_error(self):
         """Test that negative dry mass raises an error"""
         maneuvers = [("Burn", 1000.0)]
 
         with pytest.raises(Exception):
-            delta_v_budget(
-                "Test", maneuvers, dry_mass=-100.0, specific_impulse=300.0
-            )
+            delta_v_budget("Test", maneuvers, dry_mass=-100.0, specific_impulse=300.0)
 
     def test_zero_specific_impulse_raises_error(self):
         """Test that zero Isp raises an error"""
         maneuvers = [("Burn", 1000.0)]
 
         with pytest.raises(Exception):
-            delta_v_budget(
-                "Test", maneuvers, dry_mass=1000.0, specific_impulse=0.0
-            )
+            delta_v_budget("Test", maneuvers, dry_mass=1000.0, specific_impulse=0.0)
 
     def test_negative_specific_impulse_raises_error(self):
         """Test that negative Isp raises an error"""
         maneuvers = [("Burn", 1000.0)]
 
         with pytest.raises(Exception):
-            delta_v_budget(
-                "Test", maneuvers, dry_mass=1000.0, specific_impulse=-300.0
-            )
+            delta_v_budget("Test", maneuvers, dry_mass=1000.0, specific_impulse=-300.0)
 
 
 class TestDeltaVBudgetIntegration:
@@ -338,9 +326,7 @@ class TestDeltaVBudgetIntegration:
         result = delta_v_budget("LEO-GEO Hohmann", maneuvers)
 
         # Total should match Hohmann total
-        assert abs(
-            result["total_delta_v"] - hohmann["delta_v_total"]
-        ) < 1.0
+        assert abs(result["total_delta_v"] - hohmann["delta_v_total"]) < 1.0
 
     def test_budget_from_bielliptic(self):
         """Test creating budget from bi-elliptic transfer"""
@@ -352,9 +338,7 @@ class TestDeltaVBudgetIntegration:
         r_final = R_MEAN_EARTH + 35_786e3
         r_intermediate = 2 * r_final
 
-        bielliptic = bielliptic_transfer(
-            r_initial, r_final, r_intermediate, GM_EARTH
-        )
+        bielliptic = bielliptic_transfer(r_initial, r_final, r_intermediate, GM_EARTH)
 
         maneuvers = [
             ("Bi-elliptic burn 1", bielliptic["delta_v1"]),
@@ -365,18 +349,17 @@ class TestDeltaVBudgetIntegration:
         result = delta_v_budget("Bi-elliptic", maneuvers)
 
         # Total should match bi-elliptic total
-        assert abs(
-            result["total_delta_v"] - bielliptic["delta_v_total"]
-        ) < 1.0
+        assert abs(result["total_delta_v"] - bielliptic["delta_v_total"]) < 1.0
         assert result["num_maneuvers"] == 3
 
     def test_complex_multi_phase_mission(self):
         """Test complex mission with multiple transfer types"""
+        import math
+
         from astrora._core import (
             hohmann_transfer,
             pure_plane_change,
         )
-        import math
 
         R_MEAN_EARTH = constants.R_MEAN_EARTH
 

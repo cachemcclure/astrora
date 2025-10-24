@@ -11,9 +11,8 @@ This test suite verifies that:
 import numpy as np
 import pytest
 from astropy import units as u
-from astrora.twobody import Orbit
 from astrora.bodies import Earth
-from astrora._core import Epoch
+from astrora.twobody import Orbit
 
 
 class TestOrbitCreationWithUnits:
@@ -39,7 +38,7 @@ class TestOrbitCreationWithUnits:
         """Test from_vectors with raw arrays (backward compatibility)."""
         # Create orbit using raw SI units
         r = np.array([7000e3, 0, 0])  # meters
-        v = np.array([0, 7546, 0])    # m/s
+        v = np.array([0, 7546, 0])  # m/s
 
         orbit = Orbit.from_vectors(Earth, r, v)
 
@@ -88,9 +87,9 @@ class TestOrbitCreationWithUnits:
         """Test from_classical with raw values (backward compatibility)."""
         orbit = Orbit.from_classical(
             Earth,
-            a=7000e3,                   # meters
-            ecc=0.01,                   # dimensionless
-            inc=np.deg2rad(51.6),       # radians
+            a=7000e3,  # meters
+            ecc=0.01,  # dimensionless
+            inc=np.deg2rad(51.6),  # radians
             raan=0.0,
             argp=0.0,
             nu=0.0,
@@ -106,12 +105,12 @@ class TestOrbitCreationWithUnits:
         """Test from_classical with mixed unit types."""
         orbit = Orbit.from_classical(
             Earth,
-            a=1.0 << u.AU,          # Astronomical units
-            ecc=0.0167 << u.one,    # Dimensionless
-            inc=7.25 << u.deg,      # Degrees
+            a=1.0 << u.AU,  # Astronomical units
+            ecc=0.0167 << u.one,  # Dimensionless
+            inc=7.25 << u.deg,  # Degrees
             raan=348.7 << u.deg,
             argp=114.2 << u.deg,
-            nu=0 << u.rad,          # Radians
+            nu=0 << u.rad,  # Radians
         )
 
         assert orbit is not None
@@ -139,7 +138,7 @@ class TestOrbitPropertiesWithUnits:
         assert isinstance(r, u.Quantity)
 
         # Check it has length units
-        assert r.unit.physical_type == 'length'
+        assert r.unit.physical_type == "length"
 
         # Can convert to different units
         r_km = r.to(u.km)
@@ -153,7 +152,7 @@ class TestOrbitPropertiesWithUnits:
         assert isinstance(v, u.Quantity)
 
         # Check it has velocity units
-        assert v.unit.physical_type == 'speed'
+        assert v.unit.physical_type == "speed"
 
         # Can convert to different units
         v_kms = v.to(u.km / u.s)
@@ -164,7 +163,7 @@ class TestOrbitPropertiesWithUnits:
         a = circular_orbit.a
 
         assert isinstance(a, u.Quantity)
-        assert a.unit.physical_type == 'length'
+        assert a.unit.physical_type == "length"
 
         # Check value
         a_km = a.to(u.km).value
@@ -175,7 +174,7 @@ class TestOrbitPropertiesWithUnits:
         ecc = circular_orbit.ecc
 
         assert isinstance(ecc, u.Quantity)
-        assert ecc.unit.physical_type == 'dimensionless'
+        assert ecc.unit.physical_type == "dimensionless"
 
         # Should be nearly zero for circular orbit
         assert ecc.value == pytest.approx(0.0, abs=1e-3)
@@ -185,7 +184,7 @@ class TestOrbitPropertiesWithUnits:
         inc = circular_orbit.inc
 
         assert isinstance(inc, u.Quantity)
-        assert inc.unit.physical_type == 'angle'
+        assert inc.unit.physical_type == "angle"
 
         # Can convert to degrees
         inc_deg = inc.to(u.deg)
@@ -197,7 +196,7 @@ class TestOrbitPropertiesWithUnits:
 
         for angle in angles:
             assert isinstance(angle, u.Quantity)
-            assert angle.unit.physical_type == 'angle'
+            assert angle.unit.physical_type == "angle"
 
             # Can convert to degrees
             angle_deg = angle.to(u.deg)
@@ -208,7 +207,7 @@ class TestOrbitPropertiesWithUnits:
         period = circular_orbit.period
 
         assert isinstance(period, u.Quantity)
-        assert period.unit.physical_type == 'time'
+        assert period.unit.physical_type == "time"
 
         # Can convert to hours
         period_hr = period.to(u.hour)
@@ -243,8 +242,8 @@ class TestOrbitPropertiesWithUnits:
         assert isinstance(r_p, u.Quantity)
         assert isinstance(r_a, u.Quantity)
 
-        assert r_p.unit.physical_type == 'length'
-        assert r_a.unit.physical_type == 'length'
+        assert r_p.unit.physical_type == "length"
+        assert r_a.unit.physical_type == "length"
 
         # For circular orbit, r_p ≈ r_a ≈ a
         r_p_km = r_p.to(u.km).value
@@ -383,10 +382,10 @@ class TestBackwardCompatibility:
         # This should work: some with units, some without
         orbit = Orbit.from_classical(
             Earth,
-            a=7000 << u.km,       # With units
-            ecc=0.01,             # Raw
-            inc=51.6 << u.deg,    # With units
-            raan=0.0,             # Raw (radians)
+            a=7000 << u.km,  # With units
+            ecc=0.01,  # Raw
+            inc=51.6 << u.deg,  # With units
+            raan=0.0,  # Raw (radians)
             argp=0.0,
             nu=0.0,
         )

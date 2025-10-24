@@ -25,7 +25,6 @@ import numpy as np
 import pytest
 from astrora._core import numpy_ops
 
-
 # Array sizes for scaling tests
 ARRAY_SIZES = {
     "tiny": 10,
@@ -162,10 +161,7 @@ class TestInPlaceOperationsOverhead:
             return (np.random.randn(size), scalar), {}
 
         result = benchmark.pedantic(
-            numpy_ops.multiply_scalar_inplace,
-            setup=setup,
-            iterations=1,
-            rounds=100
+            numpy_ops.multiply_scalar_inplace, setup=setup, iterations=1, rounds=100
         )
 
     @pytest.mark.parametrize("size_name", ["tiny", "small", "medium", "large", "very_large"])
@@ -181,12 +177,7 @@ class TestInPlaceOperationsOverhead:
         def numpy_inplace(arr, s):
             arr *= s
 
-        result = benchmark.pedantic(
-            numpy_inplace,
-            setup=setup,
-            iterations=1,
-            rounds=100
-        )
+        result = benchmark.pedantic(numpy_inplace, setup=setup, iterations=1, rounds=100)
 
 
 class TestBatchOperationsScaling:

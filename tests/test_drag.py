@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 from astrora._core import (
     constants,
-    exponential_density,
     drag_acceleration,
-    propagate_drag_rk4,
+    exponential_density,
     propagate_drag_dopri5,
-    propagate_j2_drag_rk4,
+    propagate_drag_rk4,
     propagate_j2_drag_dopri5,
+    propagate_j2_drag_rk4,
     propagate_state_keplerian,
 )
 
@@ -59,9 +59,9 @@ class TestDragAcceleration:
         v = np.array([0.0, 7670.0, 0.0])
         B = 50.0  # CubeSat-like ballistic coefficient
 
-        a_drag = drag_acceleration(r, v, constants.R_EARTH,
-                                    constants.RHO0_EARTH,
-                                    constants.H0_EARTH, B)
+        a_drag = drag_acceleration(
+            r, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B
+        )
 
         # Drag should oppose velocity: a_drag · v < 0
         dot_product = np.dot(a_drag, v)
@@ -81,9 +81,9 @@ class TestDragAcceleration:
         v = np.array([0.0, 7670.0, 0.0])
         B = 82.0  # ISS ballistic coefficient
 
-        a_drag = drag_acceleration(r, v, constants.R_EARTH,
-                                    constants.RHO0_EARTH,
-                                    constants.H0_EARTH, B)
+        a_drag = drag_acceleration(
+            r, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B
+        )
 
         # At 400 km with this simple model, drag is extremely small
         mag = np.linalg.norm(a_drag)
@@ -96,15 +96,15 @@ class TestDragAcceleration:
         # Compare drag at 300 km vs 400 km
         r_300km = np.array([6678e3, 0.0, 0.0])
         v = np.array([0.0, 7730.0, 0.0])
-        a_drag_300 = drag_acceleration(r_300km, v, constants.R_EARTH,
-                                        constants.RHO0_EARTH,
-                                        constants.H0_EARTH, B)
+        a_drag_300 = drag_acceleration(
+            r_300km, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B
+        )
 
         r_400km = np.array([6778e3, 0.0, 0.0])
         v2 = np.array([0.0, 7670.0, 0.0])
-        a_drag_400 = drag_acceleration(r_400km, v2, constants.R_EARTH,
-                                        constants.RHO0_EARTH,
-                                        constants.H0_EARTH, B)
+        a_drag_400 = drag_acceleration(
+            r_400km, v2, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B
+        )
 
         # Drag at lower altitude should be stronger
         assert np.linalg.norm(a_drag_300) > np.linalg.norm(a_drag_400)
@@ -115,9 +115,9 @@ class TestDragAcceleration:
         v = np.zeros(3)
         B = 50.0
 
-        a_drag = drag_acceleration(r, v, constants.R_EARTH,
-                                    constants.RHO0_EARTH,
-                                    constants.H0_EARTH, B)
+        a_drag = drag_acceleration(
+            r, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B
+        )
 
         assert np.linalg.norm(a_drag) < 1e-20
 
@@ -129,12 +129,12 @@ class TestDragAcceleration:
         B_small = 20.0  # Small satellite (more drag)
         B_large = 200.0  # Large satellite (less drag)
 
-        a_drag_small = drag_acceleration(r, v, constants.R_EARTH,
-                                          constants.RHO0_EARTH,
-                                          constants.H0_EARTH, B_small)
-        a_drag_large = drag_acceleration(r, v, constants.R_EARTH,
-                                          constants.RHO0_EARTH,
-                                          constants.H0_EARTH, B_large)
+        a_drag_small = drag_acceleration(
+            r, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B_small
+        )
+        a_drag_large = drag_acceleration(
+            r, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B_large
+        )
 
         # Smaller B should experience more drag
         assert np.linalg.norm(a_drag_small) > np.linalg.norm(a_drag_large)
@@ -151,9 +151,7 @@ class TestDragAcceleration:
         B = 50.0
 
         with pytest.raises(ValueError):
-            drag_acceleration(r, v, constants.R_EARTH,
-                              constants.RHO0_EARTH,
-                              constants.H0_EARTH, B)
+            drag_acceleration(r, v, constants.R_EARTH, constants.RHO0_EARTH, constants.H0_EARTH, B)
 
 
 class TestDragPropagation:
@@ -167,13 +165,15 @@ class TestDragPropagation:
         B = 50.0
 
         r1, v1 = propagate_drag_rk4(
-            r0, v0, 600.0,
+            r0,
+            v0,
+            600.0,
             constants.GM_EARTH,
             constants.R_EARTH,
             constants.RHO0_EARTH,
             constants.H0_EARTH,
             B,
-            n_steps=100
+            n_steps=100,
         )
 
         # Orbit should still be valid
@@ -187,13 +187,15 @@ class TestDragPropagation:
         B = 50.0
 
         r1, v1 = propagate_drag_dopri5(
-            r0, v0, 600.0,
+            r0,
+            v0,
+            600.0,
             constants.GM_EARTH,
             constants.R_EARTH,
             constants.RHO0_EARTH,
             constants.H0_EARTH,
             B,
-            tol=1e-8
+            tol=1e-8,
         )
 
         assert np.linalg.norm(r1) > 6000e3
@@ -211,24 +213,30 @@ class TestDragPropagation:
 
         # Drag propagation
         r_drag, v_drag = propagate_drag_rk4(
-            r0, v0, dt,
+            r0,
+            v0,
+            dt,
             constants.GM_EARTH,
             constants.R_EARTH,
             constants.RHO0_EARTH,
             constants.H0_EARTH,
             B,
-            n_steps=100
+            n_steps=100,
         )
 
         # Calculate specific energies
-        e_twobody = np.linalg.norm(v_twobody)**2 / 2.0 - constants.GM_EARTH / np.linalg.norm(r_twobody)
-        e_drag = np.linalg.norm(v_drag)**2 / 2.0 - constants.GM_EARTH / np.linalg.norm(r_drag)
+        e_twobody = np.linalg.norm(v_twobody) ** 2 / 2.0 - constants.GM_EARTH / np.linalg.norm(
+            r_twobody
+        )
+        e_drag = np.linalg.norm(v_drag) ** 2 / 2.0 - constants.GM_EARTH / np.linalg.norm(r_drag)
 
         # With drag, orbital energy should decrease
         assert e_drag < e_twobody, "Drag should decrease orbital energy"
 
         # Orbital altitude should decrease
-        assert np.linalg.norm(r_drag) < np.linalg.norm(r_twobody), "Drag should cause orbit to decay"
+        assert np.linalg.norm(r_drag) < np.linalg.norm(
+            r_twobody
+        ), "Drag should cause orbit to decay"
 
 
 class TestCombinedJ2Drag:
@@ -241,14 +249,16 @@ class TestCombinedJ2Drag:
         B = 50.0
 
         r1, v1 = propagate_j2_drag_rk4(
-            r0, v0, 600.0,
+            r0,
+            v0,
+            600.0,
             constants.GM_EARTH,
             constants.J2_EARTH,
             constants.R_EARTH,
             constants.RHO0_EARTH,
             constants.H0_EARTH,
             B,
-            n_steps=100
+            n_steps=100,
         )
 
         assert np.linalg.norm(r1) > 6000e3
@@ -261,14 +271,16 @@ class TestCombinedJ2Drag:
         B = 50.0
 
         r1, v1 = propagate_j2_drag_dopri5(
-            r0, v0, 600.0,
+            r0,
+            v0,
+            600.0,
             constants.GM_EARTH,
             constants.J2_EARTH,
             constants.R_EARTH,
             constants.RHO0_EARTH,
             constants.H0_EARTH,
             B,
-            tol=1e-8
+            tol=1e-8,
         )
 
         assert np.linalg.norm(r1) > 6000e3
@@ -282,12 +294,14 @@ class TestCombinedJ2Drag:
 
         with pytest.raises(ValueError):
             propagate_drag_rk4(
-                r0, v0, 600.0,
+                r0,
+                v0,
+                600.0,
                 constants.GM_EARTH,
                 constants.R_EARTH,
                 constants.RHO0_EARTH,
                 constants.H0_EARTH,
-                B
+                B,
             )
 
 

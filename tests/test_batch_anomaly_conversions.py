@@ -9,18 +9,18 @@ import numpy as np
 import pytest
 from astrora._core import (
     batch_mean_to_eccentric_anomaly,
-    batch_mean_to_true_anomaly,
-    batch_true_to_mean_anomaly,
     batch_mean_to_hyperbolic_anomaly,
+    batch_mean_to_true_anomaly,
     batch_mean_to_true_anomaly_hyperbolic,
     batch_mean_to_true_anomaly_parabolic,
+    batch_true_to_mean_anomaly,
     # Individual functions for comparison
     mean_to_eccentric_anomaly,
-    mean_to_true_anomaly,
-    true_to_mean_anomaly,
     mean_to_hyperbolic_anomaly,
+    mean_to_true_anomaly,
     mean_to_true_anomaly_hyperbolic,
     mean_to_true_anomaly_parabolic,
+    true_to_mean_anomaly,
 )
 
 
@@ -53,9 +53,7 @@ class TestBatchEllipticalAnomalies:
 
         # Verify each result
         for i in range(len(mean_anomalies)):
-            E_individual = mean_to_eccentric_anomaly(
-                mean_anomalies[i], eccentricities[i]
-            )
+            E_individual = mean_to_eccentric_anomaly(mean_anomalies[i], eccentricities[i])
             np.testing.assert_allclose(results[i], E_individual, rtol=1e-10)
 
     def test_batch_mean_to_true_elliptical(self):
@@ -121,9 +119,7 @@ class TestBatchEllipticalAnomalies:
 
         # Spot check a few values
         for i in [0, 250, 500, 750, 999]:
-            E_individual = mean_to_eccentric_anomaly(
-                mean_anomalies[i], eccentricity[0]
-            )
+            E_individual = mean_to_eccentric_anomaly(mean_anomalies[i], eccentricity[0])
             np.testing.assert_allclose(results[i], E_individual, rtol=1e-10)
 
 
@@ -149,17 +145,13 @@ class TestBatchHyperbolicAnomalies:
         mean_anomalies = np.array([0.5, 1.0, 1.5, 2.0])
         eccentricities = np.array([1.2, 1.5, 2.0, 2.5])
 
-        results = batch_mean_to_true_anomaly_hyperbolic(
-            mean_anomalies, eccentricities
-        )
+        results = batch_mean_to_true_anomaly_hyperbolic(mean_anomalies, eccentricities)
 
         assert results.shape == mean_anomalies.shape
 
         # Verify each result matches individual calculation
         for i in range(len(mean_anomalies)):
-            nu_individual = mean_to_true_anomaly_hyperbolic(
-                mean_anomalies[i], eccentricities[i]
-            )
+            nu_individual = mean_to_true_anomaly_hyperbolic(mean_anomalies[i], eccentricities[i])
             np.testing.assert_allclose(results[i], nu_individual, rtol=1e-10)
 
     def test_batch_hyperbolic_single_eccentricity(self):
@@ -167,9 +159,7 @@ class TestBatchHyperbolicAnomalies:
         mean_anomalies = np.array([0.5, 1.0, 2.0, 3.0, 5.0])
         eccentricity = np.array([2.0])
 
-        results = batch_mean_to_true_anomaly_hyperbolic(
-            mean_anomalies, eccentricity
-        )
+        results = batch_mean_to_true_anomaly_hyperbolic(mean_anomalies, eccentricity)
 
         assert results.shape == mean_anomalies.shape
         assert np.all(np.isfinite(results))
@@ -223,9 +213,7 @@ class TestBatchParabolicAnomalies:
 
         # Results should be symmetric
         expected_neg = (-results_pos) % (2 * np.pi)
-        np.testing.assert_allclose(
-            results_neg, expected_neg, rtol=1e-10, atol=1e-10
-        )
+        np.testing.assert_allclose(results_neg, expected_neg, rtol=1e-10, atol=1e-10)
 
 
 class TestBatchErrorHandling:
@@ -275,9 +263,7 @@ class TestBatchPerformancePattern:
         eccentricity = np.array([0.5])
 
         # Batch processing
-        results_batch = batch_mean_to_eccentric_anomaly(
-            mean_anomalies, eccentricity
-        )
+        results_batch = batch_mean_to_eccentric_anomaly(mean_anomalies, eccentricity)
 
         # Sequential processing
         results_sequential = np.array(

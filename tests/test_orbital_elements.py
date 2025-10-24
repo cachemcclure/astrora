@@ -9,9 +9,9 @@ Tests cover:
 - Edge cases (circular, equatorial orbits)
 """
 
-import pytest
 import numpy as np
-from astrora._core import OrbitalElements, rv_to_coe, coe_to_rv, constants
+import pytest
+from astrora._core import OrbitalElements, coe_to_rv, constants, rv_to_coe
 
 
 class TestOrbitalElementsClass:
@@ -21,7 +21,7 @@ class TestOrbitalElementsClass:
         """Test creating orbital elements."""
         elements = OrbitalElements(
             a=7000e3,  # 7000 km
-            e=0.01,    # slight eccentricity
+            e=0.01,  # slight eccentricity
             i=np.deg2rad(28.5),  # ISS-like inclination
             raan=np.deg2rad(45.0),
             argp=np.deg2rad(30.0),
@@ -53,7 +53,7 @@ class TestOrbitalElementsClass:
     def test_periapsis_apoapsis(self):
         """Test periapsis and apoapsis distance calculations."""
         a = 8000e3  # 8000 km
-        e = 0.1     # 10% eccentricity
+        e = 0.1  # 10% eccentricity
 
         elements = OrbitalElements(a, e, 0.0, 0.0, 0.0, 0.0)
 
@@ -332,8 +332,8 @@ class TestKnownOrbits:
         """Test ISS-like orbit parameters."""
         # Approximate ISS parameters
         elements = OrbitalElements(
-            a=6778e3,       # ~408 km altitude
-            e=0.0001,       # Nearly circular
+            a=6778e3,  # ~408 km altitude
+            e=0.0001,  # Nearly circular
             i=np.deg2rad(51.6),  # ISS inclination
             raan=0.0,
             argp=0.0,

@@ -8,9 +8,9 @@ This test module validates the satellite operations module, including:
 - Batch propagation
 """
 
-import pytest
 import numpy as np
-from astrora._core import py_propagate_tle, py_propagate_tle_batch, py_propagate_omm
+import pytest
+from astrora._core import py_propagate_omm, py_propagate_tle, py_propagate_tle_batch
 
 
 class TestTLEPropagation:
@@ -29,36 +29,36 @@ class TestTLEPropagation:
         state = py_propagate_tle(self.ISS_TLE_2LINE, 0.0)
 
         # Check return structure
-        assert 'position' in state
-        assert 'velocity' in state
-        assert 'time_offset_minutes' in state
-        assert 'altitude_km' in state
-        assert 'speed_km_s' in state
+        assert "position" in state
+        assert "velocity" in state
+        assert "time_offset_minutes" in state
+        assert "altitude_km" in state
+        assert "speed_km_s" in state
 
         # Check position is a 3D vector
-        assert len(state['position']) == 3
+        assert len(state["position"]) == 3
 
         # ISS altitude should be around 350-450 km
-        altitude = state['altitude_km']
+        altitude = state["altitude_km"]
         assert 300 < altitude < 500, f"ISS altitude should be ~400 km, got {altitude}"
 
         # ISS speed should be around 7.6-7.8 km/s for LEO
-        speed = state['speed_km_s']
+        speed = state["speed_km_s"]
         assert 7.0 < speed < 8.0, f"ISS speed should be ~7.7 km/s, got {speed}"
 
     def test_propagate_2line_tle(self):
         """Test propagation with 2-line TLE format."""
         state = py_propagate_tle(self.ISS_TLE_2LINE, 120.0)  # 2 hours after epoch
 
-        assert state['time_offset_minutes'] == 120.0
-        assert state['altitude_km'] > 300  # Still in orbit
+        assert state["time_offset_minutes"] == 120.0
+        assert state["altitude_km"] > 300  # Still in orbit
 
     def test_propagate_3line_tle(self):
         """Test propagation with 3-line TLE format (includes satellite name)."""
         state = py_propagate_tle(self.ISS_TLE_3LINE, 60.0)  # 1 hour after epoch
 
-        assert state['time_offset_minutes'] == 60.0
-        assert state['altitude_km'] > 300  # Still in orbit
+        assert state["time_offset_minutes"] == 60.0
+        assert state["altitude_km"] > 300  # Still in orbit
 
     def test_propagate_one_orbit(self):
         """Test propagation for one full orbit."""
@@ -70,7 +70,7 @@ class TestTLEPropagation:
 
         # Positions should be similar (not exact due to perturbations)
         pos_diff = np.linalg.norm(
-            np.array(state_epoch['position']) - np.array(state_one_orbit['position'])
+            np.array(state_epoch["position"]) - np.array(state_one_orbit["position"])
         )
 
         # Should be within 100 km after one orbit (SGP4 models perturbations)
@@ -85,9 +85,9 @@ class TestTLEPropagation:
 
         # Check each state
         for i, state in enumerate(states):
-            assert state['time_offset_minutes'] == time_offsets[i]
-            assert 300 < state['altitude_km'] < 500
-            assert 7.0 < state['speed_km_s'] < 8.0
+            assert state["time_offset_minutes"] == time_offsets[i]
+            assert 300 < state["altitude_km"] < 500
+            assert 7.0 < state["speed_km_s"] < 8.0
 
     def test_batch_vs_single_propagation(self):
         """Verify batch propagation matches single propagation."""
@@ -99,10 +99,10 @@ class TestTLEPropagation:
 
             # Positions should match exactly
             np.testing.assert_allclose(
-                states_batch[i]['position'],
-                state_single['position'],
+                states_batch[i]["position"],
+                state_single["position"],
                 rtol=1e-10,
-                err_msg=f"Batch and single propagation differ at offset {offset}"
+                err_msg=f"Batch and single propagation differ at offset {offset}",
             )
 
     def test_invalid_tle(self):
@@ -147,20 +147,20 @@ class TestOMMPropagation:
         state = py_propagate_omm(self.ISS_OMM, 0.0)
 
         # Check structure
-        assert 'position' in state
-        assert 'velocity' in state
-        assert len(state['position']) == 3
+        assert "position" in state
+        assert "velocity" in state
+        assert len(state["position"]) == 3
 
         # Check ISS characteristics
-        assert 300 < state['altitude_km'] < 500
-        assert 7.0 < state['speed_km_s'] < 8.0
+        assert 300 < state["altitude_km"] < 500
+        assert 7.0 < state["speed_km_s"] < 8.0
 
     def test_propagate_omm_offset(self):
         """Test OMM propagation with time offset."""
         state = py_propagate_omm(self.ISS_OMM, 90.0)  # 90 minutes after epoch
 
-        assert state['time_offset_minutes'] == 90.0
-        assert state['altitude_km'] > 300
+        assert state["time_offset_minutes"] == 90.0
+        assert state["altitude_km"] > 300
 
     def test_invalid_omm(self):
         """Test error handling for invalid OMM JSON."""
@@ -180,10 +180,10 @@ class TestOMMPropagation:
 
         # Positions should match within 1 meter (small numerical differences expected)
         np.testing.assert_allclose(
-            state_tle['position'],
-            state_omm['position'],
+            state_tle["position"],
+            state_omm["position"],
             atol=1e-3,  # 1 meter tolerance
-            err_msg="TLE and OMM propagation should produce equivalent results"
+            err_msg="TLE and OMM propagation should produce equivalent results",
         )
 
 
@@ -197,7 +197,7 @@ class TestPhysicalValidation:
     def test_position_magnitude_reasonable(self):
         """Test that position magnitude is reasonable for LEO."""
         state = py_propagate_tle(self.ISS_TLE, 0.0)
-        pos = np.array(state['position'])
+        pos = np.array(state["position"])
         r_mag = np.linalg.norm(pos)
 
         # LEO satellites: 6400-8000 km from Earth center
@@ -206,7 +206,7 @@ class TestPhysicalValidation:
     def test_velocity_magnitude_reasonable(self):
         """Test that velocity magnitude is reasonable for LEO."""
         state = py_propagate_tle(self.ISS_TLE, 0.0)
-        vel = np.array(state['velocity'])
+        vel = np.array(state["velocity"])
         v_mag = np.linalg.norm(vel)
 
         # LEO satellites: 7-8 km/s orbital speed
@@ -221,8 +221,8 @@ class TestPhysicalValidation:
 
         # Specific energy: E = v^2/2 - mu/r
         def specific_energy(state):
-            r = np.linalg.norm(state['position'])
-            v = np.linalg.norm(state['velocity'])
+            r = np.linalg.norm(state["position"])
+            v = np.linalg.norm(state["velocity"])
             return (v**2) / 2.0 - mu / r
 
         E0 = specific_energy(state0)
@@ -232,5 +232,6 @@ class TestPhysicalValidation:
         energy_change_percent = abs(E60 - E0) / abs(E0) * 100
 
         # Allow up to 1% energy change over 1 hour (atmospheric drag)
-        assert energy_change_percent < 1.0, \
-            f"Energy changed by {energy_change_percent}% (E0={E0}, E60={E60})"
+        assert (
+            energy_change_percent < 1.0
+        ), f"Energy changed by {energy_change_percent}% (E0={E0}, E60={E60})"

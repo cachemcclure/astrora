@@ -1237,7 +1237,7 @@ fn py_batch_mean_to_eccentric_anomaly<'py>(
     let e_array = eccentricities.as_slice()?;
 
     let results = core::anomaly::batch_mean_to_eccentric_anomaly(m_array, e_array, tol, max_iter)
-        .map_err(|e| Into::<PyErr>::into(e))?;
+        .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -1256,7 +1256,7 @@ fn py_batch_mean_to_true_anomaly<'py>(
     let e_array = eccentricities.as_slice()?;
 
     let results = core::anomaly::batch_mean_to_true_anomaly(m_array, e_array, tol, max_iter)
-        .map_err(|e| Into::<PyErr>::into(e))?;
+        .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -1273,7 +1273,7 @@ fn py_batch_true_to_mean_anomaly<'py>(
     let e_array = eccentricities.as_slice()?;
 
     let results = core::anomaly::batch_true_to_mean_anomaly(nu_array, e_array)
-        .map_err(|e| Into::<PyErr>::into(e))?;
+        .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -1296,7 +1296,7 @@ fn py_batch_mean_to_hyperbolic_anomaly<'py>(
     let e_array = eccentricities.as_slice()?;
 
     let results = core::anomaly::batch_mean_to_hyperbolic_anomaly(m_array, e_array, tol, max_iter)
-        .map_err(|e| Into::<PyErr>::into(e))?;
+        .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -1315,7 +1315,7 @@ fn py_batch_mean_to_true_anomaly_hyperbolic<'py>(
     let e_array = eccentricities.as_slice()?;
 
     let results = core::anomaly::batch_mean_to_true_anomaly_hyperbolic(m_array, e_array, tol, max_iter)
-        .map_err(|e| Into::<PyErr>::into(e))?;
+        .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -1334,7 +1334,7 @@ fn py_batch_mean_to_true_anomaly_parabolic<'py>(
     let m_array = mean_anomalies.as_slice()?;
 
     let results = core::anomaly::batch_mean_to_true_anomaly_parabolic(m_array)
-        .map_err(|e| Into::<PyErr>::into(e))?;
+        .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -5941,7 +5941,7 @@ fn py_sun_synchronous_inclination(altitude_km: f64, eccentricity: f64) -> PyResu
     match sun_synchronous_inclination(semi_major_axis, eccentricity, J2_EARTH, R_EARTH, GM_EARTH) {
         Ok(inclination) => Ok(inclination.to_degrees()),
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Sun-synchronous orbit not possible: {}", e)
+            format!("Sun-synchronous orbit not possible: {e}")
         )),
     }
 }
@@ -5978,7 +5978,7 @@ fn py_eclipse_duration(altitude_km: f64, beta_angle_deg: f64) -> PyResult<f64> {
     match eclipse_duration(semi_major_axis, beta_angle, GM_EARTH) {
         Ok(duration_sec) => Ok(duration_sec / 60.0), // Convert to minutes
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Eclipse duration calculation failed: {}", e)
+            format!("Eclipse duration calculation failed: {e}")
         )),
     }
 }
@@ -6039,7 +6039,7 @@ fn py_estimate_satellite_lifetime(
     match estimate_lifetime(&r, &v, ballistic_coeff, terminal_altitude, max_time, 60.0) {
         Ok(lifetime_sec) => Ok(lifetime_sec / 86400.0), // Convert to days
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Lifetime estimation failed: {}", e)
+            format!("Lifetime estimation failed: {e}")
         )),
     }
 }
@@ -6148,7 +6148,7 @@ fn py_compute_conjunction(
             result.collision_risk,
         )),
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Conjunction analysis failed: {}", e)
+            format!("Conjunction analysis failed: {e}")
         )),
     }
 }
@@ -6207,7 +6207,7 @@ fn py_closest_approach_distance(
     match closest_approach_distance(&r1, &v1, &r2, &v2, GM_EARTH, search_window) {
         Ok(distance) => Ok(distance / 1000.0), // Convert to km
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Closest approach calculation failed: {}", e)
+            format!("Closest approach calculation failed: {e}")
         )),
     }
 }

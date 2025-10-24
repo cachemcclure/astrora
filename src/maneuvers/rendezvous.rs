@@ -300,9 +300,8 @@ impl Rendezvous {
             return Err(PoliastroError::invalid_parameter(
                 "phase_change",
                 phase_change,
-                &format!(
-                    "phasing orbit periapsis ({:.0} m) too low - would be below safe altitude",
-                    r_phasing_periapsis
+                format!(
+                    "phasing orbit periapsis ({r_phasing_periapsis:.0} m) too low - would be below safe altitude"
                 ),
             ));
         }

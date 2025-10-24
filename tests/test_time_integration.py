@@ -5,22 +5,20 @@ This test suite verifies the conversion between astropy.time.Time and hifitime E
 as well as the integration with the Orbit class.
 """
 
-import pytest
 import numpy as np
-from astropy.time import Time
+import pytest
 from astropy import units as u
-
+from astropy.time import Time
 from astrora._core import Epoch
+from astrora.bodies import Earth
 from astrora.time import (
+    ASTROPY_AVAILABLE,
     astropy_time_to_epoch,
     epoch_to_astropy_time,
-    to_epoch,
     to_astropy_time,
-    ASTROPY_AVAILABLE,
+    to_epoch,
 )
 from astrora.twobody import Orbit
-from astrora.bodies import Earth
-
 
 # Skip all tests if astropy is not installed
 pytestmark = pytest.mark.skipif(not ASTROPY_AVAILABLE, reason="astropy not installed")
@@ -32,7 +30,7 @@ class TestAstropyTimeConversion:
     def test_j2000_conversion(self):
         """Test conversion of J2000 epoch."""
         # astropy J2000
-        t_astropy = Time('2000-01-01 12:00:00', scale='tt')
+        t_astropy = Time("2000-01-01 12:00:00", scale="tt")
 
         # Convert to Epoch
         epoch = astropy_time_to_epoch(t_astropy)
@@ -41,42 +39,42 @@ class TestAstropyTimeConversion:
         assert abs(epoch.jd_tt - 2451545.0) < 1e-9
 
         # Convert back
-        t_back = epoch_to_astropy_time(epoch, scale='tt')
+        t_back = epoch_to_astropy_time(epoch, scale="tt")
 
         # Verify roundtrip
         assert abs(t_back.jd - t_astropy.jd) < 1e-9
 
     def test_utc_conversion(self):
         """Test UTC time scale conversion."""
-        t_utc = Time('2024-10-22 14:30:45.123456', scale='utc')
+        t_utc = Time("2024-10-22 14:30:45.123456", scale="utc")
 
         # Convert to Epoch
         epoch = astropy_time_to_epoch(t_utc)
 
         # Convert back
-        t_back = epoch_to_astropy_time(epoch, scale='utc')
+        t_back = epoch_to_astropy_time(epoch, scale="utc")
 
         # Verify roundtrip (should be exact)
         assert abs(t_back.jd - t_utc.jd) < 1e-9
 
     def test_tai_conversion(self):
         """Test TAI time scale conversion."""
-        t_tai = Time('2020-06-15 10:30:00', scale='tai')
+        t_tai = Time("2020-06-15 10:30:00", scale="tai")
 
         # Convert to Epoch and back
         epoch = astropy_time_to_epoch(t_tai)
-        t_back = epoch_to_astropy_time(epoch, scale='tai')
+        t_back = epoch_to_astropy_time(epoch, scale="tai")
 
         # Verify roundtrip
         assert abs(t_back.jd - t_tai.jd) < 1e-9
 
     def test_tt_conversion(self):
         """Test TT (Terrestrial Time) conversion."""
-        t_tt = Time('2015-03-20 09:45:00', scale='tt')
+        t_tt = Time("2015-03-20 09:45:00", scale="tt")
 
         # Convert to Epoch and back
         epoch = astropy_time_to_epoch(t_tt)
-        t_back = epoch_to_astropy_time(epoch, scale='tt')
+        t_back = epoch_to_astropy_time(epoch, scale="tt")
 
         # Verify roundtrip
         assert abs(t_back.jd - t_tt.jd) < 1e-9
@@ -84,11 +82,11 @@ class TestAstropyTimeConversion:
     def test_precision_preservation(self):
         """Test that conversion preserves nanosecond precision."""
         # Create a time with microsecond precision
-        t_original = Time('2024-01-15 12:34:56.123456', scale='utc')
+        t_original = Time("2024-01-15 12:34:56.123456", scale="utc")
 
         # Convert to Epoch and back
         epoch = astropy_time_to_epoch(t_original)
-        t_roundtrip = epoch_to_astropy_time(epoch, scale='utc')
+        t_roundtrip = epoch_to_astropy_time(epoch, scale="utc")
 
         # Difference should be less than 1 microsecond (1.16e-11 days)
         diff_days = abs(t_original.jd - t_roundtrip.jd)
@@ -99,10 +97,10 @@ class TestAstropyTimeConversion:
     def test_different_epochs(self):
         """Test various historical and future epochs."""
         test_cases = [
-            ('1970-01-01 00:00:00', 'utc'),  # Unix epoch
-            ('2000-01-01 00:00:00', 'utc'),  # Y2K
-            ('2024-12-31 23:59:59', 'utc'),  # Near future
-            ('1980-01-06 00:00:00', 'tai'),  # GPS epoch reference
+            ("1970-01-01 00:00:00", "utc"),  # Unix epoch
+            ("2000-01-01 00:00:00", "utc"),  # Y2K
+            ("2024-12-31 23:59:59", "utc"),  # Near future
+            ("1980-01-06 00:00:00", "tai"),  # GPS epoch reference
         ]
 
         for time_str, scale in test_cases:
@@ -119,7 +117,7 @@ class TestConvenienceFunctions:
 
     def test_to_epoch_from_astropy_time(self):
         """Test to_epoch() with astropy Time input."""
-        t = Time('2020-06-15 10:30:00', scale='utc')
+        t = Time("2020-06-15 10:30:00", scale="utc")
         epoch = to_epoch(t)
 
         assert isinstance(epoch, Epoch)
@@ -145,15 +143,15 @@ class TestConvenienceFunctions:
     def test_to_astropy_time_from_epoch(self):
         """Test to_astropy_time() with Epoch input."""
         epoch = Epoch.j2000_epoch()
-        t = to_astropy_time(epoch, scale='tt')
+        t = to_astropy_time(epoch, scale="tt")
 
         assert isinstance(t, Time)
-        assert t.scale == 'tt'
+        assert t.scale == "tt"
         assert abs(t.jd - 2451545.0) < 1e-9
 
     def test_to_astropy_time_from_time(self):
         """Test to_astropy_time() with Time input (passthrough)."""
-        t_in = Time('2020-06-15', scale='utc')
+        t_in = Time("2020-06-15", scale="utc")
         t_out = to_astropy_time(t_in)
 
         assert t_out.jd == t_in.jd
@@ -161,11 +159,11 @@ class TestConvenienceFunctions:
 
     def test_to_astropy_time_scale_conversion(self):
         """Test to_astropy_time() with scale conversion."""
-        t_in = Time('2020-06-15', scale='utc')
-        t_out = to_astropy_time(t_in, scale='tt')
+        t_in = Time("2020-06-15", scale="utc")
+        t_out = to_astropy_time(t_in, scale="tt")
 
         # Should be converted to TT
-        assert t_out.scale == 'tt'
+        assert t_out.scale == "tt"
         # But represent the same instant
         assert abs(t_out.utc.jd - t_in.jd) < 1e-9
 
@@ -177,7 +175,7 @@ class TestOrbitTimeIntegration:
         """Test Orbit.from_vectors() with astropy Time."""
         r = np.array([7000e3, 0, 0])
         v = np.array([0, 7546, 0])
-        t = Time('2024-10-22 14:30:00', scale='utc')
+        t = Time("2024-10-22 14:30:00", scale="utc")
 
         orbit = Orbit.from_vectors(Earth, r, v, epoch=t)
 
@@ -188,7 +186,7 @@ class TestOrbitTimeIntegration:
 
     def test_from_classical_with_astropy_time(self):
         """Test Orbit.from_classical() with astropy Time."""
-        t = Time('2000-01-01 12:00:00', scale='tt')  # J2000
+        t = Time("2000-01-01 12:00:00", scale="tt")  # J2000
 
         orbit = Orbit.from_classical(
             Earth,
@@ -198,7 +196,7 @@ class TestOrbitTimeIntegration:
             raan=0 << u.deg,
             argp=0 << u.deg,
             nu=0 << u.deg,
-            epoch=t
+            epoch=t,
         )
 
         # Verify orbit
@@ -233,8 +231,8 @@ class TestOrbitTimeIntegration:
         v = np.array([0, 7546, 0])
 
         # Test with different scales
-        for scale in ['utc', 'tai', 'tt']:
-            t = Time('2020-06-15 10:30:00', scale=scale)
+        for scale in ["utc", "tai", "tt"]:
+            t = Time("2020-06-15 10:30:00", scale=scale)
             orbit = Orbit.from_vectors(Earth, r, v, epoch=t)
 
             # Epoch should be created successfully
@@ -242,7 +240,7 @@ class TestOrbitTimeIntegration:
 
     def test_orbit_properties_with_astropy_time(self):
         """Test that orbital properties work correctly with astropy Time epochs."""
-        t = Time('2024-10-22', scale='utc')
+        t = Time("2024-10-22", scale="utc")
 
         orbit = Orbit.from_classical(
             Earth,
@@ -252,7 +250,7 @@ class TestOrbitTimeIntegration:
             raan=0 << u.deg,
             argp=0 << u.deg,
             nu=0 << u.deg,
-            epoch=t
+            epoch=t,
         )
 
         # Verify properties work
@@ -273,18 +271,18 @@ class TestEdgeCases:
     def test_very_old_epoch(self):
         """Test conversion of very old historical epochs."""
         # 1900-01-01
-        t = Time('1900-01-01 00:00:00', scale='utc')
+        t = Time("1900-01-01 00:00:00", scale="utc")
         epoch = astropy_time_to_epoch(t)
-        t_back = epoch_to_astropy_time(epoch, scale='utc')
+        t_back = epoch_to_astropy_time(epoch, scale="utc")
 
         assert abs(t_back.jd - t.jd) < 1e-8
 
     def test_far_future_epoch(self):
         """Test conversion of far future epochs."""
         # 2100-12-31
-        t = Time('2100-12-31 23:59:59', scale='utc')
+        t = Time("2100-12-31 23:59:59", scale="utc")
         epoch = astropy_time_to_epoch(t)
-        t_back = epoch_to_astropy_time(epoch, scale='utc')
+        t_back = epoch_to_astropy_time(epoch, scale="utc")
 
         assert abs(t_back.jd - t.jd) < 1e-8
 
@@ -292,11 +290,11 @@ class TestEdgeCases:
         """Test that leap seconds are handled correctly."""
         # Time near a known leap second: 2015-06-30 23:59:60
         # Note: astropy handles leap seconds automatically
-        t_before = Time('2015-06-30 23:59:59', scale='utc')
+        t_before = Time("2015-06-30 23:59:59", scale="utc")
 
         # Convert to Epoch and back
         epoch = astropy_time_to_epoch(t_before)
-        t_back = epoch_to_astropy_time(epoch, scale='utc')
+        t_back = epoch_to_astropy_time(epoch, scale="utc")
 
         # Should roundtrip correctly
         assert abs(t_back.jd - t_before.jd) < 1e-9
@@ -306,7 +304,7 @@ class TestEdgeCases:
 def test_integration_summary():
     """High-level test of astropy.time integration."""
     # Create orbit with astropy Time
-    t = Time('2024-10-22 14:30:00', scale='utc')
+    t = Time("2024-10-22 14:30:00", scale="utc")
     orbit = Orbit.from_classical(
         Earth,
         a=7000 << u.km,
@@ -315,7 +313,7 @@ def test_integration_summary():
         raan=0 << u.deg,
         argp=0 << u.deg,
         nu=0 << u.deg,
-        epoch=t
+        epoch=t,
     )
 
     # Verify all properties work

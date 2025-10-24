@@ -16,13 +16,13 @@ The actual speedup depends on:
 4. Cache effects
 """
 
-import numpy as np
 import time
-import pytest
+
+import numpy as np
 from astrora._core import (
-    batch_propagate_states,
     batch_mean_to_eccentric_anomaly,
     batch_mean_to_true_anomaly,
+    batch_propagate_states,
     constants,
 )
 

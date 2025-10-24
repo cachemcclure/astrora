@@ -12,10 +12,10 @@ Tests cover:
 
 import numpy as np
 import pytest
+from astrora._core import Duration, Epoch
+from astrora.bodies import Earth, Mars
 from astrora.maneuver import Maneuver
 from astrora.twobody import Orbit
-from astrora.bodies import Earth, Mars
-from astrora._core import Epoch, Duration
 
 
 class TestManeuverCreation:
@@ -37,11 +37,7 @@ class TestManeuverCreation:
         dv2 = np.array([0.0, 50.0, 0.0])
         dv3 = np.array([0.0, 0.0, 25.0])
 
-        maneuver = Maneuver(
-            (0.0, dv1),
-            (3600.0, dv2),
-            (7200.0, dv3)
-        )
+        maneuver = Maneuver((0.0, dv1), (3600.0, dv2), (7200.0, dv3))
 
         assert len(maneuver) == 3
 
@@ -174,10 +170,7 @@ class TestHohmannTransfer:
         """Test LEO to GEO Hohmann transfer."""
         # Create circular LEO orbit
         r_leo = 6778e3  # ~400 km altitude
-        orbit = Orbit.from_classical(
-            Earth, a=r_leo, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=r_leo, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         # GEO radius
         r_geo = 42164e3
@@ -207,10 +200,7 @@ class TestHohmannTransfer:
         """Test Hohmann transfer for descending (GEO to LEO)."""
         # Create circular GEO orbit
         r_geo = 42164e3
-        orbit = Orbit.from_classical(
-            Earth, a=r_geo, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=r_geo, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         # LEO radius
         r_leo = 6778e3
@@ -227,10 +217,7 @@ class TestHohmannTransfer:
     def test_hohmann_eccentric_orbit_error(self):
         """Test that eccentric orbit raises error."""
         # Create eccentric orbit
-        orbit = Orbit.from_classical(
-            Earth, a=10000e3, ecc=0.5, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=10000e3, ecc=0.5, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         with pytest.raises(ValueError, match="approximately circular"):
             Maneuver.hohmann(orbit, 42164e3)
@@ -238,10 +225,7 @@ class TestHohmannTransfer:
     def test_hohmann_transfer_time(self):
         """Test that Hohmann transfer time is reasonable."""
         r_leo = 6778e3
-        orbit = Orbit.from_classical(
-            Earth, a=r_leo, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=r_leo, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         r_geo = 42164e3
         maneuver = Maneuver.hohmann(orbit, r_geo)
@@ -260,14 +244,11 @@ class TestBiellipticTransfer:
         """Test basic bi-elliptic transfer."""
         # Create circular LEO orbit
         r_leo = 6778e3
-        orbit = Orbit.from_classical(
-            Earth, a=r_leo, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=r_leo, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         # Bi-elliptic transfer parameters
         # r_intermediate must be larger than both r_initial and r_final
-        r_final = 20000e3          # 20,000 km
+        r_final = 20000e3  # 20,000 km
         r_intermediate = 150000e3  # 150,000 km (larger than both LEO and final)
 
         maneuver = Maneuver.bielliptic(orbit, r_intermediate, r_final)
@@ -290,10 +271,7 @@ class TestBiellipticTransfer:
 
     def test_bielliptic_eccentric_orbit_error(self):
         """Test that eccentric orbit raises error."""
-        orbit = Orbit.from_classical(
-            Earth, a=10000e3, ecc=0.3, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=10000e3, ecc=0.3, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         with pytest.raises(ValueError, match="approximately circular"):
             Maneuver.bielliptic(orbit, 100000e3, 50000e3)
@@ -343,14 +321,12 @@ class TestLambertTransfer:
 
         # LEO orbit at position 1
         orbit1 = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
+            Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
         )
 
         # Same orbit but propagated to different position
         orbit2 = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=np.deg2rad(45), epoch=epoch2
+            Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=np.deg2rad(45), epoch=epoch2
         )
 
         maneuver = Maneuver.lambert(orbit1, orbit2)
@@ -367,13 +343,11 @@ class TestLambertTransfer:
         epoch2 = epoch1 + Duration.from_hrs(6)
 
         orbit1 = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
+            Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
         )
 
         orbit2 = Orbit.from_classical(
-            Mars, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0, epoch=epoch2
+            Mars, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0, epoch=epoch2
         )
 
         with pytest.raises(ValueError, match="same attractor"):
@@ -385,13 +359,11 @@ class TestLambertTransfer:
         epoch2 = epoch1 + Duration.from_hrs(-6)  # Earlier time
 
         orbit1 = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
+            Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
         )
 
         orbit2 = Orbit.from_classical(
-            Earth, a=10000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0, epoch=epoch2
+            Earth, a=10000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0, epoch=epoch2
         )
 
         with pytest.raises(ValueError, match="after initial"):
@@ -403,14 +375,12 @@ class TestLambertTransfer:
         epoch2 = epoch1 + Duration.from_hrs(4)
 
         orbit1 = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
+            Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0, epoch=epoch1
         )
 
         # 60 degrees ahead
         orbit2 = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=np.deg2rad(60), epoch=epoch2
+            Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=np.deg2rad(60), epoch=epoch2
         )
 
         maneuver_short = Maneuver.lambert(orbit1, orbit2, short_way=True)
@@ -457,10 +427,7 @@ class TestManeuverIntegration:
     def test_apply_impulse_to_orbit(self):
         """Test applying a simple impulse to an orbit."""
         # Create orbit
-        orbit = Orbit.from_classical(
-            Earth, a=7000e3, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
-        )
+        orbit = Orbit.from_classical(Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         # Create prograde impulse
         v_hat = orbit.v / np.linalg.norm(orbit.v)
@@ -478,8 +445,7 @@ class TestManeuverIntegration:
         # Create LEO orbit
         r_leo = 7000e3
         orbit_leo = Orbit.from_classical(
-            Earth, a=r_leo, ecc=0.0, inc=0.0,
-            raan=0.0, argp=0.0, nu=0.0
+            Earth, a=r_leo, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0
         )
 
         # Create Hohmann transfer to higher orbit

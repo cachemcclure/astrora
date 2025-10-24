@@ -259,11 +259,7 @@ class TestBatchOperations:
 
     def test_batch_normalize_vectors(self):
         """Test normalizing multiple 3D vectors at once"""
-        vectors = np.array([
-            [3.0, 4.0, 0.0],
-            [0.0, 0.0, 5.0],
-            [1.0, 1.0, 1.0]
-        ])
+        vectors = np.array([[3.0, 4.0, 0.0], [0.0, 0.0, 5.0], [1.0, 1.0, 1.0]])
         result = numpy_ops.batch_normalize_vectors(vectors)
 
         # Check all vectors are normalized
@@ -292,11 +288,7 @@ class TestBatchOperations:
 
     def test_batch_normalize_with_zero_vector(self):
         """Test that zero vector in batch raises error"""
-        vectors = np.array([
-            [3.0, 4.0, 0.0],
-            [0.0, 0.0, 0.0],  # Zero vector
-            [1.0, 1.0, 1.0]
-        ])
+        vectors = np.array([[3.0, 4.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]])  # Zero vector
         with pytest.raises(ArithmeticError):
             numpy_ops.batch_normalize_vectors(vectors)
 

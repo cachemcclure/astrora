@@ -39,23 +39,23 @@ For Earth-Mars missions:
 - Minimum delta-v occurs near Hohmann transfer conditions
 """
 
-import numpy as np
+from datetime import datetime
+
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from astropy.time import Time
-from astropy.coordinates import get_body_barycentric, solar_system_ephemeris
+import numpy as np
 from astropy import units as u
+from astropy.coordinates import get_body_barycentric, solar_system_ephemeris
+from astropy.time import Time
 from astrora._core import lambert_solve_batch_parallel
-from datetime import datetime, timedelta
 
 # Solar gravitational parameter (km³/s²)
 MU_SUN = 1.32712440018e11
 
 # Orbital parameters for planets (circular orbit approximation)
 EARTH_PERIOD = 365.25  # days
-MARS_PERIOD = 686.98   # days
+MARS_PERIOD = 686.98  # days
 EARTH_RADIUS = 149.6e6  # km (1 AU)
-MARS_RADIUS = 227.9e6   # km (1.52 AU)
+MARS_RADIUS = 227.9e6  # km (1.52 AU)
 
 
 def get_planet_position(body_name, time):
@@ -74,13 +74,11 @@ def get_planet_position(body_name, time):
     np.ndarray
         Position vector [x, y, z] in km
     """
-    with solar_system_ephemeris.set('builtin'):
+    with solar_system_ephemeris.set("builtin"):
         bary_pos = get_body_barycentric(body_name, time)
-        position = np.array([
-            bary_pos.x.to(u.km).value,
-            bary_pos.y.to(u.km).value,
-            bary_pos.z.to(u.km).value
-        ])
+        position = np.array(
+            [bary_pos.x.to(u.km).value, bary_pos.y.to(u.km).value, bary_pos.z.to(u.km).value]
+        )
     return position
 
 
@@ -102,7 +100,7 @@ def calculate_synodic_period(planet1_period, planet2_period):
     float
         Synodic period in days
     """
-    return abs(1.0 / (1.0/planet1_period - 1.0/planet2_period))
+    return abs(1.0 / (1.0 / planet1_period - 1.0 / planet2_period))
 
 
 def calculate_hohmann_tof(r1, r2, mu):
@@ -128,7 +126,7 @@ def calculate_hohmann_tof(r1, r2, mu):
     return tof_seconds / 86400.0  # Convert to days
 
 
-def find_good_transfer_dates(reference_date='2024-01-01', num_windows=5):
+def find_good_transfer_dates(reference_date="2024-01-01", num_windows=5):
     """
     Find favorable Earth-Mars transfer windows using synodic period.
 
@@ -154,7 +152,7 @@ def find_good_transfer_dates(reference_date='2024-01-01', num_windows=5):
     hohmann_tof = calculate_hohmann_tof(EARTH_RADIUS, MARS_RADIUS, MU_SUN)
 
     # Parse reference date
-    ref_time = Time(reference_date, format='iso')
+    ref_time = Time(reference_date, format="iso")
 
     windows = []
 
@@ -163,25 +161,25 @@ def find_good_transfer_dates(reference_date='2024-01-01', num_windows=5):
         days_to_window = i * synodic_period
 
         # Departure window: centered around opposition
-        departure_center = Time(ref_time.jd + days_to_window, format='jd')
+        departure_center = Time(ref_time.jd + days_to_window, format="jd")
 
         # Arrival window: departure + typical transfer time
-        arrival_center = Time(departure_center.jd + hohmann_tof, format='jd')
+        arrival_center = Time(departure_center.jd + hohmann_tof, format="jd")
 
         # Create windows (±45 days for departure, ±30 days for arrival)
-        dep_start = Time(departure_center.jd - 45, format='jd')
-        dep_end = Time(departure_center.jd + 45, format='jd')
-        arr_start = Time(arrival_center.jd - 30, format='jd')
-        arr_end = Time(arrival_center.jd + 30, format='jd')
+        dep_start = Time(departure_center.jd - 45, format="jd")
+        dep_end = Time(departure_center.jd + 45, format="jd")
+        arr_start = Time(arrival_center.jd - 30, format="jd")
+        arr_end = Time(arrival_center.jd + 30, format="jd")
 
         window = {
-            'window_number': i + 1,
-            'departure_start': dep_start.iso[:10],
-            'departure_end': dep_end.iso[:10],
-            'arrival_start': arr_start.iso[:10],
-            'arrival_end': arr_end.iso[:10],
-            'estimated_tof_days': hohmann_tof,
-            'synodic_phase': i
+            "window_number": i + 1,
+            "departure_start": dep_start.iso[:10],
+            "departure_end": dep_end.iso[:10],
+            "arrival_start": arr_start.iso[:10],
+            "arrival_end": arr_end.iso[:10],
+            "estimated_tof_days": hohmann_tof,
+            "synodic_phase": i,
         }
 
         windows.append(window)
@@ -208,19 +206,13 @@ def test_date_range_viability(dep_start, dep_end, arr_start, arr_end, num_test_p
         Results with success rate and example successful combination
     """
     # Sample a few points in the date range
-    t_dep_start = Time(dep_start, format='iso')
-    t_dep_end = Time(dep_end, format='iso')
-    t_arr_start = Time(arr_start, format='iso')
-    t_arr_end = Time(arr_end, format='iso')
+    t_dep_start = Time(dep_start, format="iso")
+    t_dep_end = Time(dep_end, format="iso")
+    t_arr_start = Time(arr_start, format="iso")
+    t_arr_end = Time(arr_end, format="iso")
 
-    dep_dates = Time(
-        np.linspace(t_dep_start.jd, t_dep_end.jd, num_test_points),
-        format='jd'
-    )
-    arr_dates = Time(
-        np.linspace(t_arr_start.jd, t_arr_end.jd, num_test_points),
-        format='jd'
-    )
+    dep_dates = Time(np.linspace(t_dep_start.jd, t_dep_end.jd, num_test_points), format="jd")
+    arr_dates = Time(np.linspace(t_arr_start.jd, t_arr_end.jd, num_test_points), format="jd")
 
     successful = []
     failed = 0
@@ -233,8 +225,8 @@ def test_date_range_viability(dep_start, dep_end, arr_start, arr_end, num_test_p
                 continue
 
             try:
-                r_earth = get_planet_position('earth', t_dep)
-                r_mars = get_planet_position('mars', t_arr)
+                r_earth = get_planet_position("earth", t_dep)
+                r_mars = get_planet_position("mars", t_arr)
 
                 # Try to solve Lambert
                 result = lambert_solve_batch_parallel(
@@ -243,14 +235,16 @@ def test_date_range_viability(dep_start, dep_end, arr_start, arr_end, num_test_p
                     tofs=np.array([tof]),
                     mu=MU_SUN,
                     short_way=True,
-                    revs=0
+                    revs=0,
                 )
 
-                successful.append({
-                    'departure': t_dep.iso[:10],
-                    'arrival': t_arr.iso[:10],
-                    'tof_days': tof / 86400
-                })
+                successful.append(
+                    {
+                        "departure": t_dep.iso[:10],
+                        "arrival": t_arr.iso[:10],
+                        "tof_days": tof / 86400,
+                    }
+                )
 
             except Exception as e:
                 failed += 1
@@ -259,10 +253,10 @@ def test_date_range_viability(dep_start, dep_end, arr_start, arr_end, num_test_p
     success_rate = len(successful) / max(total_tested, 1)
 
     return {
-        'success_rate': success_rate,
-        'successful_count': len(successful),
-        'failed_count': failed,
-        'example_success': successful[0] if successful else None
+        "success_rate": success_rate,
+        "successful_count": len(successful),
+        "failed_count": failed,
+        "example_success": successful[0] if successful else None,
     }
 
 
@@ -285,7 +279,7 @@ def get_planet_velocity(body_name, time, dt=3600):
         Velocity vector [vx, vy, vz] in km/s
     """
     pos1 = get_planet_position(body_name, time)
-    time_plus = Time(time.jd + dt/86400, format='jd')
+    time_plus = Time(time.jd + dt / 86400, format="jd")
     pos2 = get_planet_position(body_name, time_plus)
     velocity = (pos2 - pos1) / dt
     return velocity
@@ -311,7 +305,7 @@ def calculate_c3(v_departure, v_planet):
         C3 in km²/s²
     """
     v_infinity = v_departure - v_planet
-    c3 = np.linalg.norm(v_infinity)**2
+    c3 = np.linalg.norm(v_infinity) ** 2
     return c3
 
 
@@ -340,8 +334,8 @@ def filter_by_c3(data, max_c3_km2s2=30.0):
     dict
         Filtered porkchop data with C3 constraint applied
     """
-    c3_grid = data['c3_grid']
-    delta_v_grid = data['delta_v_grid'].copy()
+    c3_grid = data["c3_grid"]
+    delta_v_grid = data["delta_v_grid"].copy()
 
     # Mask values exceeding C3 limit
     mask = c3_grid > max_c3_km2s2
@@ -356,8 +350,8 @@ def filter_by_c3(data, max_c3_km2s2=30.0):
 
     # Create filtered copy
     filtered_data = data.copy()
-    filtered_data['delta_v_grid'] = delta_v_grid
-    filtered_data['max_c3'] = max_c3_km2s2
+    filtered_data["delta_v_grid"] = delta_v_grid
+    filtered_data["max_c3"] = max_c3_km2s2
 
     return filtered_data
 
@@ -367,10 +361,10 @@ def generate_porkchop_data(
     departure_end,
     arrival_start,
     arrival_end,
-    departure_body='earth',
-    arrival_body='mars',
+    departure_body="earth",
+    arrival_body="mars",
     num_departure=50,
-    num_arrival=50
+    num_arrival=50,
 ):
     """
     Generate porkchop plot data for an interplanetary transfer.
@@ -402,22 +396,18 @@ def generate_porkchop_data(
     print(f"Generating porkchop plot data...")
     print(f"  Departure window: {departure_start} to {departure_end}")
     print(f"  Arrival window:   {arrival_start} to {arrival_end}")
-    print(f"  Grid size:        {num_departure} x {num_arrival} = {num_departure * num_arrival:,} solves")
+    print(
+        f"  Grid size:        {num_departure} x {num_arrival} = {num_departure * num_arrival:,} solves"
+    )
 
     # Create date grids
-    t_dep_start = Time(departure_start, format='iso')
-    t_dep_end = Time(departure_end, format='iso')
-    t_arr_start = Time(arrival_start, format='iso')
-    t_arr_end = Time(arrival_end, format='iso')
+    t_dep_start = Time(departure_start, format="iso")
+    t_dep_end = Time(departure_end, format="iso")
+    t_arr_start = Time(arrival_start, format="iso")
+    t_arr_end = Time(arrival_end, format="iso")
 
-    departure_dates = Time(
-        np.linspace(t_dep_start.jd, t_dep_end.jd, num_departure),
-        format='jd'
-    )
-    arrival_dates = Time(
-        np.linspace(t_arr_start.jd, t_arr_end.jd, num_arrival),
-        format='jd'
-    )
+    departure_dates = Time(np.linspace(t_dep_start.jd, t_dep_end.jd, num_departure), format="jd")
+    arrival_dates = Time(np.linspace(t_arr_start.jd, t_arr_end.jd, num_arrival), format="jd")
 
     # Initialize result grids
     delta_v_grid = np.zeros((num_departure, num_arrival))
@@ -461,17 +451,12 @@ def generate_porkchop_data(
             try:
                 # Batch solve Lambert's problem
                 results = lambert_solve_batch_parallel(
-                    r1s=r_deps,
-                    r2s=r_arrivals,
-                    tofs=tofs,
-                    mu=MU_SUN,
-                    short_way=True,
-                    revs=0
+                    r1s=r_deps, r2s=r_arrivals, tofs=tofs, mu=MU_SUN, short_way=True, revs=0
                 )
 
                 # Compute delta-v and C3 for each solution
-                for j, (v1, v_arr) in enumerate(zip(results['v1s'], v_arrivals)):
-                    v2 = results['v2s'][j]
+                for j, (v1, v_arr) in enumerate(zip(results["v1s"], v_arrivals)):
+                    v2 = results["v2s"][j]
 
                     # Delta-v at departure and arrival
                     dv_dep = np.linalg.norm(v1 - v_dep)
@@ -488,9 +473,9 @@ def generate_porkchop_data(
             except Exception as e:
                 print(f"  Warning: Lambert solve failed for departure {i}: {e}")
                 # Fill with NaN for failed solves
-                delta_v_grid[i, :len(tofs)] = np.nan
-                tof_grid[i, :len(tofs)] = np.array(tofs) / 86400
-                c3_grid[i, :len(tofs)] = np.nan
+                delta_v_grid[i, : len(tofs)] = np.nan
+                tof_grid[i, : len(tofs)] = np.array(tofs) / 86400
+                c3_grid[i, : len(tofs)] = np.nan
 
     print(f"  Complete! Generated {num_departure * num_arrival:,} solutions")
 
@@ -503,13 +488,13 @@ def generate_porkchop_data(
         print(f"  Mean C3:    {np.mean(valid_c3):.2f} km²/s²")
 
     return {
-        'departure_dates': departure_dates,
-        'arrival_dates': arrival_dates,
-        'delta_v_grid': delta_v_grid,
-        'tof_grid': tof_grid,
-        'c3_grid': c3_grid,
-        'departure_body': departure_body,
-        'arrival_body': arrival_body
+        "departure_dates": departure_dates,
+        "arrival_dates": arrival_dates,
+        "delta_v_grid": delta_v_grid,
+        "tof_grid": tof_grid,
+        "c3_grid": c3_grid,
+        "departure_body": departure_body,
+        "arrival_body": arrival_body,
     }
 
 
@@ -524,51 +509,73 @@ def plot_porkchop(data, save_path=None):
     save_path : str, optional
         Path to save the figure
     """
-    departure_dates = data['departure_dates']
-    arrival_dates = data['arrival_dates']
-    delta_v_grid = data['delta_v_grid']
-    tof_grid = data['tof_grid']
+    departure_dates = data["departure_dates"]
+    arrival_dates = data["arrival_dates"]
+    delta_v_grid = data["delta_v_grid"]
+    tof_grid = data["tof_grid"]
 
     # Convert times to datetime for plotting
-    dep_dt = [datetime(int(t.datetime.year), int(t.datetime.month), int(t.datetime.day))
-              for t in departure_dates]
-    arr_dt = [datetime(int(t.datetime.year), int(t.datetime.month), int(t.datetime.day))
-              for t in arrival_dates]
+    dep_dt = [
+        datetime(int(t.datetime.year), int(t.datetime.month), int(t.datetime.day))
+        for t in departure_dates
+    ]
+    arr_dt = [
+        datetime(int(t.datetime.year), int(t.datetime.month), int(t.datetime.day))
+        for t in arrival_dates
+    ]
 
     # Create figure with two subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
     # Convert to meshgrid for contour plots
-    dep_mesh, arr_mesh = np.meshgrid(range(len(dep_dt)), range(len(arr_dt)), indexing='ij')
+    dep_mesh, arr_mesh = np.meshgrid(range(len(dep_dt)), range(len(arr_dt)), indexing="ij")
 
     # Plot 1: Delta-v contours
-    levels_dv = np.linspace(
-        np.nanmin(delta_v_grid),
-        np.nanpercentile(delta_v_grid, 95),
-        20
-    )
+    valid_dv = delta_v_grid[~np.isnan(delta_v_grid) & ~np.isinf(delta_v_grid)]
 
-    cs1 = ax1.contourf(dep_mesh, arr_mesh, delta_v_grid, levels=levels_dv, cmap='RdYlGn_r')
-    cs1_lines = ax1.contour(dep_mesh, arr_mesh, delta_v_grid, levels=10, colors='black', alpha=0.3, linewidths=0.5)
-    ax1.clabel(cs1_lines, inline=True, fontsize=8, fmt='%.1f km/s')
+    levels_dv = np.linspace(np.nanmin(delta_v_grid), np.nanpercentile(delta_v_grid, 95), 20)
+
+    cs1 = ax1.contourf(dep_mesh, arr_mesh, delta_v_grid, levels=levels_dv, cmap="RdYlGn_r")
+    cs1_lines = ax1.contour(
+        dep_mesh, arr_mesh, delta_v_grid, levels=10, colors="black", alpha=0.3, linewidths=0.5
+    )
+    ax1.clabel(cs1_lines, inline=True, fontsize=8, fmt="%.1f km/s")
 
     cbar1 = plt.colorbar(cs1, ax=ax1)
-    cbar1.set_label('Total Delta-v (km/s)', fontsize=12)
+    cbar1.set_label("Total Delta-v (km/s)", fontsize=12)
 
-    ax1.set_xlabel('Departure Date', fontsize=12)
-    ax1.set_ylabel('Arrival Date', fontsize=12)
-    ax1.set_title(f'{data["departure_body"].title()}-{data["arrival_body"].title()} Transfer: Delta-v', fontsize=14, fontweight='bold')
+    ax1.set_xlabel("Departure Date", fontsize=12)
+    ax1.set_ylabel("Arrival Date", fontsize=12)
+    ax1.set_title(
+        f'{data["departure_body"].title()}-{data["arrival_body"].title()} Transfer: Delta-v',
+        fontsize=14,
+        fontweight="bold",
+    )
 
     # Set tick labels
-    ax1.set_xticks(range(0, len(dep_dt), max(1, len(dep_dt)//10)))
-    ax1.set_xticklabels([dep_dt[i].strftime('%Y-%m-%d') for i in range(0, len(dep_dt), max(1, len(dep_dt)//10))], rotation=45, ha='right')
-    ax1.set_yticks(range(0, len(arr_dt), max(1, len(arr_dt)//10)))
-    ax1.set_yticklabels([arr_dt[i].strftime('%Y-%m-%d') for i in range(0, len(arr_dt), max(1, len(arr_dt)//10))])
+    ax1.set_xticks(range(0, len(dep_dt), max(1, len(dep_dt) // 10)))
+    ax1.set_xticklabels(
+        [dep_dt[i].strftime("%Y-%m-%d") for i in range(0, len(dep_dt), max(1, len(dep_dt) // 10))],
+        rotation=45,
+        ha="right",
+    )
+    ax1.set_yticks(range(0, len(arr_dt), max(1, len(arr_dt) // 10)))
+    ax1.set_yticklabels(
+        [arr_dt[i].strftime("%Y-%m-%d") for i in range(0, len(arr_dt), max(1, len(arr_dt) // 10))]
+    )
 
     # Mark optimal solution (if valid solutions exist)
     if len(valid_dv) > 0:
         min_idx = np.unravel_index(np.nanargmin(delta_v_grid), delta_v_grid.shape)
-        ax1.plot(min_idx[0], min_idx[1], 'r*', markersize=20, markeredgecolor='white', markeredgewidth=2, label='Optimal')
+        ax1.plot(
+            min_idx[0],
+            min_idx[1],
+            "r*",
+            markersize=20,
+            markeredgecolor="white",
+            markeredgewidth=2,
+            label="Optimal",
+        )
         ax1.legend(fontsize=10)
 
     # Plot 2: Time of flight contours
@@ -577,28 +584,48 @@ def plot_porkchop(data, save_path=None):
     levels_tof = np.linspace(
         np.nanmin(tof_grid),
         np.nanpercentile(tof_grid, 95) if len(valid_tof) > 1 else np.nanmax(tof_grid),
-        min(20, len(valid_tof))
+        min(20, len(valid_tof)),
     )
 
-    cs2 = ax2.contourf(dep_mesh, arr_mesh, tof_grid, levels=levels_tof, cmap='viridis')
-    cs2_lines = ax2.contour(dep_mesh, arr_mesh, tof_grid, levels=10, colors='black', alpha=0.3, linewidths=0.5)
-    ax2.clabel(cs2_lines, inline=True, fontsize=8, fmt='%.0f days')
+    cs2 = ax2.contourf(dep_mesh, arr_mesh, tof_grid, levels=levels_tof, cmap="viridis")
+    cs2_lines = ax2.contour(
+        dep_mesh, arr_mesh, tof_grid, levels=10, colors="black", alpha=0.3, linewidths=0.5
+    )
+    ax2.clabel(cs2_lines, inline=True, fontsize=8, fmt="%.0f days")
 
     cbar2 = plt.colorbar(cs2, ax=ax2)
-    cbar2.set_label('Time of Flight (days)', fontsize=12)
+    cbar2.set_label("Time of Flight (days)", fontsize=12)
 
-    ax2.set_xlabel('Departure Date', fontsize=12)
-    ax2.set_ylabel('Arrival Date', fontsize=12)
-    ax2.set_title(f'{data["departure_body"].title()}-{data["arrival_body"].title()} Transfer: Flight Time', fontsize=14, fontweight='bold')
+    ax2.set_xlabel("Departure Date", fontsize=12)
+    ax2.set_ylabel("Arrival Date", fontsize=12)
+    ax2.set_title(
+        f'{data["departure_body"].title()}-{data["arrival_body"].title()} Transfer: Flight Time',
+        fontsize=14,
+        fontweight="bold",
+    )
 
-    ax2.set_xticks(range(0, len(dep_dt), max(1, len(dep_dt)//10)))
-    ax2.set_xticklabels([dep_dt[i].strftime('%Y-%m-%d') for i in range(0, len(dep_dt), max(1, len(dep_dt)//10))], rotation=45, ha='right')
-    ax2.set_yticks(range(0, len(arr_dt), max(1, len(arr_dt)//10)))
-    ax2.set_yticklabels([arr_dt[i].strftime('%Y-%m-%d') for i in range(0, len(arr_dt), max(1, len(arr_dt)//10))])
+    ax2.set_xticks(range(0, len(dep_dt), max(1, len(dep_dt) // 10)))
+    ax2.set_xticklabels(
+        [dep_dt[i].strftime("%Y-%m-%d") for i in range(0, len(dep_dt), max(1, len(dep_dt) // 10))],
+        rotation=45,
+        ha="right",
+    )
+    ax2.set_yticks(range(0, len(arr_dt), max(1, len(arr_dt) // 10)))
+    ax2.set_yticklabels(
+        [arr_dt[i].strftime("%Y-%m-%d") for i in range(0, len(arr_dt), max(1, len(arr_dt) // 10))]
+    )
 
     # Mark optimal solution
     if len(valid_dv) > 0:
-        ax2.plot(min_idx[0], min_idx[1], 'r*', markersize=20, markeredgecolor='white', markeredgewidth=2, label='Optimal')
+        ax2.plot(
+            min_idx[0],
+            min_idx[1],
+            "r*",
+            markersize=20,
+            markeredgecolor="white",
+            markeredgewidth=2,
+            label="Optimal",
+        )
         ax2.legend(fontsize=10)
 
         # Print optimal solution info
@@ -611,7 +638,7 @@ def plot_porkchop(data, save_path=None):
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
         print(f"\nPlot saved to: {save_path}")
 
     plt.show()
@@ -630,9 +657,9 @@ def example_earth_mars_2025():
     The Lambert solver may fail to converge for some date combinations,
     which is normal when the transfer geometry is unfavorable.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Earth-Mars Porkchop Plot Example (Demonstration)")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     print("NOTE: This example demonstrates the porkchop plot workflow.")
     print("Some Lambert solutions may fail to converge - this is expected")
@@ -642,24 +669,24 @@ def example_earth_mars_2025():
     # Use a narrower window to focus on potentially good transfer dates
     # A true mission would analyze the full ~6 month departure window
     data = generate_porkchop_data(
-        departure_start='2025-09-01',
-        departure_end='2025-11-30',
-        arrival_start='2026-05-01',
-        arrival_end='2026-08-31',
-        departure_body='earth',
-        arrival_body='mars',
-        num_departure=20,   # Smaller grid for demonstration
-        num_arrival=20      # 20x20 = 400 solves
+        departure_start="2025-09-01",
+        departure_end="2025-11-30",
+        arrival_start="2026-05-01",
+        arrival_end="2026-08-31",
+        departure_body="earth",
+        arrival_body="mars",
+        num_departure=20,  # Smaller grid for demonstration
+        num_arrival=20,  # 20x20 = 400 solves
     )
 
     # Check if we got any valid solutions
-    valid_solutions = ~np.isnan(data['delta_v_grid'])
+    valid_solutions = ~np.isnan(data["delta_v_grid"])
     num_valid = np.sum(valid_solutions)
 
     print(f"\n  Valid solutions: {num_valid} out of {data['delta_v_grid'].size}")
 
     if num_valid > 10:  # Need at least some valid solutions to plot
-        plot_porkchop(data, save_path='earth_mars_2025_porkchop.png')
+        plot_porkchop(data, save_path="earth_mars_2025_porkchop.png")
     else:
         print("\n  WARNING: Too few valid solutions to generate porkchop plot.")
         print("  This can happen when:")
@@ -670,18 +697,20 @@ def example_earth_mars_2025():
 
         # Suggest better dates based on synodic period
         print("  🔍 FINDING BETTER TRANSFER WINDOWS...")
-        print("  " + "="*66)
+        print("  " + "=" * 66)
         print()
 
         # Calculate synodic period
         synodic_period = calculate_synodic_period(EARTH_PERIOD, MARS_PERIOD)
-        print(f"  Earth-Mars synodic period: {synodic_period:.1f} days ({synodic_period/365.25:.2f} years)")
+        print(
+            f"  Earth-Mars synodic period: {synodic_period:.1f} days ({synodic_period/365.25:.2f} years)"
+        )
         print(f"  Transfer opportunities occur roughly every {synodic_period/30.44:.1f} months")
         print()
 
         # Find and test good transfer windows
         print("  Testing favorable transfer windows...")
-        windows = find_good_transfer_dates(reference_date='2024-01-01', num_windows=3)
+        windows = find_good_transfer_dates(reference_date="2024-01-01", num_windows=3)
 
         best_window = None
         best_success_rate = 0
@@ -693,26 +722,28 @@ def example_earth_mars_2025():
 
             # Test this window
             viability = test_date_range_viability(
-                window['departure_start'],
-                window['departure_end'],
-                window['arrival_start'],
-                window['arrival_end'],
-                num_test_points=5
+                window["departure_start"],
+                window["departure_end"],
+                window["arrival_start"],
+                window["arrival_end"],
+                num_test_points=5,
             )
 
-            print(f"    Test results: {viability['successful_count']}/{viability['successful_count'] + viability['failed_count']} Lambert solves succeeded")
+            print(
+                f"    Test results: {viability['successful_count']}/{viability['successful_count'] + viability['failed_count']} Lambert solves succeeded"
+            )
 
-            if viability['success_rate'] > best_success_rate:
-                best_success_rate = viability['success_rate']
+            if viability["success_rate"] > best_success_rate:
+                best_success_rate = viability["success_rate"]
                 best_window = window.copy()
-                best_window['viability'] = viability
+                best_window["viability"] = viability
 
         print()
-        print("  " + "="*66)
+        print("  " + "=" * 66)
         print("  ✅ RECOMMENDED TRANSFER WINDOW:")
-        print("  " + "="*66)
+        print("  " + "=" * 66)
 
-        if best_window and best_window.get('viability', {}).get('example_success'):
+        if best_window and best_window.get("viability", {}).get("example_success"):
             print(f"\n  Use these dates for your porkchop plot:")
             print(f"    departure_start = '{best_window['departure_start']}'")
             print(f"    departure_end   = '{best_window['departure_end']}'")
@@ -720,11 +751,13 @@ def example_earth_mars_2025():
             print(f"    arrival_end     = '{best_window['arrival_end']}'")
             print()
 
-            example = best_window['viability']['example_success']
+            example = best_window["viability"]["example_success"]
             print(f"  Example successful transfer:")
             print(f"    Depart:  {example['departure']}")
             print(f"    Arrive:  {example['arrival']}")
-            print(f"    TOF:     {example['tof_days']:.1f} days ({example['tof_days']/30.44:.1f} months)")
+            print(
+                f"    TOF:     {example['tof_days']:.1f} days ({example['tof_days']/30.44:.1f} months)"
+            )
             print()
         else:
             print("\n  Could not find favorable dates in the tested windows.")
@@ -740,22 +773,22 @@ def example_earth_venus():
     """
     Generate porkchop plot for Earth-Venus transfer.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Earth-Venus Launch Window Analysis")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     data = generate_porkchop_data(
-        departure_start='2025-01-01',
-        departure_end='2025-09-30',
-        arrival_start='2025-03-01',
-        arrival_end='2025-12-31',
-        departure_body='earth',
-        arrival_body='venus',
+        departure_start="2025-01-01",
+        departure_end="2025-09-30",
+        arrival_start="2025-03-01",
+        arrival_end="2025-12-31",
+        departure_body="earth",
+        arrival_body="venus",
         num_departure=30,
-        num_arrival=30
+        num_arrival=30,
     )
 
-    plot_porkchop(data, save_path='earth_venus_2025_porkchop.png')
+    plot_porkchop(data, save_path="earth_venus_2025_porkchop.png")
 
 
 def example_c3_filtering():
@@ -765,9 +798,9 @@ def example_c3_filtering():
     This example shows how to apply realistic launch vehicle constraints
     to porkchop plot analysis.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example: C3 Constraint Filtering")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     print("This example demonstrates how launch vehicle capabilities")
     print("constrain available launch windows via C3 energy limits.\n")
@@ -799,7 +832,8 @@ def example_c3_filtering():
 
     print("To use C3 filtering in your mission planning:")
     print("-" * 70)
-    print("""
+    print(
+        """
 # Generate porkchop data
 data = generate_porkchop_data(
     departure_start='2026-01-01',
@@ -813,7 +847,8 @@ filtered_data = filter_by_c3(data, max_c3_km2s2=30.0)
 
 # Plot only trajectories within launch vehicle capability
 plot_porkchop(filtered_data, save_path='mars_transfer_falcon9.png')
-    """)
+    """
+    )
 
     print("\nThe filter_by_c3() function will:")
     print("  1. Calculate C3 for each departure date")
@@ -823,8 +858,9 @@ plot_porkchop(filtered_data, save_path='mars_transfer_falcon9.png')
     print()
 
 
-if __name__ == '__main__':
-    print("""
+if __name__ == "__main__":
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║     Porkchop Plot Generator                                      ║
 ║     Interplanetary Launch Window Optimization                    ║
@@ -834,7 +870,8 @@ This example uses Astrora's high-performance parallel Lambert solver
 to generate porkchop plots 10-100x faster than pure Python implementations.
 
 NOTE: This example requires matplotlib to be installed.
-""")
+"""
+    )
 
     # Run Earth-Mars example
     example_earth_mars_2025()
@@ -842,7 +879,8 @@ NOTE: This example requires matplotlib to be installed.
     # Demonstrate C3 filtering concept
     example_c3_filtering()
 
-    print("""
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║  Performance Note                                                ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -875,4 +913,5 @@ For production mission planning:
 
 The smart date finder in this example demonstrates the concept of
 finding favorable transfer windows using synodic period calculations.
-""")
+"""
+    )

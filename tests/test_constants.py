@@ -1,6 +1,7 @@
 """Tests for the constants module."""
-import pytest
+
 import astrora._core as core
+import pytest
 
 
 class TestPhysicalConstants:
@@ -252,11 +253,13 @@ class TestConversionFactors:
     def test_deg_to_rad(self):
         """Test degree to radian conversion factor."""
         import math
+
         assert core.constants.DEG_TO_RAD == pytest.approx(math.pi / 180.0, rel=1e-15)
 
     def test_rad_to_deg(self):
         """Test radian to degree conversion factor."""
         import math
+
         assert core.constants.RAD_TO_DEG == pytest.approx(180.0 / math.pi, rel=1e-15)
 
     def test_day_to_sec(self):
@@ -296,6 +299,7 @@ class TestConversionFunctions:
     def test_deg_to_rad_function(self):
         """Test degree to radian conversion function."""
         import math
+
         assert core.constants.deg_to_rad(180.0) == pytest.approx(math.pi, rel=1e-15)
         assert core.constants.deg_to_rad(90.0) == pytest.approx(math.pi / 2.0, rel=1e-15)
         assert core.constants.deg_to_rad(0.0) == 0.0
@@ -303,6 +307,7 @@ class TestConversionFunctions:
     def test_rad_to_deg_function(self):
         """Test radian to degree conversion function."""
         import math
+
         assert core.constants.rad_to_deg(math.pi) == pytest.approx(180.0, rel=1e-15)
         assert core.constants.rad_to_deg(math.pi / 2.0) == pytest.approx(90.0, rel=1e-15)
         assert core.constants.rad_to_deg(0.0) == 0.0
@@ -474,14 +479,39 @@ class TestSphereOfInfluence:
     def test_soi_all_formulas(self):
         """Test that all planet SOI values match the formula r_SOI = a × (GM_planet / GM_sun)^(2/5)."""
         planets = [
-            ("MERCURY", core.constants.A_MERCURY, core.constants.GM_MERCURY, core.constants.R_SOI_MERCURY),
+            (
+                "MERCURY",
+                core.constants.A_MERCURY,
+                core.constants.GM_MERCURY,
+                core.constants.R_SOI_MERCURY,
+            ),
             ("VENUS", core.constants.A_VENUS, core.constants.GM_VENUS, core.constants.R_SOI_VENUS),
             ("EARTH", core.constants.A_EARTH, core.constants.GM_EARTH, core.constants.R_SOI_EARTH),
             ("MARS", core.constants.A_MARS, core.constants.GM_MARS, core.constants.R_SOI_MARS),
-            ("JUPITER", core.constants.A_JUPITER, core.constants.GM_JUPITER, core.constants.R_SOI_JUPITER),
-            ("SATURN", core.constants.A_SATURN, core.constants.GM_SATURN, core.constants.R_SOI_SATURN),
-            ("URANUS", core.constants.A_URANUS, core.constants.GM_URANUS, core.constants.R_SOI_URANUS),
-            ("NEPTUNE", core.constants.A_NEPTUNE, core.constants.GM_NEPTUNE, core.constants.R_SOI_NEPTUNE),
+            (
+                "JUPITER",
+                core.constants.A_JUPITER,
+                core.constants.GM_JUPITER,
+                core.constants.R_SOI_JUPITER,
+            ),
+            (
+                "SATURN",
+                core.constants.A_SATURN,
+                core.constants.GM_SATURN,
+                core.constants.R_SOI_SATURN,
+            ),
+            (
+                "URANUS",
+                core.constants.A_URANUS,
+                core.constants.GM_URANUS,
+                core.constants.R_SOI_URANUS,
+            ),
+            (
+                "NEPTUNE",
+                core.constants.A_NEPTUNE,
+                core.constants.GM_NEPTUNE,
+                core.constants.R_SOI_NEPTUNE,
+            ),
         ]
 
         for name, a, gm, r_soi in planets:
@@ -506,8 +536,12 @@ class TestRelationships:
     def test_reciprocal_conversions(self):
         """Test that conversion factors are reciprocals."""
         assert core.constants.KM_TO_M * core.constants.M_TO_KM == pytest.approx(1.0, rel=1e-15)
-        assert core.constants.DAY_TO_SEC * core.constants.SEC_TO_DAY == pytest.approx(1.0, rel=1e-15)
-        assert core.constants.DEG_TO_RAD * core.constants.RAD_TO_DEG == pytest.approx(1.0, rel=1e-15)
+        assert core.constants.DAY_TO_SEC * core.constants.SEC_TO_DAY == pytest.approx(
+            1.0, rel=1e-15
+        )
+        assert core.constants.DEG_TO_RAD * core.constants.RAD_TO_DEG == pytest.approx(
+            1.0, rel=1e-15
+        )
 
     def test_gm_hierarchy(self):
         """Test that gravitational parameters follow expected hierarchy."""

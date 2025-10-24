@@ -1,8 +1,8 @@
 """Tests for satellite lifetime estimation and conjunction analysis"""
 
-import pytest
 import astrora._core as core
 import numpy as np
+import pytest
 
 
 class TestLifetimeEstimation:
@@ -70,8 +70,7 @@ class TestLifetimeEstimation:
 
         try:
             lifetime_days = core.estimate_satellite_lifetime(
-                r_km, v_km_s, ballistic_coeff,
-                terminal_altitude_km, max_time_days
+                r_km, v_km_s, ballistic_coeff, terminal_altitude_km, max_time_days
             )
 
             # Should get a result
@@ -80,6 +79,7 @@ class TestLifetimeEstimation:
         except ValueError:
             # May not converge in max_time, which is acceptable for test
             pass
+
 
 class TestConjunctionAnalysis:
     """Test conjunction analysis and collision detection"""
@@ -99,8 +99,7 @@ class TestConjunctionAnalysis:
         search_window_hours = 0.2  # 12 minutes
 
         miss_distance = core.closest_approach_distance(
-            r1_km, v1_km_s, r2_km, v2_km_s,
-            search_window_hours
+            r1_km, v1_km_s, r2_km, v2_km_s, search_window_hours
         )
 
         # Should be reasonably close to 5 km (may vary due to dynamics)
@@ -122,8 +121,7 @@ class TestConjunctionAnalysis:
         collision_threshold_km = 5.0  # 5 km
 
         tca_minutes, miss_distance_km, collision_risk = core.compute_conjunction(
-            r1_km, v1_km_s, r2_km, v2_km_s,
-            search_window_hours, collision_threshold_km
+            r1_km, v1_km_s, r2_km, v2_km_s, search_window_hours, collision_threshold_km
         )
 
         # TCA should be within search window
@@ -152,8 +150,7 @@ class TestConjunctionAnalysis:
         collision_threshold_km = 10.0  # 10 km
 
         tca_minutes, miss_distance_km, collision_risk = core.compute_conjunction(
-            r1_km, v1_km_s, r2_km, v2_km_s,
-            search_window_hours, collision_threshold_km
+            r1_km, v1_km_s, r2_km, v2_km_s, search_window_hours, collision_threshold_km
         )
 
         # Should not be collision risk (well separated)
@@ -168,18 +165,12 @@ class TestConjunctionAnalysis:
         # Negative search window should raise error
         with pytest.raises(ValueError):
             core.compute_conjunction(
-                r_km, v_km_s, r_km, v_km_s,
-                -1.0,  # Negative search window
-                5.0
+                r_km, v_km_s, r_km, v_km_s, -1.0, 5.0  # Negative search window
             )
 
         # Negative collision threshold should raise error
         with pytest.raises(ValueError):
-            core.compute_conjunction(
-                r_km, v_km_s, r_km, v_km_s,
-                1.0,
-                -5.0  # Negative threshold
-            )
+            core.compute_conjunction(r_km, v_km_s, r_km, v_km_s, 1.0, -5.0)  # Negative threshold
 
 
 if __name__ == "__main__":

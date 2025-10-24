@@ -1102,7 +1102,7 @@ pub fn propagate_thirdbody_rk4(
     // Integrate using multiple RK4 steps
     let mut t = t0;
     for _ in 0..n_steps {
-        state = rk4_step(&f, t, &state, h);
+        state = rk4_step(f, t, &state, h);
         t += h;
     }
 
@@ -2076,7 +2076,7 @@ where
             let mut state = state0;
             let mut t = 0.0;
             for _ in 0..n_steps {
-                state = rk4_step(&accel_func, t, &state, h);
+                state = rk4_step(accel_func, t, &state, h);
                 t += h;
             }
             state
@@ -2089,7 +2089,7 @@ where
         }
         _ => {
             return Err(PoliastroError::ComputationError {
-                message: format!("Invalid integration method '{}'. Expected either 'rk4' or 'dopri5'", method),
+                message: format!("Invalid integration method '{method}'. Expected either 'rk4' or 'dopri5'"),
             });
         }
     };
@@ -3385,7 +3385,7 @@ pub fn propagate_with_perturbations<P: Perturbation + ?Sized>(
 
             // Integrate using multiple RK4 steps
             for _ in 0..steps {
-                state = rk4_step(&accel_func, t, &state, h);
+                state = rk4_step(accel_func, t, &state, h);
                 t += h;
             }
             state
@@ -3397,8 +3397,7 @@ pub fn propagate_with_perturbations<P: Perturbation + ?Sized>(
         }
         _ => {
             return Err(PoliastroError::invalid_state(format!(
-                "Unknown integration method: {}. Use 'rk4' or 'dopri5'",
-                method
+                "Unknown integration method: {method}. Use 'rk4' or 'dopri5'"
             )))
         }
     };

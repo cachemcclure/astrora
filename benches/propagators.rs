@@ -34,7 +34,6 @@ fn leo_initial_state() -> CartesianState {
     CartesianState::new(
         na::Vector3::new(r_mag * inclination.cos(), 0.0, r_mag * inclination.sin()),
         na::Vector3::new(0.0, v_circular, 0.0),
-        GM_EARTH,
     )
 }
 
@@ -47,7 +46,6 @@ fn geo_initial_state() -> CartesianState {
     CartesianState::new(
         na::Vector3::new(r_mag, 0.0, 0.0),
         na::Vector3::new(0.0, v_circular, 0.0),
-        GM_EARTH,
     )
 }
 
@@ -68,7 +66,6 @@ fn heo_initial_state() -> CartesianState {
     CartesianState::new(
         na::Vector3::new(r_perigee * inclination.cos(), 0.0, r_perigee * inclination.sin()),
         na::Vector3::new(0.0, v_perigee, 0.0),
-        GM_EARTH,
     )
 }
 
@@ -103,12 +100,13 @@ fn bench_j2_rk4_step_sizes(c: &mut Criterion) {
             |b, &steps| {
                 b.iter(|| {
                     black_box(propagate_j2_rk4(
-                        black_box(&state),
-                        black_box(epoch),
-                        black_box(duration),
+                        black_box(&state.position()),
+                        black_box(&state.velocity()),
+                        black_box(duration.to_seconds()),
+                        black_box(GM_EARTH),
                         black_box(J2_EARTH),
                         black_box(R_EARTH),
-                        black_box(steps),
+                        black_box(Some(steps)),
                     ))
                 })
             },
@@ -148,12 +146,13 @@ fn bench_j2_dopri5_tolerances(c: &mut Criterion) {
             |b, &tol| {
                 b.iter(|| {
                     black_box(propagate_j2_dopri5(
-                        black_box(&state),
-                        black_box(epoch),
-                        black_box(duration),
+                        black_box(&state.position()),
+                        black_box(&state.velocity()),
+                        black_box(duration.to_seconds()),
+                        black_box(GM_EARTH),
                         black_box(J2_EARTH),
                         black_box(R_EARTH),
-                        black_box(tol),
+                        black_box(Some(tol)),
                     ))
                 })
             },
@@ -206,12 +205,13 @@ fn bench_integrator_comparison_leo(c: &mut Criterion) {
     group.bench_function("DOPRI5_tol_1e-8", |b| {
         b.iter(|| {
             black_box(propagate_j2_dopri5(
-                black_box(&state),
-                black_box(epoch),
-                black_box(duration),
+                black_box(&state.position()),
+                black_box(&state.velocity()),
+                black_box(duration.to_seconds()),
+                black_box(GM_EARTH),
                 black_box(J2_EARTH),
                 black_box(R_EARTH),
-                black_box(1e-8),
+                black_box(Some(1e-8)),
             ))
         })
     });
@@ -220,12 +220,13 @@ fn bench_integrator_comparison_leo(c: &mut Criterion) {
     group.bench_function("DOPRI5_tol_1e-10", |b| {
         b.iter(|| {
             black_box(propagate_j2_dopri5(
-                black_box(&state),
-                black_box(epoch),
-                black_box(duration),
+                black_box(&state.position()),
+                black_box(&state.velocity()),
+                black_box(duration.to_seconds()),
+                black_box(GM_EARTH),
                 black_box(J2_EARTH),
                 black_box(R_EARTH),
-                black_box(1e-10),
+                black_box(Some(1e-10)),
             ))
         })
     });
@@ -249,12 +250,13 @@ fn bench_orbit_types_dopri5(c: &mut Criterion) {
         let state = leo_initial_state();
         b.iter(|| {
             black_box(propagate_j2_dopri5(
-                black_box(&state),
-                black_box(epoch),
-                black_box(duration),
+                black_box(&state.position()),
+                black_box(&state.velocity()),
+                black_box(duration.to_seconds()),
+                black_box(GM_EARTH),
                 black_box(J2_EARTH),
                 black_box(R_EARTH),
-                black_box(tol),
+                black_box(Some(tol)),
             ))
         })
     });
@@ -264,12 +266,13 @@ fn bench_orbit_types_dopri5(c: &mut Criterion) {
         let state = geo_initial_state();
         b.iter(|| {
             black_box(propagate_j2_dopri5(
-                black_box(&state),
-                black_box(epoch),
-                black_box(duration),
+                black_box(&state.position()),
+                black_box(&state.velocity()),
+                black_box(duration.to_seconds()),
+                black_box(GM_EARTH),
                 black_box(J2_EARTH),
                 black_box(R_EARTH),
-                black_box(tol),
+                black_box(Some(tol)),
             ))
         })
     });
@@ -279,12 +282,13 @@ fn bench_orbit_types_dopri5(c: &mut Criterion) {
         let state = heo_initial_state();
         b.iter(|| {
             black_box(propagate_j2_dopri5(
-                black_box(&state),
-                black_box(epoch),
-                black_box(duration),
+                black_box(&state.position()),
+                black_box(&state.velocity()),
+                black_box(duration.to_seconds()),
+                black_box(GM_EARTH),
                 black_box(J2_EARTH),
                 black_box(R_EARTH),
-                black_box(tol),
+                black_box(Some(tol)),
             ))
         })
     });
@@ -315,12 +319,13 @@ fn bench_propagation_durations(c: &mut Criterion) {
                 let duration = Duration::from_hours(hours);
                 b.iter(|| {
                     black_box(propagate_j2_dopri5(
-                        black_box(&state),
-                        black_box(epoch),
-                        black_box(duration),
+                        black_box(&state.position()),
+                        black_box(&state.velocity()),
+                        black_box(duration.to_seconds()),
+                        black_box(GM_EARTH),
                         black_box(J2_EARTH),
                         black_box(R_EARTH),
-                        black_box(tol),
+                        black_box(Some(tol)),
                     ))
                 })
             },
@@ -370,12 +375,13 @@ fn bench_keplerian_vs_j2(c: &mut Criterion) {
     group.bench_function("J2_DOPRI5_tol_1e-8", |b| {
         b.iter(|| {
             black_box(propagate_j2_dopri5(
-                black_box(&state),
-                black_box(epoch),
-                black_box(duration),
+                black_box(&state.position()),
+                black_box(&state.velocity()),
+                black_box(duration.to_seconds()),
+                black_box(GM_EARTH),
                 black_box(J2_EARTH),
                 black_box(R_EARTH),
-                black_box(1e-8),
+                black_box(Some(1e-8)),
             ))
         })
     });
@@ -407,12 +413,13 @@ fn bench_tolerance_accuracy_tradeoff(c: &mut Criterion) {
             |b, &tol| {
                 b.iter(|| {
                     black_box(propagate_j2_dopri5(
-                        black_box(&state),
-                        black_box(epoch),
-                        black_box(duration),
+                        black_box(&state.position()),
+                        black_box(&state.velocity()),
+                        black_box(duration.to_seconds()),
+                        black_box(GM_EARTH),
                         black_box(J2_EARTH),
                         black_box(R_EARTH),
-                        black_box(tol),
+                        black_box(Some(tol)),
                     ))
                 })
             },
@@ -446,12 +453,13 @@ fn bench_rk4_step_size_performance(c: &mut Criterion) {
             |b, &steps| {
                 b.iter(|| {
                     black_box(propagate_j2_rk4(
-                        black_box(&state),
-                        black_box(epoch),
-                        black_box(duration),
+                        black_box(&state.position()),
+                        black_box(&state.velocity()),
+                        black_box(duration.to_seconds()),
+                        black_box(GM_EARTH),
                         black_box(J2_EARTH),
                         black_box(R_EARTH),
-                        black_box(steps),
+                        black_box(Some(steps)),
                     ))
                 })
             },

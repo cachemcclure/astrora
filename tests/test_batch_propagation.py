@@ -8,10 +8,10 @@ to ensure they work correctly with NumPy arrays and provide the expected perform
 import numpy as np
 import pytest
 from astrora._core import (
-    batch_propagate_states,
     batch_propagate_lagrange,
-    propagate_state_keplerian,
+    batch_propagate_states,
     constants,
+    propagate_state_keplerian,
 )
 
 
@@ -26,10 +26,7 @@ class TestBatchPropagation:
         v1 = np.sqrt(constants.GM_EARTH / r1)
         v2 = np.sqrt(constants.GM_EARTH / r2)
 
-        states = np.array([
-            [r1, 0.0, 0.0, 0.0, v1, 0.0],
-            [r2, 0.0, 0.0, 0.0, v2, 0.0]
-        ])
+        states = np.array([[r1, 0.0, 0.0, 0.0, v1, 0.0], [r2, 0.0, 0.0, 0.0, v2, 0.0]])
 
         dt = 3600.0  # 1 hour
         result = batch_propagate_states(states, dt, constants.GM_EARTH)
@@ -49,10 +46,7 @@ class TestBatchPropagation:
         r = 7000e3
         v = np.sqrt(constants.GM_EARTH / r)
 
-        states = np.array([
-            [r, 0.0, 0.0, 0.0, v, 0.0],
-            [r, 0.0, 0.0, 0.0, v, 0.0]
-        ])
+        states = np.array([[r, 0.0, 0.0, 0.0, v, 0.0], [r, 0.0, 0.0, 0.0, v, 0.0]])
 
         # Different time steps
         dt = np.array([1800.0, 3600.0])  # 30 min and 1 hour
@@ -100,11 +94,13 @@ class TestBatchPropagation:
         r0 = 7000e3
         v0 = 8000.0
 
-        states = np.array([
-            [r0, 0.0, 0.0, 0.0, v0, 0.0],
-            [r0, 0.0, 0.0, 0.0, v0, 0.0],
-            [r0, 0.0, 0.0, 0.0, v0, 0.0]
-        ])
+        states = np.array(
+            [
+                [r0, 0.0, 0.0, 0.0, v0, 0.0],
+                [r0, 0.0, 0.0, 0.0, v0, 0.0],
+                [r0, 0.0, 0.0, 0.0, v0, 0.0],
+            ]
+        )
 
         dt = 3600.0
         result = batch_propagate_states(states, dt, constants.GM_EARTH)
@@ -114,8 +110,8 @@ class TestBatchPropagation:
             r_mag = np.linalg.norm(result[i, :3])
             v_mag = np.linalg.norm(result[i, 3:])
 
-            energy_initial = 0.5 * v0 ** 2 - constants.GM_EARTH / r0
-            energy_final = 0.5 * v_mag ** 2 - constants.GM_EARTH / r_mag
+            energy_initial = 0.5 * v0**2 - constants.GM_EARTH / r0
+            energy_final = 0.5 * v_mag**2 - constants.GM_EARTH / r_mag
 
             np.testing.assert_allclose(energy_final, energy_initial, rtol=1e-8)
 
@@ -124,10 +120,7 @@ class TestBatchPropagation:
         r0 = 7000e3
         v0 = 8000.0
 
-        states = np.array([
-            [r0, 0.0, 0.0, 0.0, v0, 0.0],
-            [r0, 0.0, 0.0, 0.0, v0, 0.0]
-        ])
+        states = np.array([[r0, 0.0, 0.0, 0.0, v0, 0.0], [r0, 0.0, 0.0, 0.0, v0, 0.0]])
 
         dt = 3600.0
         result = batch_propagate_states(states, dt, constants.GM_EARTH)
@@ -142,9 +135,7 @@ class TestBatchPropagation:
     def test_batch_propagate_invalid_dimensions(self):
         """Test that invalid state dimensions raise error"""
         # Wrong number of columns
-        states = np.array([
-            [7000e3, 0.0, 0.0, 0.0, 7546.0]  # Only 5 columns
-        ])
+        states = np.array([[7000e3, 0.0, 0.0, 0.0, 7546.0]])  # Only 5 columns
 
         dt = 3600.0
         with pytest.raises(ValueError):
@@ -152,10 +143,9 @@ class TestBatchPropagation:
 
     def test_batch_propagate_wrong_time_steps(self):
         """Test that mismatched time steps raise error"""
-        states = np.array([
-            [7000e3, 0.0, 0.0, 0.0, 7546.0, 0.0],
-            [8000e3, 0.0, 0.0, 0.0, 7000.0, 0.0]
-        ])
+        states = np.array(
+            [[7000e3, 0.0, 0.0, 0.0, 7546.0, 0.0], [8000e3, 0.0, 0.0, 0.0, 7000.0, 0.0]]
+        )
 
         # Wrong number of time steps (2 states but 3 time steps)
         dt = np.array([1000.0, 2000.0, 3000.0])
@@ -167,10 +157,7 @@ class TestBatchPropagation:
         r = 7000e3
         v = np.sqrt(constants.GM_EARTH / r)
 
-        states = np.array([
-            [r, 0.0, 0.0, 0.0, v, 0.0],
-            [r * 1.2, 0.0, 0.0, 0.0, v * 0.9, 0.0]
-        ])
+        states = np.array([[r, 0.0, 0.0, 0.0, v, 0.0], [r * 1.2, 0.0, 0.0, 0.0, v * 0.9, 0.0]])
 
         dt = 3600.0
 
@@ -185,9 +172,7 @@ class TestBatchPropagation:
         r = 7000e3
         v = np.sqrt(constants.GM_EARTH / r)
 
-        states = np.array([
-            [r, 0.0, 0.0, 0.0, v, 0.0]
-        ])
+        states = np.array([[r, 0.0, 0.0, 0.0, v, 0.0]])
 
         dt = 3600.0
 
@@ -215,11 +200,13 @@ class TestBatchPropagation:
         mol_r_peri = mol_a * (1 - mol_e)
         mol_v_peri = np.sqrt(constants.GM_EARTH * (2 / mol_r_peri - 1 / mol_a))
 
-        states = np.array([
-            [iss_r, 0.0, 0.0, 0.0, iss_v, 0.0],
-            [geo_r, 0.0, 0.0, 0.0, geo_v, 0.0],
-            [mol_r_peri, 0.0, 0.0, 0.0, mol_v_peri, 0.0]
-        ])
+        states = np.array(
+            [
+                [iss_r, 0.0, 0.0, 0.0, iss_v, 0.0],
+                [geo_r, 0.0, 0.0, 0.0, geo_v, 0.0],
+                [mol_r_peri, 0.0, 0.0, 0.0, mol_v_peri, 0.0],
+            ]
+        )
 
         # Propagate for 1 hour
         dt = 3600.0
@@ -232,8 +219,8 @@ class TestBatchPropagation:
             r_mag = np.linalg.norm(result[i, :3])
             v_mag = np.linalg.norm(result[i, 3:])
 
-            energy0 = 0.5 * v0_mag ** 2 - constants.GM_EARTH / r0_mag
-            energy = 0.5 * v_mag ** 2 - constants.GM_EARTH / r_mag
+            energy0 = 0.5 * v0_mag**2 - constants.GM_EARTH / r0_mag
+            energy = 0.5 * v_mag**2 - constants.GM_EARTH / r_mag
 
             np.testing.assert_allclose(energy, energy0, rtol=1e-8)
 

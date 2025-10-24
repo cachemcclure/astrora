@@ -32,11 +32,12 @@ Famous missions using gravity assists:
 
 import numpy as np
 from astrora._core import gravity_assist, periapsis_from_b_parameter
-from astrora.bodies import Earth, Mars, Jupiter, Saturn, Venus
+from astrora.bodies import Earth, Jupiter, Mars, Saturn, Venus
+
 
 def print_flyby_summary(result, planet_name, v_infinity, r_periapsis):
     """Print formatted summary of gravity assist results."""
-    c3 = result['specific_energy'] * 2 / 1e6  # km²/s²
+    c3 = result["specific_energy"] * 2 / 1e6  # km²/s²
 
     print(f"\n{'='*70}")
     print(f"{planet_name} Gravity Assist")
@@ -53,7 +54,9 @@ def print_flyby_summary(result, planet_name, v_infinity, r_periapsis):
     print(f"\nVelocity Change (Heliocentric Frame):")
     print(f"  Delta-v magnitude:                 {result['delta_v_magnitude']/1000:.3f} km/s")
     print(f"  Maximum possible (2·v∞):           {2*v_infinity:.3f} km/s")
-    print(f"  Efficiency:                        {result['delta_v_magnitude']/1000/(2*v_infinity)*100:.1f}%")
+    print(
+        f"  Efficiency:                        {result['delta_v_magnitude']/1000/(2*v_infinity)*100:.1f}%"
+    )
     print(f"\nC3 Characteristic Energy:")
     print(f"  C3 at flyby approach:              {c3:.3f} km²/s²")
     print(f"  v∞ (planet frame):                 {v_infinity:.3f} km/s")
@@ -81,7 +84,7 @@ def example_jupiter_flyby():
     result = gravity_assist(
         v_infinity=v_infinity * 1000,  # Convert to m/s
         r_periapsis=r_periapsis * 1000,
-        mu=Jupiter.mu
+        mu=Jupiter.mu,
     )
 
     print_flyby_summary(result, "Jupiter", v_infinity, r_periapsis)
@@ -109,9 +112,7 @@ def example_venus_flyby():
     r_periapsis = 6352 + 300  # km (Venus radius + 300 km altitude)
 
     result = gravity_assist(
-        v_infinity=v_infinity * 1000,
-        r_periapsis=r_periapsis * 1000,
-        mu=Venus.mu
+        v_infinity=v_infinity * 1000, r_periapsis=r_periapsis * 1000, mu=Venus.mu
     )
 
     print_flyby_summary(result, "Venus", v_infinity, r_periapsis)
@@ -136,9 +137,7 @@ def example_mars_flyby():
     r_periapsis = 3396 + 500  # km (Mars radius + 500 km altitude)
 
     result = gravity_assist(
-        v_infinity=v_infinity * 1000,
-        r_periapsis=r_periapsis * 1000,
-        mu=Mars.mu
+        v_infinity=v_infinity * 1000, r_periapsis=r_periapsis * 1000, mu=Mars.mu
     )
 
     print_flyby_summary(result, "Mars", v_infinity, r_periapsis)
@@ -169,9 +168,7 @@ def example_b_plane_targeting():
     target_b_parameter = 500000  # km (target impact parameter)
 
     result = periapsis_from_b_parameter(
-        v_infinity=v_infinity * 1000,
-        b_parameter=target_b_parameter * 1000,
-        mu=Jupiter.mu
+        v_infinity=v_infinity * 1000, b_parameter=target_b_parameter * 1000, mu=Jupiter.mu
     )
 
     print(f"Mission Requirements:")
@@ -219,8 +216,8 @@ def example_flyby_comparison():
 
     for name, mu, r_p in planets:
         result = gravity_assist(v_inf * 1000, r_p * 1000, mu)
-        deflection = np.rad2deg(result['delta'])
-        delta_v = result['delta_v_magnitude'] / 1000  # Convert to km/s
+        deflection = np.rad2deg(result["delta"])
+        delta_v = result["delta_v_magnitude"] / 1000  # Convert to km/s
 
         print(f"{name:>10} {r_p:>15,.0f} {deflection:>15.2f} {delta_v:>12.3f}")
 
@@ -232,8 +229,9 @@ def example_flyby_comparison():
     print("  - Choice depends on mission trajectory and available opportunities")
 
 
-if __name__ == '__main__':
-    print("""
+if __name__ == "__main__":
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║     Gravity Assist (Planetary Flyby) Examples                    ║
 ║     Using Astrora's Gravity Assist Calculator                    ║
@@ -247,24 +245,26 @@ without using propellant. They've enabled missions to:
 
 The physics: In the planet's frame, speed is conserved but direction
 changes. In the Sun's frame, this appears as a velocity change (ΔV).
-""")
+"""
+    )
 
     # Run all examples
     example_jupiter_flyby()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_venus_flyby()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_mars_flyby()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_b_plane_targeting()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_flyby_comparison()
 
-    print("""
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║  Advanced Topics                                                 ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -287,4 +287,5 @@ For more mission design tools, see:
   - examples/earth_mars_transfer.py - Interplanetary transfers
   - examples/porkchop_plot.py - Launch window optimization
   - examples/lambert_solver.py - General trajectory design
-""")
+"""
+    )

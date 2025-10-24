@@ -144,6 +144,8 @@ extend-exclude = '''
 [tool.ruff]
 line-length = 100
 target-version = "py38"
+
+[tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -155,10 +157,14 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by black)
+    "F541", # f-string without placeholders (often used for consistency)
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"tests/*.py" = ["B017"]  # Allow pytest.raises(Exception) for testing
+"examples/*.py" = ["F841"]  # Allow unused variables in examples
+"notebooks/*.ipynb" = ["F841", "B018"]  # Allow unused vars and bare expressions in notebooks
 
 [tool.mypy]
 python_version = "3.8"

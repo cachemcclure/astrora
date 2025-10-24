@@ -258,9 +258,9 @@ pub fn coverage_area(altitude: f64, min_elevation: f64) -> f64 {
 
     // Spherical cap area: A = 2πR²(1 - cos(λ))
     // Using WGS84 semi-major axis for more accurate Earth surface area
-    let area = 2.0 * PI * WGS84_A * WGS84_A * (1.0 - lambda.cos());
+    
 
-    area
+    2.0 * PI * WGS84_A * WGS84_A * (1.0 - lambda.cos())
 }
 
 /// Compute access time statistics for a ground target from a list of satellite passes.

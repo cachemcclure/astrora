@@ -7,12 +7,10 @@ showing how to create publication-quality orbit visualizations.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from astropy import units as u
-
-from astrora.twobody import Orbit
 from astrora.bodies import Earth
 from astrora.plotting import StaticOrbitPlotter
+from astrora.twobody import Orbit
 
 print("Astrora Plotting Module Demo")
 print("=" * 50)
@@ -20,7 +18,7 @@ print("=" * 50)
 # Create a simple circular orbit (ISS-like)
 print("\n1. Creating ISS-like circular orbit...")
 r = np.array([6800e3, 0, 0])  # meters
-v = np.array([0, 7.66e3, 0])   # m/s
+v = np.array([0, 7.66e3, 0])  # m/s
 orbit1 = Orbit.from_vectors(Earth, r, v)
 
 print(f"   Semi-major axis: {orbit1.a.to(u.km):.2f}")
@@ -36,7 +34,7 @@ orbit2 = Orbit.from_classical(
     inc=7 << u.deg,
     raan=0 << u.deg,
     argp=178 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 print(f"   Semi-major axis: {orbit2.a.to(u.km):.2f}")
@@ -53,7 +51,7 @@ orbit3 = Orbit.from_classical(
     inc=98 << u.deg,  # Sun-synchronous inclination
     raan=0 << u.deg,
     argp=90 << u.deg,
-    nu=0 << u.deg
+    nu=0 << u.deg,
 )
 
 print(f"   Semi-major axis: {orbit3.a.to(u.km):.2f}")
@@ -72,26 +70,22 @@ print("   ✓ Earth set as attractor")
 
 # Create a simple trajectory manually to demonstrate plotting
 print("\n5. Creating manual trajectory for demonstration...")
-theta = np.linspace(0, 2*np.pi, 100)
+theta = np.linspace(0, 2 * np.pi, 100)
 r_orbit = 7000e3  # meters
-positions = np.column_stack([
-    r_orbit * np.cos(theta),
-    r_orbit * np.sin(theta),
-    np.zeros_like(theta)
-])
+positions = np.column_stack(
+    [r_orbit * np.cos(theta), r_orbit * np.sin(theta), np.zeros_like(theta)]
+)
 
-traj, pos = plotter.plot_trajectory(positions, label="Circular test orbit", color='blue')
+traj, pos = plotter.plot_trajectory(positions, label="Circular test orbit", color="blue")
 print("   ✓ Trajectory plotted successfully")
 
 # Add another trajectory at different altitude
 r_orbit2 = 10000e3
-positions2 = np.column_stack([
-    r_orbit2 * np.cos(theta) * 0.7,  # Elliptical
-    r_orbit2 * np.sin(theta),
-    np.zeros_like(theta)
-])
+positions2 = np.column_stack(
+    [r_orbit2 * np.cos(theta) * 0.7, r_orbit2 * np.sin(theta), np.zeros_like(theta)]  # Elliptical
+)
 
-traj2, pos2 = plotter.plot_trajectory(positions2, label="Elliptical test orbit", color='red')
+traj2, pos2 = plotter.plot_trajectory(positions2, label="Elliptical test orbit", color="red")
 print("   ✓ Second trajectory plotted successfully")
 
 # Save the plot

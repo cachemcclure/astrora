@@ -171,7 +171,7 @@ impl DeltaVBudget {
                 "must be finite",
             ));
         }
-        if contingency_margin < 0.0 || contingency_margin > 1.0 {
+        if !(0.0..=1.0).contains(&contingency_margin) {
             return Err(PoliastroError::out_of_range(
                 "contingency_margin",
                 contingency_margin,
@@ -337,7 +337,7 @@ impl DeltaVBudget {
                 "must be finite",
             ));
         }
-        if margin < 0.0 || margin > 1.0 {
+        if !(0.0..=1.0).contains(&margin) {
             return Err(PoliastroError::out_of_range(
                 "margin",
                 margin,

@@ -256,8 +256,8 @@ pub fn estimate_lifetime(
         let k4_v = a4;
 
         // Update state: y_{n+1} = y_n + (dt/6) * (k1 + 2*k2 + 2*k3 + k4)
-        r = r + (k1_r + k2_r.scale(2.0) + k3_r.scale(2.0) + k4_r).scale(dt / 6.0);
-        v = v + (k1_v + k2_v.scale(2.0) + k3_v.scale(2.0) + k4_v).scale(dt / 6.0);
+        r += (k1_r + k2_r.scale(2.0) + k3_r.scale(2.0) + k4_r).scale(dt / 6.0);
+        v += (k1_v + k2_v.scale(2.0) + k3_v.scale(2.0) + k4_v).scale(dt / 6.0);
         time += dt;
     }
 
@@ -675,6 +675,34 @@ mod tests {
         let result = estimate_lifetime(&r0, &v0, 0.001, 100_000.0, 1.0, 1.0);
 
         // Should error due to exceeding max_time
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_lifetime_negative_terminal_altitude() {
+        // Test error handling for negative terminal altitude
+        let r0 = Vector3::new(R_EARTH + 400_000.0, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7670.0, 0.0);
+
+        let result = estimate_lifetime(&r0, &v0, 0.01, -1000.0, 86400.0, 600.0);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("terminal_altitude"));
+    }
+
+    #[test]
+    fn test_lifetime_validation_checks() {
+        // Test all validation checks in estimate_lifetime
+        let r0 = Vector3::new(R_EARTH + 400_000.0, 0.0, 0.0);
+        let v0 = Vector3::new(0.0, 7670.0, 0.0);
+
+        // Negative ballistic coefficient
+        let result = estimate_lifetime(&r0, &v0, -0.01, 100_000.0, 86400.0, 600.0);
+        assert!(result.is_err());
+
+        // Zero ballistic coefficient (already tested separately)
+        // Negative max_time
+        let result = estimate_lifetime(&r0, &v0, 0.01, 100_000.0, -100.0, 600.0);
         assert!(result.is_err());
     }
 }

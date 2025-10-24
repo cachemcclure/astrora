@@ -50,10 +50,10 @@ use pyo3::prelude::*;
 use numpy::{PyArray1, PyReadonlyArray1};
 use crate::core::PoliastroResult;
 use crate::core::time::Epoch;
+use hifitime::TimeScale;
 use crate::coordinates::rotations::{rotation_x, rotation_z};
 use std::f64::consts::PI;
 use rayon::prelude::*;
-use hifitime::TimeScale;
 
 /// International Celestial Reference System (ICRS)
 ///
@@ -409,7 +409,7 @@ impl GCRS {
 pub fn earth_rotation_angle(epoch: &Epoch) -> f64 {
     // Constants from IERS Conventions (2010)
     const ERA_OFFSET: f64 = 0.7790572732640; // Radians at J2000
-    const ERA_RATE: f64 = 1.00273781191135448; // Rotations per UT1 day
+    const ERA_RATE: f64 = 1.002_737_811_911_354_6; // Rotations per UT1 day
 
     // Get Julian date in UT1 (approximated by UTC for V1)
     // hifitime provides JD in the epoch's current time scale
@@ -423,9 +423,9 @@ pub fn earth_rotation_angle(epoch: &Epoch) -> f64 {
 
     // Normalize to [0, 1) rotations, then convert to [0, 2π) radians
     let era_normalized = era_rotations - era_rotations.floor();
-    let era_radians = 2.0 * PI * era_normalized;
+    
 
-    era_radians
+    2.0 * PI * era_normalized
 }
 
 /// Calculate Greenwich Mean Sidereal Time (GMST) using IAU 1982 model

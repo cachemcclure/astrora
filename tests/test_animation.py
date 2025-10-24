@@ -4,35 +4,38 @@ Tests for orbit animation functionality.
 Tests both matplotlib (2D) and plotly (3D) animation helpers.
 """
 
-import pytest
 import numpy as np
+import pytest
 from astropy import units as u
 
 # Import animation module - may not be available if matplotlib/plotly missing
 try:
     from astrora.plotting.animation import animate_orbit, animate_orbit_3d
+
     HAS_ANIMATION = True
 except ImportError:
     HAS_ANIMATION = False
 
 try:
     import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend for testing
-    import matplotlib.pyplot as plt
+
+    matplotlib.use("Agg")  # Non-interactive backend for testing
     import matplotlib.animation as mpl_animation
+    import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
 try:
     import plotly.graph_objects as go
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
 
-from astrora.twobody import Orbit
 from astrora.bodies import Earth, Mars
-
+from astrora.twobody import Orbit
 
 # Skip all tests if animation module not available
 pytestmark = pytest.mark.skipif(not HAS_ANIMATION, reason="Animation module not available")
@@ -56,7 +59,7 @@ class TestAnimateOrbit:
         assert isinstance(anim, mpl_animation.FuncAnimation)
         assert anim is not None
 
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_single_orbit_with_units(self):
@@ -68,7 +71,7 @@ class TestAnimateOrbit:
         anim = animate_orbit(orbit, num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_multiple_orbits(self):
@@ -81,7 +84,7 @@ class TestAnimateOrbit:
             inc=0 << u.deg,
             raan=0 << u.deg,
             argp=0 << u.deg,
-            nu=0 << u.deg
+            nu=0 << u.deg,
         )
 
         orbit2 = Orbit.from_classical(
@@ -91,13 +94,13 @@ class TestAnimateOrbit:
             inc=10 << u.deg,
             raan=0 << u.deg,
             argp=0 << u.deg,
-            nu=0 << u.deg
+            nu=0 << u.deg,
         )
 
         anim = animate_orbit([orbit1, orbit2], num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_custom_duration(self):
@@ -107,11 +110,11 @@ class TestAnimateOrbit:
         orbit = Orbit.from_vectors(Earth, r, v)
 
         # Animate for half a period
-        period = orbit.period.value if hasattr(orbit.period, 'value') else orbit.period
-        anim = animate_orbit(orbit, duration=period/2, num_frames=10)
+        period = orbit.period.value if hasattr(orbit.period, "value") else orbit.period
+        anim = animate_orbit(orbit, duration=period / 2, num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_without_trail(self):
@@ -123,7 +126,7 @@ class TestAnimateOrbit:
         anim = animate_orbit(orbit, trail=False, num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_dark_mode(self):
@@ -135,7 +138,7 @@ class TestAnimateOrbit:
         anim = animate_orbit(orbit, dark=True, num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_without_time_display(self):
@@ -147,7 +150,7 @@ class TestAnimateOrbit:
         anim = animate_orbit(orbit, show_time=False, num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_custom_fps(self):
@@ -159,7 +162,7 @@ class TestAnimateOrbit:
         anim = animate_orbit(orbit, num_frames=20, fps=30)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_custom_axes(self):
@@ -174,7 +177,7 @@ class TestAnimateOrbit:
         assert isinstance(anim, mpl_animation.FuncAnimation)
         # Verify animation uses the provided axes
         assert ax in fig.get_axes()
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_elliptical_orbit(self):
@@ -186,13 +189,13 @@ class TestAnimateOrbit:
             inc=30 << u.deg,
             raan=45 << u.deg,
             argp=60 << u.deg,
-            nu=0 << u.deg
+            nu=0 << u.deg,
         )
 
         anim = animate_orbit(orbit, num_frames=15)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_animate_different_attractor(self):
@@ -204,13 +207,13 @@ class TestAnimateOrbit:
             inc=0 << u.deg,
             raan=0 << u.deg,
             argp=0 << u.deg,
-            nu=0 << u.deg
+            nu=0 << u.deg,
         )
 
         anim = animate_orbit(orbit, num_frames=10)
 
         assert isinstance(anim, mpl_animation.FuncAnimation)
-        plt.close('all')
+        plt.close("all")
 
 
 class TestAnimateOrbit3D:
@@ -250,7 +253,7 @@ class TestAnimateOrbit3D:
             inc=0 << u.deg,
             raan=0 << u.deg,
             argp=0 << u.deg,
-            nu=0 << u.deg
+            nu=0 << u.deg,
         )
 
         orbit2 = Orbit.from_classical(
@@ -260,7 +263,7 @@ class TestAnimateOrbit3D:
             inc=20 << u.deg,
             raan=30 << u.deg,
             argp=0 << u.deg,
-            nu=0 << u.deg
+            nu=0 << u.deg,
         )
 
         fig = animate_orbit_3d([orbit1, orbit2], num_frames=10)
@@ -275,8 +278,8 @@ class TestAnimateOrbit3D:
         v = np.array([0, 0, 7546])
         orbit = Orbit.from_vectors(Earth, r, v)
 
-        period = orbit.period.value if hasattr(orbit.period, 'value') else orbit.period
-        fig = animate_orbit_3d(orbit, duration=period/2, num_frames=10)
+        period = orbit.period.value if hasattr(orbit.period, "value") else orbit.period
+        fig = animate_orbit_3d(orbit, duration=period / 2, num_frames=10)
 
         assert isinstance(fig, go.Figure)
         assert len(fig.frames) == 10
@@ -305,7 +308,7 @@ class TestAnimateOrbit3D:
 
         assert isinstance(fig, go.Figure)
         # Check that dark template is applied by checking the template name
-        assert hasattr(fig.layout, 'template')
+        assert hasattr(fig.layout, "template")
 
     @pytest.mark.skipif(not HAS_PLOTLY, reason="plotly not available")
     def test_animate_3d_controls(self):
@@ -318,7 +321,9 @@ class TestAnimateOrbit3D:
 
         # Check for updatemenus (play/pause buttons)
         assert len(fig.layout.updatemenus) > 0
-        assert any('Play' in str(button) for menu in fig.layout.updatemenus for button in menu.buttons)
+        assert any(
+            "Play" in str(button) for menu in fig.layout.updatemenus for button in menu.buttons
+        )
 
     @pytest.mark.skipif(not HAS_PLOTLY, reason="plotly not available")
     def test_animate_3d_slider(self):
@@ -381,7 +386,7 @@ class TestAnimationIntegration:
         assert orbit.a == original_a
         assert orbit.ecc == original_ecc
 
-        plt.close('all')
+        plt.close("all")
 
     @pytest.mark.skipif(not HAS_PLOTLY, reason="plotly not available")
     def test_3d_animation_preserves_orbit_properties(self):
@@ -411,7 +416,7 @@ class TestAnimationIntegration:
             # Note: FuncAnimation doesn't expose frame count directly
             # but we can verify it was created successfully
             assert isinstance(anim, mpl_animation.FuncAnimation)
-            plt.close('all')
+            plt.close("all")
 
     @pytest.mark.skipif(not HAS_PLOTLY, reason="plotly not available")
     def test_3d_animation_num_frames_parameter(self):
@@ -435,7 +440,8 @@ class TestAnimationErrors:
 
         # Mock matplotlib as unavailable
         import astrora.plotting.animation as anim_module
-        monkeypatch.setattr(anim_module, 'HAS_MATPLOTLIB', False)
+
+        monkeypatch.setattr(anim_module, "HAS_MATPLOTLIB", False)
 
         r = np.array([7000e3, 0, 0])
         v = np.array([0, 7546, 0])
@@ -451,7 +457,8 @@ class TestAnimationErrors:
 
         # Mock plotly as unavailable
         import astrora.plotting.animation as anim_module
-        monkeypatch.setattr(anim_module, 'HAS_PLOTLY', False)
+
+        monkeypatch.setattr(anim_module, "HAS_PLOTLY", False)
 
         r = np.array([7000e3, 0, 0])
         v = np.array([0, 0, 7546])
@@ -461,5 +468,5 @@ class TestAnimationErrors:
             animate_orbit_3d(orbit, num_frames=10)
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

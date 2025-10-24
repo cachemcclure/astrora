@@ -6,14 +6,13 @@ by showing contours of delta-v and transfer time as functions of departure
 and arrival dates.
 """
 
-import numpy as np
+from datetime import datetime
+from typing import Callable, Optional, Tuple
+
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.axes import Axes
-from typing import Optional, Tuple, Callable
-from datetime import datetime, timedelta
-from astropy.time import Time
+import numpy as np
 from astropy import units as u
+from matplotlib.axes import Axes
 
 try:
     from .._core import lambert_solve_batch_parallel
@@ -30,7 +29,7 @@ def plot_porkchop(
     ax: Optional[Axes] = None,
     levels_deltav: int = 20,
     levels_tof: int = 15,
-    **kwargs
+    **kwargs,
 ) -> Tuple[Axes, np.ndarray, np.ndarray, np.ndarray]:
     """
     Generate a porkchop plot for launch window analysis.
@@ -107,15 +106,14 @@ def plot_porkchop(
     """
     if lambert_solve_batch_parallel is None:
         raise ImportError(
-            "Lambert solver not available. "
-            "Make sure astrora._core is properly compiled."
+            "Lambert solver not available. " "Make sure astrora._core is properly compiled."
         )
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 9))
 
     # Create meshgrid of dates
-    dep_grid, arr_grid = np.meshgrid(departure_dates, arrival_dates, indexing='ij')
+    dep_grid, arr_grid = np.meshgrid(departure_dates, arrival_dates, indexing="ij")
 
     # Initialize grids for results
     delta_v_grid = np.full(dep_grid.shape, np.nan)
@@ -135,7 +133,7 @@ def plot_porkchop(
             r2 = arrival_planet_positions(arr_time)
 
             # Calculate time of flight
-            if hasattr(dep_time, 'jd') and hasattr(arr_time, 'jd'):
+            if hasattr(dep_time, "jd") and hasattr(arr_time, "jd"):
                 # astropy.time.Time
                 tof_days = (arr_time - dep_time).to(u.day).value
             else:
@@ -154,17 +152,12 @@ def plot_porkchop(
                 from .._core import lambert_solve
 
                 solution = lambert_solve(
-                    r1.flatten(),
-                    r2.flatten(),
-                    tof_seconds,
-                    mu,
-                    prograde=True,
-                    num_revs=0
+                    r1.flatten(), r2.flatten(), tof_seconds, mu, prograde=True, num_revs=0
                 )
 
-                if solution['converged']:
-                    v1 = np.array(solution['v1'])
-                    v2 = np.array(solution['v2'])
+                if solution["converged"]:
+                    v1 = np.array(solution["v1"])
+                    v2 = np.array(solution["v2"])
 
                     # Calculate C3 (departure energy)
                     v_inf_dep = np.linalg.norm(v1)
@@ -190,11 +183,11 @@ def plot_porkchop(
         arr_grid,
         delta_v_grid,
         levels=levels_deltav,
-        cmap='viridis',
+        cmap="viridis",
         linewidths=1.5,
-        alpha=0.7
+        alpha=0.7,
     )
-    ax.clabel(contour_dv, inline=True, fontsize=8, fmt='%.1f km/s')
+    ax.clabel(contour_dv, inline=True, fontsize=8, fmt="%.1f km/s")
 
     # Plot time-of-flight contours
     contour_tof = ax.contour(
@@ -202,12 +195,12 @@ def plot_porkchop(
         arr_grid,
         tof_grid,
         levels=levels_tof,
-        colors='red',
+        colors="red",
         linewidths=1,
-        linestyles='dashed',
-        alpha=0.5
+        linestyles="dashed",
+        alpha=0.5,
     )
-    ax.clabel(contour_tof, inline=True, fontsize=8, fmt='%.0f days')
+    ax.clabel(contour_tof, inline=True, fontsize=8, fmt="%.0f days")
 
     # Find and mark minimum delta-v
     min_idx = np.nanargmin(delta_v_grid)
@@ -215,28 +208,29 @@ def plot_porkchop(
     ax.plot(
         dep_grid[min_i, min_j],
         arr_grid[min_i, min_j],
-        'r*',
+        "r*",
         markersize=15,
-        label=f'Min ΔV: {delta_v_grid[min_i, min_j]:.2f} km/s'
+        label=f"Min ΔV: {delta_v_grid[min_i, min_j]:.2f} km/s",
     )
 
     # Labels and formatting
-    ax.set_xlabel('Departure Date', fontsize=12)
-    ax.set_ylabel('Arrival Date', fontsize=12)
-    ax.set_title('Porkchop Plot - Launch Window Analysis', fontsize=14, fontweight='bold')
+    ax.set_xlabel("Departure Date", fontsize=12)
+    ax.set_ylabel("Arrival Date", fontsize=12)
+    ax.set_title("Porkchop Plot - Launch Window Analysis", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
-    ax.legend(loc='best')
+    ax.legend(loc="best")
 
     # Format dates if using datetime
-    if hasattr(departure_dates[0], 'iso'):
+    if hasattr(departure_dates[0], "iso"):
         # astropy.time.Time - format appropriately
         pass
     elif isinstance(departure_dates[0], datetime):
         import matplotlib.dates as mdates
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        ax.yaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        plt.setp(ax.yaxis.get_majorticklabels(), rotation=45, ha='right')
+
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        ax.yaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
+        plt.setp(ax.yaxis.get_majorticklabels(), rotation=45, ha="right")
 
     plt.tight_layout()
 
@@ -249,7 +243,7 @@ def plot_porkchop_simple(
     mu: float,
     tof_range: Tuple[float, float],
     n_points: int = 50,
-    ax: Optional[Axes] = None
+    ax: Optional[Axes] = None,
 ) -> Tuple[Axes, np.ndarray, np.ndarray]:
     """
     Generate a simplified porkchop plot from position arrays.

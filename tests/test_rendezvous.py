@@ -1,11 +1,13 @@
 """Tests for rendezvous and phasing orbit calculations"""
+
 import math
+
 import pytest
 from astrora._core import (
-    phasing_orbit,
+    constants,
     coorbital_rendezvous,
     coplanar_rendezvous,
-    constants,
+    phasing_orbit,
 )
 
 GM_EARTH = constants.GM_EARTH

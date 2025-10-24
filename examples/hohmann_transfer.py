@@ -22,8 +22,8 @@ but takes longer than higher-energy trajectories.
 """
 
 import numpy as np
-from astrora._core import hohmann_transfer, hohmann_phase_angle, hohmann_synodic_period
-from astrora.bodies import Earth, Mars
+from astrora._core import hohmann_phase_angle, hohmann_synodic_period, hohmann_transfer
+from astrora.bodies import Earth
 
 # Useful constants
 EARTH_RADIUS = 6378.137  # km
@@ -49,7 +49,9 @@ def print_transfer_summary(result, name, r_initial, r_final):
     print(f"  Second burn (ΔV₂):        {result['delta_v2']/1000:.3f} km/s")
     print(f"  Total delta-v:            {result['delta_v_total']/1000:.3f} km/s")
     print(f"\nTiming:")
-    print(f"  Transfer time:            {result['transfer_time']/3600:.2f} hours ({result['transfer_time']/86400:.3f} days)")
+    print(
+        f"  Transfer time:            {result['transfer_time']/3600:.2f} hours ({result['transfer_time']/86400:.3f} days)"
+    )
     print(f"  Initial orbit velocity:   {result['v_initial']/1000:.3f} km/s")
     print(f"  Final orbit velocity:     {result['v_final']/1000:.3f} km/s")
     print(f"{'='*70}\n")
@@ -73,7 +75,7 @@ def example_leo_to_geo():
     result = hohmann_transfer(
         r_initial=r_leo * 1000,  # Convert to meters
         r_final=r_geo * 1000,
-        mu=Earth.mu  # Earth's gravitational parameter
+        mu=Earth.mu,  # Earth's gravitational parameter
     )
 
     print_transfer_summary(result, "LEO to GEO Transfer", r_leo, r_geo)
@@ -100,11 +102,7 @@ def example_leo_to_lunar():
     r_leo = EARTH_RADIUS + LEO_ALTITUDE
     r_lunar = LUNAR_DISTANCE
 
-    result = hohmann_transfer(
-        r_initial=r_leo * 1000,
-        r_final=r_lunar * 1000,
-        mu=Earth.mu
-    )
+    result = hohmann_transfer(r_initial=r_leo * 1000, r_final=r_lunar * 1000, mu=Earth.mu)
 
     print_transfer_summary(result, "LEO to Lunar Transfer Orbit", r_leo, r_lunar)
 
@@ -126,35 +124,31 @@ def example_earth_mars_comparison():
     """
     # Approximate orbital radii (semi-major axes)
     r_earth = 149.6e6  # km (1 AU)
-    r_mars = 227.9e6   # km (1.52 AU)
+    r_mars = 227.9e6  # km (1.52 AU)
 
     # Sun's gravitational parameter
     mu_sun = 1.32712440018e11  # km³/s²
 
     result = hohmann_transfer(
-        r_initial=r_earth * 1000,
-        r_final=r_mars * 1000,
-        mu=mu_sun * 1e9  # Convert to m³/s²
+        r_initial=r_earth * 1000, r_final=r_mars * 1000, mu=mu_sun * 1e9  # Convert to m³/s²
     )
 
     print_transfer_summary(result, "Earth-Mars Hohmann Transfer", r_earth, r_mars)
 
     # Calculate phase angle and synodic period
     phase_angle_rad = hohmann_phase_angle(
-        r_initial=r_earth * 1000,
-        r_final=r_mars * 1000,
-        mu=mu_sun * 1e9
+        r_initial=r_earth * 1000, r_final=r_mars * 1000, mu=mu_sun * 1e9
     )
 
     synodic_period_sec = hohmann_synodic_period(
-        r_initial=r_earth * 1000,
-        r_final=r_mars * 1000,
-        mu=mu_sun * 1e9
+        r_initial=r_earth * 1000, r_final=r_mars * 1000, mu=mu_sun * 1e9
     )
 
     print("Launch Window Analysis:")
     print(f"  Required phase angle:     {np.rad2deg(phase_angle_rad):.2f}°")
-    print(f"  Synodic period:           {synodic_period_sec/86400:.1f} days ({synodic_period_sec/(86400*365.25):.2f} years)")
+    print(
+        f"  Synodic period:           {synodic_period_sec/86400:.1f} days ({synodic_period_sec/(86400*365.25):.2f} years)"
+    )
     print(f"  Launch windows occur every ~{synodic_period_sec/(86400*30.44):.1f} months")
     print()
 
@@ -190,7 +184,9 @@ def example_altitude_changes():
 
         result = hohmann_transfer(r_initial, r_final, Earth.mu)
 
-        print(f"{delta_h:>10} {result['delta_v_total']:>18.2f} {result['transfer_time']/60:>15.1f} min")
+        print(
+            f"{delta_h:>10} {result['delta_v_total']:>18.2f} {result['transfer_time']/60:>15.1f} min"
+        )
 
     print()
     print("Observations:")
@@ -200,8 +196,9 @@ def example_altitude_changes():
     print("  - For station-keeping, these are typical maneuver sizes")
 
 
-if __name__ == '__main__':
-    print("""
+if __name__ == "__main__":
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║     Hohmann Transfer Examples                                    ║
 ║     Using Astrora's Hohmann Transfer Calculator                  ║
@@ -212,21 +209,23 @@ circular coplanar orbits. They require exactly two impulsive burns
 and follow an elliptical transfer trajectory.
 
 These examples demonstrate common orbital transfer scenarios.
-""")
+"""
+    )
 
     # Run all examples
     example_leo_to_geo()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_leo_to_lunar()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_earth_mars_comparison()
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     example_altitude_changes()
 
-    print("""
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║  Key Takeaways                                                   ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -241,4 +240,5 @@ For more examples, see:
   - examples/plane_change.py - Inclination changes
   - examples/earth_mars_transfer.py - Real planetary positions
   - examples/porkchop_plot.py - Launch window optimization
-""")
+"""
+    )

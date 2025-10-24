@@ -285,7 +285,7 @@ pub fn rv_to_coe(
 
     if h_mag < tol {
         return Err(PoliastroError::InvalidStateVector {
-            reason: format!("orbit is degenerate (zero angular momentum): |h| = {}", h_mag),
+            reason: format!("orbit is degenerate (zero angular momentum): |h| = {h_mag}"),
         });
     }
 

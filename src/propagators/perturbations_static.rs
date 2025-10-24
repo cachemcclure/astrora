@@ -640,4 +640,234 @@ mod tests {
 
         // If this compiles, we've proven zero allocations
     }
+
+    #[test]
+    fn test_j3_at_equator() {
+        // J3 effect should be minimal at equator
+        let r = Vector3Static::new(7000e3, 0.0, 0.0);
+        let accel = j3_perturbation_static(&r, MU_EARTH, J3_EARTH, R_EARTH);
+
+        // J3 is antisymmetric, so at z=0 it should be nearly zero
+        assert_relative_eq!(accel[0], 0.0, epsilon = 1e-15);
+        assert_relative_eq!(accel[1], 0.0, epsilon = 1e-15);
+        // Z-component may have small numerical errors
+        assert!(accel[2].abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_j3_at_pole() {
+        // J3 should have non-zero effect at pole
+        let r = Vector3Static::new(0.0, 0.0, 7000e3);
+        let accel = j3_perturbation_static(&r, MU_EARTH, J3_EARTH, R_EARTH);
+
+        // Should have z-component
+        assert!(accel[2].abs() > 0.0);
+    }
+
+    #[test]
+    fn test_j4_at_equator() {
+        // J4 at equator should be radially inward
+        let r = Vector3Static::new(7000e3, 0.0, 0.0);
+        let accel = j4_perturbation_static(&r, MU_EARTH, J4_EARTH, R_EARTH);
+
+        // Should have negative x-component (inward)
+        assert!(accel[0] < 0.0);
+        // No y-component (axially symmetric)
+        assert_relative_eq!(accel[1], 0.0, epsilon = 1e-20);
+        // No z-component (in equatorial plane)
+        assert_relative_eq!(accel[2], 0.0, epsilon = 1e-20);
+    }
+
+    #[test]
+    fn test_j4_at_pole() {
+        // J4 at pole
+        let r = Vector3Static::new(0.0, 0.0, 7000e3);
+        let accel = j4_perturbation_static(&r, MU_EARTH, J4_EARTH, R_EARTH);
+
+        // No x or y components
+        assert_relative_eq!(accel[0], 0.0, epsilon = 1e-20);
+        assert_relative_eq!(accel[1], 0.0, epsilon = 1e-20);
+        // Should have z-component
+        assert!(accel[2].abs() > 0.0);
+    }
+
+    #[test]
+    fn test_j2_high_altitude() {
+        // Test J2 at GEO altitude
+        let r_geo = 42164e3; // GEO radius
+        let r = Vector3Static::new(r_geo, 0.0, 1000e3);
+
+        let accel = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+
+        // Should be much smaller than at LEO
+        let accel_mag = accel.norm();
+        assert!(accel_mag > 0.0);
+        assert!(accel_mag < 1e-5); // Very small at GEO
+    }
+
+    #[test]
+    fn test_j2_low_altitude() {
+        // Test J2 at very low altitude (just above surface)
+        let r_low = R_EARTH + 200e3; // 200 km altitude
+        let r = Vector3Static::new(r_low, 0.0, 500e3);
+
+        let accel = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+
+        // Should be relatively strong at low altitude
+        let accel_mag = accel.norm();
+        assert!(accel_mag > 1e-5);
+    }
+
+    #[test]
+    fn test_j2_inclined_orbit() {
+        // Test J2 for inclined orbit position
+        let r_mag = 7000e3;
+        let inc = std::f64::consts::PI / 4.0; // 45 degree inclination
+
+        let x = r_mag * inc.cos();
+        let y = r_mag * 0.3;
+        let z = r_mag * inc.sin();
+
+        let r = Vector3Static::new(x, y, z);
+        let accel = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+
+        // Should have components in all directions
+        assert!(accel[0].abs() > 0.0);
+        assert!(accel[2].abs() > 0.0);
+    }
+
+    #[test]
+    fn test_combined_zero_perturbations() {
+        // Test combined function with zero perturbation coefficients
+        let r = Vector3Static::new(7000e3, 0.0, 1000e3);
+
+        let accel = j2_j3_j4_perturbation_static(&r, MU_EARTH, 0.0, 0.0, 0.0, R_EARTH);
+
+        // Should be zero
+        assert_relative_eq!(accel[0], 0.0, epsilon = 1e-20);
+        assert_relative_eq!(accel[1], 0.0, epsilon = 1e-20);
+        assert_relative_eq!(accel[2], 0.0, epsilon = 1e-20);
+    }
+
+    #[test]
+    fn test_j2_dynamics_polar_orbit() {
+        // Test J2 dynamics with polar orbit initial condition
+        use crate::core::integrators_static::{propagate_rk4_final_only, StateVector6};
+
+        let dynamics = j2_dynamics(MU_EARTH, J2_EARTH, R_EARTH);
+
+        // Polar orbit initial state
+        let r0 = 7000e3;
+        let v0 = (MU_EARTH / r0).sqrt();
+        let state0 = StateVector6::new(r0, 0.0, 0.0, 0.0, 0.0, v0);
+
+        // Propagate for short time
+        let t_final = 600.0; // 10 minutes
+        let state_final = propagate_rk4_final_only(dynamics, 0.0, &state0, t_final, 100);
+
+        // Check that state is valid
+        let r_final = state_final.fixed_rows::<3>(0).norm();
+        assert!(r_final > 6000e3 && r_final < 8000e3);
+    }
+
+    #[test]
+    fn test_j2_j3_j4_dynamics_equatorial() {
+        // Test combined dynamics with equatorial orbit
+        use crate::core::integrators_static::{propagate_rk4_final_only, StateVector6};
+
+        let dynamics = j2_j3_j4_dynamics(MU_EARTH, J2_EARTH, J3_EARTH, J4_EARTH, R_EARTH);
+
+        // Equatorial orbit initial state
+        let r0 = 7000e3;
+        let v0 = (MU_EARTH / r0).sqrt();
+        let state0 = StateVector6::new(r0, 0.0, 0.0, 0.0, v0, 0.0);
+
+        // Propagate for short time
+        let t_final = 300.0; // 5 minutes
+        let state_final = propagate_rk4_final_only(dynamics, 0.0, &state0, t_final, 50);
+
+        // Check that state is valid
+        let r_final = state_final.fixed_rows::<3>(0).norm();
+        assert!(r_final > 6000e3 && r_final < 8000e3);
+    }
+
+    #[test]
+    fn test_j2_j3_j4_dynamics_inclined() {
+        // Test combined dynamics with inclined orbit
+        use crate::core::integrators_static::{propagate_rk4_final_only, StateVector6};
+
+        let dynamics = j2_j3_j4_dynamics(MU_EARTH, J2_EARTH, J3_EARTH, J4_EARTH, R_EARTH);
+
+        // 60-degree inclined orbit initial state
+        let r0 = 7000e3;
+        let v0 = (MU_EARTH / r0).sqrt();
+        let inc = 60.0_f64.to_radians();
+
+        let state0 = StateVector6::new(r0, 0.0, 0.0, 0.0, v0 * inc.cos(), v0 * inc.sin());
+
+        // Propagate for short time
+        let t_final = 450.0;
+        let state_final = propagate_rk4_final_only(dynamics, 0.0, &state0, t_final, 75);
+
+        // Check that state is valid
+        let r_final = state_final.fixed_rows::<3>(0).norm();
+        assert!(r_final > 6000e3 && r_final < 8000e3);
+    }
+
+    #[test]
+    fn test_j3_magnitude_vs_j2() {
+        // J3 should be much smaller than J2
+        let r = Vector3Static::new(7000e3, 0.0, 1000e3);
+
+        let a_j2 = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+        let a_j3 = j3_perturbation_static(&r, MU_EARTH, J3_EARTH, R_EARTH);
+
+        let mag_j2 = a_j2.norm();
+        let mag_j3 = a_j3.norm();
+
+        // J3 should be at least 100x smaller than J2
+        assert!(mag_j3 < mag_j2 / 100.0);
+    }
+
+    #[test]
+    fn test_j4_magnitude_vs_j2() {
+        // J4 should be much smaller than J2
+        let r = Vector3Static::new(7000e3, 0.0, 1000e3);
+
+        let a_j2 = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+        let a_j4 = j4_perturbation_static(&r, MU_EARTH, J4_EARTH, R_EARTH);
+
+        let mag_j2 = a_j2.norm();
+        let mag_j4 = a_j4.norm();
+
+        // J4 should be at least 50x smaller than J2
+        assert!(mag_j4 < mag_j2 / 50.0);
+    }
+
+    #[test]
+    fn test_j2_different_radii() {
+        // Test J2 at several different orbital radii
+        let radii = vec![6600e3, 7000e3, 8000e3, 12000e3, 20000e3, 42164e3];
+
+        for &r_mag in &radii {
+            let r = Vector3Static::new(r_mag, 0.0, 500e3);
+            let accel = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+
+            // Should always have some acceleration
+            assert!(accel.norm() > 0.0, "Zero acceleration at radius {}", r_mag);
+        }
+    }
+
+    #[test]
+    fn test_combined_with_only_j2() {
+        // Combined function with only J2 should match j2_perturbation_static
+        let r = Vector3Static::new(7000e3, 500e3, 1000e3);
+
+        let a_j2_only = j2_perturbation_static(&r, MU_EARTH, J2_EARTH, R_EARTH);
+        let a_combined = j2_j3_j4_perturbation_static(&r, MU_EARTH, J2_EARTH, 0.0, 0.0, R_EARTH);
+
+        assert_relative_eq!(a_combined[0], a_j2_only[0], epsilon = 1e-15);
+        assert_relative_eq!(a_combined[1], a_j2_only[1], epsilon = 1e-15);
+        assert_relative_eq!(a_combined[2], a_j2_only[2], epsilon = 1e-15);
+    }
 }

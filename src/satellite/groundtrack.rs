@@ -397,9 +397,9 @@ pub fn calculate_swath_width(altitude: f64, min_elevation: f64) -> f64 {
     let elevation_factor = (PI / 2.0 - min_elevation) / (PI / 2.0);
 
     // Swath width (rough approximation)
-    let swath_width = 2.0 * max_range * elevation_factor;
+    
 
-    swath_width
+    2.0 * max_range * elevation_factor
 }
 
 /// Calculate maximum ground range (distance to horizon) for a satellite
@@ -432,9 +432,9 @@ pub fn maximum_ground_range(altitude: f64) -> f64 {
     let lambda = (r_earth / r_sat).acos();
 
     // Ground range is arc length from sub-satellite point to horizon
-    let ground_range = r_earth * lambda;
+    
 
-    ground_range
+    r_earth * lambda
 }
 
 #[cfg(test)]

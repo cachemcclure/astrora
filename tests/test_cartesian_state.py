@@ -1,7 +1,7 @@
 """Tests for CartesianState class and orbital property calculations."""
 
-import pytest
 import astrora._core as core
+import pytest
 
 # Import constants
 GM_EARTH = core.constants.GM_EARTH
@@ -55,7 +55,7 @@ class TestCartesianState:
         assert h[2] > 0.0
 
         # Magnitude should be r * v
-        h_mag = (h[0]**2 + h[1]**2 + h[2]**2) ** 0.5
+        h_mag = (h[0] ** 2 + h[1] ** 2 + h[2] ** 2) ** 0.5
         expected_h = 7000e3 * 7546.0
         assert abs(h_mag - expected_h) / expected_h < 1e-6
 
@@ -130,7 +130,7 @@ class TestCartesianState:
         assert abs(ecc_vec[2]) < 1e-6
 
         # Magnitude should equal target eccentricity
-        ecc_mag = (ecc_vec[0]**2 + ecc_vec[1]**2 + ecc_vec[2]**2) ** 0.5
+        ecc_mag = (ecc_vec[0] ** 2 + ecc_vec[1] ** 2 + ecc_vec[2] ** 2) ** 0.5
         assert abs(ecc_mag - e_target) < 1e-6
 
     def test_orbit_type_classification(self):

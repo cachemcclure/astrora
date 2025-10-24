@@ -345,7 +345,7 @@ pub fn propagate_stm_rk4(
     // Integrate
     let mut t = 0.0;
     for _ in 0..n_steps {
-        augmented = rk4_step(&dynamics, t, &augmented, h);
+        augmented = rk4_step(dynamics, t, &augmented, h);
         t += h;
     }
 
@@ -556,7 +556,7 @@ pub fn propagate_stm_j2_rk4(
     let mut augmented = augmented0;
     let mut t = 0.0;
     for _ in 0..n_steps {
-        augmented = rk4_step(&dynamics, t, &augmented, h);
+        augmented = rk4_step(dynamics, t, &augmented, h);
         t += h;
     }
 

@@ -405,9 +405,8 @@ pub fn sun_synchronous_inclination(
             semi_major_axis / 1000.0,
             format!(
                 "Sun-synchronous orbit not possible at this altitude. \
-                Required cos(i) = {:.4} is outside [-1, 1]. \
-                Try altitude between 200-6000 km.",
-                cos_i
+                Required cos(i) = {cos_i:.4} is outside [-1, 1]. \
+                Try altitude between 200-6000 km."
             )
         ));
     }

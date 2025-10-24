@@ -6,12 +6,17 @@ from ground stations using topocentric coordinate transformations.
 """
 
 import pytest
-import numpy as np
 from astrora._core import (
     py_compute_azimuth_elevation as compute_azimuth_elevation,
+)
+from astrora._core import (
     py_compute_azimuth_elevation_rate as compute_azimuth_elevation_rate,
-    py_is_visible as is_visible,
+)
+from astrora._core import (
     py_find_satellite_passes as find_satellite_passes,
+)
+from astrora._core import (
+    py_is_visible as is_visible,
 )
 
 
@@ -104,9 +109,7 @@ class TestAzimuthElevationRate:
         sat_ecef = [6878.0, 0.0, 0.0]
         vel_ecef = [1.0, 0.0, 0.0]  # Moving radially outward
 
-        result = compute_azimuth_elevation_rate(
-            sat_ecef, vel_ecef, obs_lat, obs_lon, obs_alt
-        )
+        result = compute_azimuth_elevation_rate(sat_ecef, vel_ecef, obs_lat, obs_lon, obs_alt)
 
         # Range rate should be positive (receding)
         assert result["range_rate_km_s"] > 0.0
@@ -119,9 +122,7 @@ class TestAzimuthElevationRate:
         sat_ecef = [6878.0, 0.0, 0.0]
         vel_ecef = [-1.0, 0.0, 0.0]  # Moving radially inward
 
-        result = compute_azimuth_elevation_rate(
-            sat_ecef, vel_ecef, obs_lat, obs_lon, obs_alt
-        )
+        result = compute_azimuth_elevation_rate(sat_ecef, vel_ecef, obs_lat, obs_lon, obs_alt)
 
         # Range rate should be negative (approaching)
         assert result["range_rate_km_s"] < 0.0
@@ -135,9 +136,7 @@ class TestAzimuthElevationRate:
         # Moving tangentially (perpendicular to range vector)
         vel_ecef = [0.0, 7.5, 0.0]
 
-        result = compute_azimuth_elevation_rate(
-            sat_ecef, vel_ecef, obs_lat, obs_lon, obs_alt
-        )
+        result = compute_azimuth_elevation_rate(sat_ecef, vel_ecef, obs_lat, obs_lon, obs_alt)
 
         # Range rate should be small
         assert abs(result["range_rate_km_s"]) < 1.0
@@ -264,9 +263,7 @@ class TestSatellitePassPrediction:
             assert pass_info["duration_minutes"] > 0.0
 
             # Duration should match rise-set difference
-            expected_duration = (
-                pass_info["set_time_minutes"] - pass_info["rise_time_minutes"]
-            )
+            expected_duration = pass_info["set_time_minutes"] - pass_info["rise_time_minutes"]
             assert abs(pass_info["duration_minutes"] - expected_duration) < 0.01
 
     def test_high_elevation_filter(self):

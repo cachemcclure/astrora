@@ -12,7 +12,7 @@ Tests cover:
 
 import numpy as np
 import pytest
-from astrora._core import TEME, ITRS, GCRS, Epoch
+from astrora._core import GCRS, ITRS, TEME, Epoch
 
 # Test tolerances
 POS_TOL = 1.0  # meters for position

@@ -529,7 +529,7 @@ pub const R_SOI_URANUS: f64 = 5.176_365_156_171_003e10;
 /// Neptune's sphere of influence radius (m)
 ///
 /// Calculated using: r_SOI = a × (GM_planet / GM_sun)^(2/5)
-pub const R_SOI_NEPTUNE: f64 = 8.666_171_649_697_980e10;
+pub const R_SOI_NEPTUNE: f64 = 8.666_171_649_697_98e10;
 
 // =============================================================================
 // CONVERSION FACTORS
@@ -606,4 +606,87 @@ pub fn days_to_sec(days: f64) -> f64 {
 #[inline]
 pub fn sec_to_days(sec: f64) -> f64 {
     sec * SEC_TO_DAY
+}
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+
+    #[test]
+    fn test_km_to_m() {
+        assert_relative_eq!(km_to_m(1.0), 1000.0);
+        assert_relative_eq!(km_to_m(10.5), 10500.0);
+        assert_relative_eq!(km_to_m(0.001), 1.0);
+    }
+
+    #[test]
+    fn test_m_to_km() {
+        assert_relative_eq!(m_to_km(1000.0), 1.0);
+        assert_relative_eq!(m_to_km(10500.0), 10.5);
+        assert_relative_eq!(m_to_km(1.0), 0.001);
+    }
+
+    #[test]
+    fn test_deg_to_rad() {
+        assert_relative_eq!(deg_to_rad(180.0), std::f64::consts::PI);
+        assert_relative_eq!(deg_to_rad(90.0), std::f64::consts::PI / 2.0);
+        assert_relative_eq!(deg_to_rad(0.0), 0.0);
+        assert_relative_eq!(deg_to_rad(360.0), 2.0 * std::f64::consts::PI);
+    }
+
+    #[test]
+    fn test_rad_to_deg() {
+        assert_relative_eq!(rad_to_deg(std::f64::consts::PI), 180.0);
+        assert_relative_eq!(rad_to_deg(std::f64::consts::PI / 2.0), 90.0);
+        assert_relative_eq!(rad_to_deg(0.0), 0.0);
+        assert_relative_eq!(rad_to_deg(2.0 * std::f64::consts::PI), 360.0);
+    }
+
+    #[test]
+    fn test_days_to_sec() {
+        assert_relative_eq!(days_to_sec(1.0), 86400.0);
+        assert_relative_eq!(days_to_sec(0.5), 43200.0);
+        assert_relative_eq!(days_to_sec(7.0), 604800.0);
+    }
+
+    #[test]
+    fn test_sec_to_days() {
+        assert_relative_eq!(sec_to_days(86400.0), 1.0);
+        assert_relative_eq!(sec_to_days(43200.0), 0.5);
+        assert_relative_eq!(sec_to_days(604800.0), 7.0);
+    }
+
+    #[test]
+    fn test_conversion_roundtrips() {
+        // Test that conversions are inverses of each other
+        let km = 123.456;
+        assert_relative_eq!(m_to_km(km_to_m(km)), km);
+
+        let deg = 45.678;
+        assert_relative_eq!(rad_to_deg(deg_to_rad(deg)), deg);
+
+        let days = 3.14159;
+        assert_relative_eq!(sec_to_days(days_to_sec(days)), days);
+    }
+
+    #[test]
+    fn test_constant_values() {
+        // Test some key constant values
+        assert!(GM_EARTH > 0.0);
+        assert!(R_EARTH > 0.0);
+        assert!(AU > 0.0);
+        assert!(C > 0.0);
+
+        // Earth should be oblate (equatorial > polar)
+        assert!(R_EARTH > R_POLAR_EARTH);
+
+        // J2 should be the dominant term
+        assert!(J2_EARTH.abs() > J3_EARTH.abs());
+        assert!(J2_EARTH.abs() > J4_EARTH.abs());
+    }
 }

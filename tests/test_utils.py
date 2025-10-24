@@ -9,14 +9,15 @@ This module provides common helper functions used across multiple test files:
 - Pretty printing for test failures
 """
 
-import numpy as np
-from typing import Tuple, Optional, Dict, Any
-import astrora._core as core
+from typing import Tuple
 
+import astrora._core as core
+import numpy as np
 
 # ============================================================================
 # Numerical Comparison Utilities
 # ============================================================================
+
 
 def assert_allclose_with_context(
     actual: np.ndarray,
@@ -24,7 +25,7 @@ def assert_allclose_with_context(
     rtol: float = 1e-7,
     atol: float = 0,
     context: str = "",
-    err_msg: str = ""
+    err_msg: str = "",
 ) -> None:
     """
     Enhanced version of np.testing.assert_allclose with better error messages.
@@ -55,11 +56,11 @@ def assert_allclose_with_context(
 
 
 def assert_states_equal(
-    state1: 'core.CartesianState',
-    state2: 'core.CartesianState',
+    state1: "core.CartesianState",
+    state2: "core.CartesianState",
     position_tol: float = 1e-6,
     velocity_tol: float = 1e-9,
-    context: str = ""
+    context: str = "",
 ) -> None:
     """
     Assert that two CartesianState objects are equal within tolerances.
@@ -77,23 +78,19 @@ def assert_states_equal(
     vel2 = np.array(state2.velocity)
 
     assert_allclose_with_context(
-        pos1, pos2,
-        atol=position_tol,
-        context=f"{context} position" if context else "position"
+        pos1, pos2, atol=position_tol, context=f"{context} position" if context else "position"
     )
     assert_allclose_with_context(
-        vel1, vel2,
-        atol=velocity_tol,
-        context=f"{context} velocity" if context else "velocity"
+        vel1, vel2, atol=velocity_tol, context=f"{context} velocity" if context else "velocity"
     )
 
 
 def assert_elements_equal(
-    elem1: 'core.OrbitalElements',
-    elem2: 'core.OrbitalElements',
+    elem1: "core.OrbitalElements",
+    elem2: "core.OrbitalElements",
     atol_m: float = 1.0,
     atol_rad: float = 1e-9,
-    context: str = ""
+    context: str = "",
 ) -> None:
     """
     Assert that two OrbitalElements objects are equal within tolerances.
@@ -109,34 +106,22 @@ def assert_elements_equal(
         np.array([elem1.a]),
         np.array([elem2.a]),
         atol=atol_m,
-        context=f"{context} semi-major axis" if context else "semi-major axis"
+        context=f"{context} semi-major axis" if context else "semi-major axis",
     )
 
     assert_allclose_with_context(
         np.array([elem1.e]),
         np.array([elem2.e]),
         atol=1e-9,
-        context=f"{context} eccentricity" if context else "eccentricity"
+        context=f"{context} eccentricity" if context else "eccentricity",
     )
 
     # Angular elements
-    angles1 = np.array([
-        elem1.i,
-        elem1.raan,
-        elem1.argp,
-        elem1.nu
-    ])
-    angles2 = np.array([
-        elem2.i,
-        elem2.raan,
-        elem2.argp,
-        elem2.nu
-    ])
+    angles1 = np.array([elem1.i, elem1.raan, elem1.argp, elem1.nu])
+    angles2 = np.array([elem2.i, elem2.raan, elem2.argp, elem2.nu])
 
     assert_allclose_with_context(
-        angles1, angles2,
-        atol=atol_rad,
-        context=f"{context} angles" if context else "angles"
+        angles1, angles2, atol=atol_rad, context=f"{context} angles" if context else "angles"
     )
 
 
@@ -144,7 +129,8 @@ def assert_elements_equal(
 # Conservation Law Checkers
 # ============================================================================
 
-def compute_specific_energy(state: 'core.CartesianState', gm: float) -> float:
+
+def compute_specific_energy(state: "core.CartesianState", gm: float) -> float:
     """
     Compute specific orbital energy (energy per unit mass).
 
@@ -162,7 +148,7 @@ def compute_specific_energy(state: 'core.CartesianState', gm: float) -> float:
     return 0.5 * v_squared - gm / r
 
 
-def compute_specific_angular_momentum(state: 'core.CartesianState') -> np.ndarray:
+def compute_specific_angular_momentum(state: "core.CartesianState") -> np.ndarray:
     """
     Compute specific angular momentum vector.
 
@@ -178,11 +164,11 @@ def compute_specific_angular_momentum(state: 'core.CartesianState') -> np.ndarra
 
 
 def assert_energy_conserved(
-    state_initial: 'core.CartesianState',
-    state_final: 'core.CartesianState',
+    state_initial: "core.CartesianState",
+    state_final: "core.CartesianState",
     gm: float,
     rtol: float = 1e-10,
-    context: str = ""
+    context: str = "",
 ) -> None:
     """
     Assert that orbital energy is conserved between two states.
@@ -211,10 +197,10 @@ def assert_energy_conserved(
 
 
 def assert_angular_momentum_conserved(
-    state_initial: 'core.CartesianState',
-    state_final: 'core.CartesianState',
+    state_initial: "core.CartesianState",
+    state_final: "core.CartesianState",
     rtol: float = 1e-10,
-    context: str = ""
+    context: str = "",
 ) -> None:
     """
     Assert that angular momentum is conserved between two states.
@@ -248,10 +234,8 @@ def assert_angular_momentum_conserved(
 # Test Data Generators
 # ============================================================================
 
-def generate_test_orbits(
-    n_orbits: int = 10,
-    seed: int = 42
-) -> list:
+
+def generate_test_orbits(n_orbits: int = 10, seed: int = 42) -> list:
     """
     Generate a list of diverse test orbits for property-based testing.
 
@@ -282,7 +266,7 @@ def generate_test_orbits(
                 raan=raan,
                 argument_of_periapsis=omega,
                 true_anomaly=nu,
-                gm=core.constants.GM_EARTH
+                gm=core.constants.GM_EARTH,
             )
         )
 
@@ -290,8 +274,7 @@ def generate_test_orbits(
 
 
 def generate_anomaly_test_cases(
-    eccentricity: float,
-    n_points: int = 100
+    eccentricity: float, n_points: int = 100
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Generate test cases for anomaly conversions.
@@ -307,15 +290,13 @@ def generate_anomaly_test_cases(
     true_anomalies = np.linspace(0, 2 * np.pi, n_points)
 
     # Convert to eccentric and mean anomalies using astrora
-    eccentric_anomalies = np.array([
-        core.true_to_eccentric_anomaly(nu, eccentricity)
-        for nu in true_anomalies
-    ])
+    eccentric_anomalies = np.array(
+        [core.true_to_eccentric_anomaly(nu, eccentricity) for nu in true_anomalies]
+    )
 
-    mean_anomalies = np.array([
-        core.eccentric_to_mean_anomaly(E, eccentricity)
-        for E in eccentric_anomalies
-    ])
+    mean_anomalies = np.array(
+        [core.eccentric_to_mean_anomaly(E, eccentricity) for E in eccentric_anomalies]
+    )
 
     return true_anomalies, eccentric_anomalies, mean_anomalies
 
@@ -324,9 +305,9 @@ def generate_anomaly_test_cases(
 # Coordinate System Utilities
 # ============================================================================
 
+
 def compute_position_difference_magnitude(
-    state1: 'core.CartesianState',
-    state2: 'core.CartesianState'
+    state1: "core.CartesianState", state2: "core.CartesianState"
 ) -> float:
     """
     Compute the magnitude of position difference between two states.
@@ -344,8 +325,7 @@ def compute_position_difference_magnitude(
 
 
 def compute_velocity_difference_magnitude(
-    state1: 'core.CartesianState',
-    state2: 'core.CartesianState'
+    state1: "core.CartesianState", state2: "core.CartesianState"
 ) -> float:
     """
     Compute the magnitude of velocity difference between two states.
@@ -365,6 +345,7 @@ def compute_velocity_difference_magnitude(
 # ============================================================================
 # Orbit Classification Utilities
 # ============================================================================
+
 
 def classify_orbit_regime(semi_major_axis: float, earth_radius: float = 6378137.0) -> str:
     """
@@ -401,14 +382,15 @@ def is_equatorial_orbit(inclination: float, tol: float = 1e-6) -> bool:
 
 def is_polar_orbit(inclination: float, tol: float = 1e-6) -> bool:
     """Check if orbit is polar."""
-    return abs(inclination - np.pi/2) < tol
+    return abs(inclination - np.pi / 2) < tol
 
 
 # ============================================================================
 # Pretty Printing for Test Output
 # ============================================================================
 
-def format_state_vector(state: 'core.CartesianState', name: str = "State") -> str:
+
+def format_state_vector(state: "core.CartesianState", name: str = "State") -> str:
     """
     Format a CartesianState for pretty printing in test output.
 
@@ -432,7 +414,7 @@ def format_state_vector(state: 'core.CartesianState', name: str = "State") -> st
     )
 
 
-def format_orbital_elements(elem: 'core.OrbitalElements', name: str = "Elements") -> str:
+def format_orbital_elements(elem: "core.OrbitalElements", name: str = "Elements") -> str:
     """
     Format OrbitalElements for pretty printing in test output.
 
@@ -458,11 +440,14 @@ def format_orbital_elements(elem: 'core.OrbitalElements', name: str = "Elements"
 # Skip Decorators for Conditional Tests
 # ============================================================================
 
+
 def skip_if_no_ephemerides():
     """Skip test if JPL ephemerides are not available."""
     import pytest
+
     try:
         from jplephem.spk import SPK
+
         # Try to load a common ephemeris file
         return pytest.mark.skipif(False, reason="")
     except (ImportError, FileNotFoundError):
@@ -472,4 +457,5 @@ def skip_if_no_ephemerides():
 def skip_if_slow(reason: str = "Test is too slow for regular runs"):
     """Skip test if running quick test suite."""
     import pytest
+
     return pytest.mark.slow

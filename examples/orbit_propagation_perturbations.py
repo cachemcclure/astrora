@@ -50,10 +50,9 @@ References
 
 import numpy as np
 from astrora._core import (
-    propagate_j2_dop853,
     propagate_drag_dopri5,
+    propagate_j2_dop853,
     propagate_srp_dopri5,
-    third_body_perturbation,
 )
 from astrora.bodies import Earth
 
@@ -107,9 +106,9 @@ def example_j2_leo_precession():
 
     Sun-synchronous orbits exploit J2 to maintain constant solar time.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 1: J2 Perturbation - LEO Satellite Nodal Regression")
-    print("="*70)
+    print("=" * 70)
 
     # Initial state: LEO at 800 km altitude
     altitude = 800e3  # m
@@ -119,19 +118,17 @@ def example_j2_leo_precession():
     inclination = np.deg2rad(98.0)  # Degrees
 
     # Position vector (in orbital plane)
-    r0 = np.array([
-        r0_mag * np.cos(0),
-        r0_mag * np.sin(0) * np.cos(inclination),
-        r0_mag * np.sin(0) * np.sin(inclination)
-    ])
+    r0 = np.array(
+        [
+            r0_mag * np.cos(0),
+            r0_mag * np.sin(0) * np.cos(inclination),
+            r0_mag * np.sin(0) * np.sin(inclination),
+        ]
+    )
 
     # Velocity for circular orbit
     v_circ = np.sqrt(Earth.mu / r0_mag)
-    v0 = np.array([
-        0,
-        v_circ * np.cos(inclination),
-        -v_circ * np.sin(inclination)
-    ])
+    v0 = np.array([0, v_circ * np.cos(inclination), -v_circ * np.sin(inclination)])
 
     print(f"\nInitial conditions:")
     print(f"  Altitude: {altitude/1000:.1f} km")
@@ -167,13 +164,7 @@ def example_j2_leo_precession():
 
         # Propagate one step
         r_current, v_current = propagate_j2_dop853(
-            r0=r_current,
-            v0=v_current,
-            dt=dt,
-            mu=Earth.mu,
-            j2=Earth.J2,
-            R=Earth.R,
-            tol=1e-10
+            r0=r_current, v0=v_current, dt=dt, mu=Earth.mu, j2=Earth.J2, R=Earth.R, tol=1e-10
         )
 
         t_current += dt
@@ -214,7 +205,7 @@ def example_j2_leo_precession():
     t_span = t_final
 
     # Analytical prediction for nodal regression
-    raan_rate = -1.5 * Earth.J2 * (Earth.R / a)**2 * n * np.cos(inclination)
+    raan_rate = -1.5 * Earth.J2 * (Earth.R / a) ** 2 * n * np.cos(inclination)
     predicted_raan_change = raan_rate * t_span
 
     print(f"\nNodal regression (RAAN drift):")
@@ -232,9 +223,9 @@ def example_atmospheric_drag():
 
     Demonstrates how drag gradually reduces orbital energy and altitude.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 2: Atmospheric Drag - LEO Orbit Decay")
-    print("="*70)
+    print("=" * 70)
 
     # Initial state: LEO at 400 km (like ISS)
     altitude = 400e3  # m
@@ -246,11 +237,7 @@ def example_atmospheric_drag():
     r0 = np.array([r0_mag, 0, 0])
 
     v_circ = np.sqrt(Earth.mu / r0_mag)
-    v0 = np.array([
-        0,
-        v_circ * np.cos(inclination),
-        v_circ * np.sin(inclination)
-    ])
+    v0 = np.array([0, v_circ * np.cos(inclination), v_circ * np.sin(inclination)])
 
     print(f"\nInitial conditions (ISS-like orbit):")
     print(f"  Altitude: {altitude/1000:.1f} km")
@@ -301,7 +288,7 @@ def example_atmospheric_drag():
             rho0=rho0,
             H0=H0,
             B=B,
-            tol=1e-8
+            tol=1e-8,
         )
 
         t_current += dt
@@ -338,9 +325,9 @@ def example_solar_radiation_pressure():
 
     SRP is more significant for high-altitude orbits and high A/m satellites.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 3: Solar Radiation Pressure - GEO Satellite")
-    print("="*70)
+    print("=" * 70)
 
     # Initial state: GEO at 35,786 km altitude
     altitude = 35786e3  # m
@@ -404,7 +391,7 @@ def example_solar_radiation_pressure():
             C_r=C_r,
             R_earth=Earth.R,
             t0=t_current,
-            tol=1e-8
+            tol=1e-8,
         )
 
         t_current += dt
@@ -434,7 +421,9 @@ def example_solar_radiation_pressure():
     h_initial = np.cross(r_initial, velocities[0])
     h_final = np.cross(r_final, velocities[-1])
 
-    e_initial_vec = np.cross(velocities[0], h_initial) / Earth.mu - r_initial / np.linalg.norm(r_initial)
+    e_initial_vec = np.cross(velocities[0], h_initial) / Earth.mu - r_initial / np.linalg.norm(
+        r_initial
+    )
     e_final_vec = np.cross(velocities[-1], h_final) / Earth.mu - r_final / np.linalg.norm(r_final)
 
     e_initial = np.linalg.norm(e_initial_vec)
@@ -456,9 +445,9 @@ def example_third_body_moon():
 
     Shows how Moon's gravity affects high-altitude Earth satellites.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 4: Third-Body Perturbation - Lunar Gravity on HEO")
-    print("="*70)
+    print("=" * 70)
 
     # Highly Elliptical Orbit (HEO) - Molniya-type
     # Perigee: 500 km, Apogee: 40,000 km
@@ -475,7 +464,7 @@ def example_third_body_moon():
     e = (r_apogee - r_perigee) / (r_apogee + r_perigee)
 
     # Velocity at perigee
-    v_perigee = np.sqrt(Earth.mu * (2/r_perigee - 1/a))
+    v_perigee = np.sqrt(Earth.mu * (2 / r_perigee - 1 / a))
 
     # Initial state at perigee
     r0 = np.array([r_perigee, 0, 0])
@@ -523,11 +512,12 @@ def comparison_summary():
     """
     Summary: Compare perturbation magnitudes at different altitudes.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("PERTURBATION MAGNITUDE COMPARISON")
-    print("="*70)
+    print("=" * 70)
 
-    print(f"""
+    print(
+        f"""
 Typical perturbation accelerations (order of magnitude):
 
 Altitude    | Two-body  | J2        | Drag      | Moon/Sun  | SRP
@@ -556,13 +546,15 @@ Key takeaways:
 2. Drag critical below ~600 km → limits satellite lifetime
 3. Third-body matters for HEO/GEO → long-term stability concerns
 4. SRP important for large A/m spacecraft → affects GEO station-keeping
-    """)
+    """
+    )
 
-    print("="*70)
+    print("=" * 70)
 
 
-if __name__ == '__main__':
-    print("""
+if __name__ == "__main__":
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║     Orbit Propagation with Perturbations                        ║
 ║     High-Fidelity Satellite Dynamics                            ║
@@ -570,7 +562,8 @@ if __name__ == '__main__':
 
 This example demonstrates real-world orbital perturbations and their
 effects on satellite trajectories across different orbital regimes.
-""")
+"""
+    )
 
     # Run examples
     example_j2_leo_precession()
@@ -579,7 +572,8 @@ effects on satellite trajectories across different orbital regimes.
     example_third_body_moon()
     comparison_summary()
 
-    print("""
+    print(
+        """
 ╔══════════════════════════════════════════════════════════════════╗
 ║  Next Steps                                                      ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -600,4 +594,5 @@ References:
 - Vallado, "Fundamentals of Astrodynamics and Applications"
 - Montenbruck & Gill, "Satellite Orbits"
 - Tapley, Schutz, Born, "Statistical Orbit Determination"
-""")
+"""
+    )
