@@ -33,7 +33,7 @@ jobs:
         run: |
           pip install maturin pytest
           maturin build --release --out dist
-          pip install --force-reinstall --no-index --find-links dist astrora
+          pip install --force-reinstall --find-links dist astrora
           pytest tests/ -v --tb=short -x
 
   publish-crates:
