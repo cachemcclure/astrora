@@ -13,55 +13,55 @@ Astrora is a ground-up modernization of astrodynamics computing, delivering **10
 ### Background
 
 The original [poliastro](https://github.com/poliastro/poliastro) library was archived on October 14, 2023. While active forks like [hapsira](https://github.com/pleiszenburg/hapsira) continue development, Astrora represents a new approach that:
-- 🚀 Leverages the mature Rust astrodynamics ecosystem (2024-2025)
-- ⚡ Implements cutting-edge Python-Rust integration patterns
-- 🎯 Provides 10-100x performance improvements over pure Python
-- 🔄 Maintains API compatibility with poliastro where practical
+- Leverages the mature Rust astrodynamics ecosystem (2024-2025)
+- Implements cutting-edge Python-Rust integration patterns
+- Provides 10-100x performance improvements over pure Python
+- Maintains API compatibility with poliastro where practical
 
 ## Features
 
 ### Core Capabilities
 
-- ✅ **High-performance orbit propagators**
+- **High-performance orbit propagators**
   - Keplerian propagation (analytical)
   - Cowell's method with perturbations
   - Numerical integrators (RK4, DOPRI5, DOP853)
   - **10-50x faster** than pure Python
 
-- ✅ **Perturbation models**
+- **Perturbation models**
   - Earth oblateness (J2, J3, J4)
   - Atmospheric drag (exponential model)
   - Third-body effects (Sun, Moon)
   - Solar radiation pressure
 
-- ✅ **Coordinate transformations**
+- **Coordinate transformations**
   - GCRS ↔ ITRS ↔ TEME
   - Batch transformations with **20-80x speedup**
   - Full time-dependent rotations
 
-- ✅ **Lambert solvers**
+- **Lambert solvers**
   - Universal variable formulation
   - Izzo's algorithm
   - Batch processing with **50-100x speedup**
 
-- ✅ **Orbital mechanics**
+- **Orbital mechanics**
   - Classical orbital elements ↔ Cartesian state vectors
   - Anomaly conversions (true, eccentric, mean)
   - Orbit classification and analysis
 
-- ✅ **Maneuvers**
+- **Maneuvers**
   - Hohmann transfers
   - Bi-elliptic transfers
   - Impulsive burns (Δv calculations)
 
-- ✅ **Visualization**
+- **Visualization**
   - 2D/3D static plots
   - Interactive 3D visualizations (Plotly)
   - Ground track plotting
   - Porkchop plots for transfer analysis
   - **Orbit animations** (GIF, MP4, HTML)
 
-- ✅ **Satellite operations**
+- **Satellite operations**
   - TLE/OMM parsing and propagation
   - Lifetime estimation
   - Ground station visibility
@@ -100,7 +100,7 @@ uv pip install -e ".[dev]"
 maturin develop --release
 ```
 
-📖 **[Complete Installation Guide](INSTALLATION.md)** - Detailed instructions for all platforms and use cases
+**[Complete Installation Guide](INSTALLATION.md)** - Detailed instructions for all platforms and use cases
 
 ## Quick Start
 
@@ -160,10 +160,10 @@ Real-world benchmarks on Apple M2 Pro:
 
 ## Documentation
 
-- 📖 **[Installation Guide](INSTALLATION.md)** - Comprehensive setup instructions
-- 📚 **[API Reference](https://docs.rs/astrora_core)** - Auto-generated Rust documentation
-- 🎯 **[Examples](examples/)** - Usage examples and tutorials
-- 🧪 **[Testing Guide](tests/README_TESTING.md)** - For contributors
+- **[Installation Guide](INSTALLATION.md)** - Comprehensive setup instructions
+- **[API Reference](https://docs.rs/astrora_core)** - Auto-generated Rust documentation
+- **[Examples](examples/)** - Usage examples and tutorials
+- **[Testing Guide](tests/README_TESTING.md)** - For contributors
 
 ## Examples
 
@@ -238,16 +238,16 @@ We maintain high code quality standards:
 **Current Version:** 0.1.0 (Alpha)
 
 **Test Status:**
-- ✅ 636+ tests passing (473 Rust, 163+ Python)
-- ✅ 73.96% overall Rust coverage (~87% excluding PyO3 bindings)
-- ✅ Comprehensive benchmark suite
-- ✅ Continuous integration via GitHub Actions
+- 636+ tests passing (473 Rust, 163+ Python)
+- 73.96% overall Rust coverage (~87% excluding PyO3 bindings)
+- Comprehensive benchmark suite
+- Continuous integration via GitHub Actions
 
 **Phase Completion:**
-- ✅ Phase 1-8: Core functionality (propagators, coordinates, plotting)
-- ✅ Phase 9-10: Advanced features (SIMD optimization, satellite operations)
-- 🟡 Phase 11: Documentation (in progress)
-- 🟡 Phase 12: Testing and quality assurance (14/17 complete)
+- Phase 1-8: Core functionality (propagators, coordinates, plotting)
+- Phase 9-10: Advanced features (SIMD optimization, satellite operations)
+- Phase 11: Documentation (in progress)
+- Phase 12: Testing and quality assurance (14/17 complete)
 
 ## Performance Benchmarks
 
@@ -293,10 +293,10 @@ If you use Astrora in your research, please cite:
 
 ## Support
 
-- 🐛 **[Report Issues](https://github.com/cachemcclure/astrora/issues)** - Bug reports and feature requests
-- 💬 **[Discussions](https://github.com/cachemcclure/astrora/discussions)** - Questions and community
-- 📧 **Email:** cache.mcclure@gmail.com
+- **[Report Issues](https://github.com/cachemcclure/astrora/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/cachemcclure/astrora/discussions)** - Questions and community
+- **Email:** cache.mcclure@gmail.com
 
 ---
 
-**Made with ❤️ by the Astrora team. Powered by Rust and Python.**
+**Made by the Astrora team. Powered by Rust and Python.**
