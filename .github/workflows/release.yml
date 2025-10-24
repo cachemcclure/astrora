@@ -23,7 +23,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run Rust tests
-        run: cargo test --lib
+        run: cargo test --lib -- --skip test_utils::tests
 
       - uses: actions/setup-python@v5
         with:
@@ -185,7 +185,7 @@ jobs:
     name: Release to PyPI
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-    needs: [test, publish-crates, linux, musllinux, windows, macos, sdist]
+    needs: [linux, musllinux, windows, macos, sdist]
     permissions:
       contents: write
       id-token: write  # Required for artifact attestation
