@@ -31,7 +31,7 @@ jobs:
 
       - name: Build wheel and run Python tests
         run: |
-          pip install maturin pytest
+          pip install maturin pytest pytest-cov
           maturin build --release --out dist
           pip install --force-reinstall --find-links dist astrora
           pytest tests/ -v --tb=short -x
