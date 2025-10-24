@@ -131,7 +131,7 @@ hapsira : Active fork of poliastro with continued development
 Nyx-space : Mission-proven Rust astrodynamics toolkit
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Import Rust core module
 try:
