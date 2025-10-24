@@ -29,13 +29,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Python dependencies
+      - name: Build wheel and run Python tests
         run: |
           pip install maturin pytest
-          maturin develop
-
-      - name: Run Python tests
-        run: pytest tests/ -v --tb=short -x
+          maturin build --release --out dist
+          pip install --force-reinstall --no-index --find-links dist astrora
+          pytest tests/ -v --tb=short -x
 
   publish-crates:
     name: Publish to crates.io
