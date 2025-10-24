@@ -309,6 +309,8 @@ def animate_orbit(
         return artists
 
     # Create animation
+    # Remove 'interval' from kwargs if present, as we compute it from fps
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'interval'}
     anim = animation.FuncAnimation(
         fig,
         animate_frame,
@@ -316,7 +318,7 @@ def animate_orbit(
         frames=num_frames,
         interval=1000 / fps,
         blit=True,
-        **kwargs,
+        **filtered_kwargs,
     )
 
     # Save if requested

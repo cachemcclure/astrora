@@ -430,7 +430,7 @@ class TestAnimationComprehensive:
             v = np.array([0, 7546, 0])
             orbit = Orbit.from_vectors(Earth, r, v)
 
-            anim = animate_orbit(orbit, num_frames=5, show_trail=True, interval=100)
+            anim = animate_orbit(orbit, num_frames=5, trail=True, interval=100)
             assert anim is not None
         except (ImportError, RuntimeError) as e:
             pytest.skip(f"Animation with options not available: {e}")
@@ -468,9 +468,12 @@ class TestGroundTrackComprehensive:
         orbit = Orbit.from_vectors(Earth, r, v)
 
         try:
-            fig, ax = plot_ground_track(orbit, n_points=100)
-            assert fig is not None
+            # Plot ground track for one orbital period
+            duration = orbit.period.to(u.s).value
+            ax = plot_ground_track(orbit, duration=duration)
             assert ax is not None
+            fig = ax.figure
+            assert fig is not None
             plt.close(fig)
         except ImportError as e:
             pytest.skip(f"Cartopy or other dependency missing: {e}")
@@ -485,9 +488,11 @@ class TestGroundTrackComprehensive:
         orbit = Orbit.from_vectors(Earth, r, v)
 
         try:
-            fig, ax = plot_ground_track(orbit, n_points=50)
-            assert fig is not None
-            plt.close(fig)
+            # Plot ground track for one orbital period
+            duration = orbit.period.to(u.s).value
+            ax = plot_ground_track(orbit, duration=duration)
+            assert ax is not None
+            plt.close(ax.figure)
         except ImportError as e:
             pytest.skip(f"Cartopy missing: {e}")
 
@@ -501,9 +506,11 @@ class TestGroundTrackComprehensive:
 
         try:
             custom_fig, custom_ax = plt.subplots()
-            fig, ax = plot_ground_track(orbit, n_points=50, ax=custom_ax)
+            # Plot ground track for one orbital period
+            duration = orbit.period.to(u.s).value
+            ax = plot_ground_track(orbit, duration=duration, ax=custom_ax)
             assert ax is custom_ax
-            plt.close(fig)
+            plt.close(custom_fig)
         except ImportError as e:
             pytest.skip(f"Cartopy missing: {e}")
 

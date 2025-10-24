@@ -1141,14 +1141,21 @@ class Orbit:
         elif isinstance(value, (int, float)):
             dt_seconds = float(value)
             dt = Duration(dt_seconds)  # Duration constructor takes seconds
+        elif hasattr(value, 'unit'):  # astropy Quantity
+            # Convert Quantity to seconds
+            dt_seconds = float(value.to(u.s).value)
+            dt = Duration(dt_seconds)
         else:
-            raise TypeError(f"value must be Duration or numeric, got {type(value)}")
+            raise TypeError(f"value must be Duration, numeric, or astropy Quantity, got {type(value)}")
 
         # Propagate using Rust backend
         if method == "keplerian" or method == "lagrange":
-            # Use Keplerian propagation (expects float seconds)
+            # Use Keplerian propagation (expects float seconds and plain arrays)
             # Returns tuple (position, velocity)
-            result = propagate_state_keplerian(self.r, self.v, dt_seconds, self._attractor.mu)
+            # Extract values from Quantities (r and v are Quantities)
+            r_arr = self.r.to(u.m).value
+            v_arr = self.v.to(u.m / u.s).value
+            result = propagate_state_keplerian(r_arr, v_arr, dt_seconds, self._attractor.mu)
             new_r = np.array(result[0])
             new_v = np.array(result[1])
         else:
@@ -1210,9 +1217,9 @@ class Orbit:
         # Handle case where times has astropy units
         if hasattr(times, "unit"):
             # Convert to seconds (SI)
-            times_seconds = times.to(u.s).value
+            times_seconds = np.asarray(times.to(u.s).value, dtype=np.float64)
         else:
-            times_seconds = times
+            times_seconds = np.asarray(times, dtype=np.float64)
 
         # Get SI values for position and velocity
         if hasattr(self.r, "unit"):
@@ -1249,14 +1256,15 @@ class Orbit:
     # Methods - Maneuvers
     # ========================================================================
 
-    def apply_maneuver(self, delta_v: np.ndarray) -> "Orbit":
+    def apply_maneuver(self, delta_v: Union[np.ndarray, u.Quantity]) -> "Orbit":
         """
         Apply an impulsive maneuver (instantaneous velocity change).
 
         Parameters
         ----------
-        delta_v : np.ndarray
+        delta_v : np.ndarray or Quantity
             Velocity change vector [Δvx, Δvy, Δvz] in m/s (3-element array)
+            Can be plain array (assumes m/s) or astropy Quantity with velocity units
 
         Returns
         -------
@@ -1266,20 +1274,28 @@ class Orbit:
         Examples
         --------
         >>> # Prograde burn (along velocity vector)
-        >>> v_hat = orbit.v / np.linalg.norm(orbit.v)
+        >>> v_hat = orbit.v / np.linalg.norm(orbit.v.value)
         >>> delta_v = 100 * v_hat  # 100 m/s prograde
         >>> new_orbit = orbit.apply_maneuver(delta_v)
         """
-        delta_v = np.asarray(delta_v, dtype=np.float64)
+        # Convert delta_v to plain array in m/s
+        if hasattr(delta_v, 'unit'):  # astropy Quantity
+            delta_v_ms = delta_v.to(u.m / u.s).value
+        else:
+            delta_v_ms = np.asarray(delta_v, dtype=np.float64)
 
-        if delta_v.shape != (3,):
-            raise ValueError(f"delta_v must be 3-element array, got shape {delta_v.shape}")
+        if delta_v_ms.shape != (3,):
+            raise ValueError(f"delta_v must be 3-element array, got shape {delta_v_ms.shape}")
+
+        # Extract current state as plain arrays
+        r_arr = self.r.to(u.m).value
+        v_arr = self.v.to(u.m / u.s).value
 
         # Apply delta-v to velocity
-        new_v = self.v + delta_v
+        new_v_arr = v_arr + delta_v_ms
 
         # Position remains the same (impulsive maneuver)
-        new_state = CartesianState(self.r, new_v)
+        new_state = CartesianState(r_arr, new_v_arr)
 
         return Orbit(new_state, self._epoch, self._attractor)
 

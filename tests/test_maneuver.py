@@ -12,6 +12,7 @@ Tests cover:
 
 import numpy as np
 import pytest
+from astropy import units as u
 from astrora._core import Duration, Epoch
 from astrora.bodies import Earth, Mars
 from astrora.maneuver import Maneuver
@@ -430,7 +431,7 @@ class TestManeuverIntegration:
         orbit = Orbit.from_classical(Earth, a=7000e3, ecc=0.0, inc=0.0, raan=0.0, argp=0.0, nu=0.0)
 
         # Create prograde impulse
-        v_hat = orbit.v / np.linalg.norm(orbit.v)
+        v_hat = orbit.v.value / np.linalg.norm(orbit.v.value)
         dv = 100 * v_hat
         maneuver = Maneuver.impulse(dv)
 

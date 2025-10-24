@@ -270,21 +270,31 @@ class TestEdgeCases:
 
     def test_very_old_epoch(self):
         """Test conversion of very old historical epochs."""
-        # 1900-01-01
-        t = Time("1900-01-01 00:00:00", scale="utc")
-        epoch = astropy_time_to_epoch(t)
-        t_back = epoch_to_astropy_time(epoch, scale="utc")
+        import warnings
+        from erfa import ErfaWarning
 
-        assert abs(t_back.jd - t.jd) < 1e-8
+        # 1900-01-01 - suppress ERFA warnings about dubious year
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ErfaWarning)
+            t = Time("1900-01-01 00:00:00", scale="utc")
+            epoch = astropy_time_to_epoch(t)
+            t_back = epoch_to_astropy_time(epoch, scale="utc")
+
+            assert abs(t_back.jd - t.jd) < 1e-8
 
     def test_far_future_epoch(self):
         """Test conversion of far future epochs."""
-        # 2100-12-31
-        t = Time("2100-12-31 23:59:59", scale="utc")
-        epoch = astropy_time_to_epoch(t)
-        t_back = epoch_to_astropy_time(epoch, scale="utc")
+        import warnings
+        from erfa import ErfaWarning
 
-        assert abs(t_back.jd - t.jd) < 1e-8
+        # 2100-12-31 - suppress ERFA warnings about dubious year
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ErfaWarning)
+            t = Time("2100-12-31 23:59:59", scale="utc")
+            epoch = astropy_time_to_epoch(t)
+            t_back = epoch_to_astropy_time(epoch, scale="utc")
+
+            assert abs(t_back.jd - t.jd) < 1e-8
 
     def test_leap_second_handling(self):
         """Test that leap seconds are handled correctly."""

@@ -8,6 +8,7 @@ This module provides the Maneuver class for representing impulsive maneuvers
 from typing import List, Tuple, Union
 
 import numpy as np
+from astropy import units as u
 
 from astrora._core import (
     Duration,
@@ -255,22 +256,26 @@ class Maneuver:
         - Vallado, "Fundamentals of Astrodynamics", Ch. 6.2
         """
         # Check that initial orbit is approximately circular
-        if orbit_i.ecc > 0.001:
+        ecc_val = orbit_i.ecc.value if hasattr(orbit_i.ecc, 'value') else orbit_i.ecc
+        if ecc_val > 0.001:
             raise ValueError(
                 f"Initial orbit must be approximately circular (ecc < 0.001), "
-                f"got ecc = {orbit_i.ecc:.6f}. Consider using Lambert solver instead."
+                f"got ecc = {ecc_val:.6f}. Consider using Lambert solver instead."
             )
 
-        # Get initial radius (semi-major axis for circular orbit)
-        r_i = orbit_i.a
+        # Get initial radius (semi-major axis for circular orbit) - extract value from Quantity
+        r_i_val = orbit_i.a.to(u.m).value if hasattr(orbit_i.a, 'unit') else orbit_i.a
+
+        # Handle r_f as Quantity or float
+        r_f_val = r_f.to(u.m).value if hasattr(r_f, 'unit') else r_f
 
         # Call Rust backend for Hohmann calculation
-        result = hohmann_transfer(r_i, r_f, orbit_i.attractor.mu)
+        result = hohmann_transfer(r_i_val, r_f_val, orbit_i.attractor.mu)
 
         # Create unit vectors for velocity direction
         # For circular orbit, velocity is perpendicular to position
-        r_vec = orbit_i.r
-        v_vec = orbit_i.v
+        r_vec = orbit_i.r.to(u.m).value if hasattr(orbit_i.r, 'unit') else orbit_i.r
+        v_vec = orbit_i.v.to(u.m / u.s).value if hasattr(orbit_i.v, 'unit') else orbit_i.v
         v_hat = v_vec / np.linalg.norm(v_vec)  # Velocity direction
 
         # First impulse: apply delta_v1 in velocity direction
@@ -331,20 +336,26 @@ class Maneuver:
         - Curtis, "Orbital Mechanics for Engineering Students", Ch. 6.3
         """
         # Check that initial orbit is approximately circular
-        if orbit_i.ecc > 0.001:
+        ecc_val = orbit_i.ecc.value if hasattr(orbit_i.ecc, 'value') else orbit_i.ecc
+        if ecc_val > 0.001:
             raise ValueError(
                 f"Initial orbit must be approximately circular (ecc < 0.001), "
-                f"got ecc = {orbit_i.ecc:.6f}"
+                f"got ecc = {ecc_val:.6f}"
             )
 
-        # Get initial radius
-        r_i = orbit_i.a
+        # Get initial radius - extract value from Quantity
+        r_i_val = orbit_i.a.to(u.m).value if hasattr(orbit_i.a, 'unit') else orbit_i.a
+
+        # Handle r_b and r_f as Quantity or float
+        r_b_val = r_b.to(u.m).value if hasattr(r_b, 'unit') else r_b
+        r_f_val = r_f.to(u.m).value if hasattr(r_f, 'unit') else r_f
 
         # Call Rust backend for bi-elliptic calculation
-        result = bielliptic_transfer(r_i, r_b, r_f, orbit_i.attractor.mu)
+        result = bielliptic_transfer(r_i_val, r_b_val, r_f_val, orbit_i.attractor.mu)
 
-        # Velocity unit vector
-        v_hat = orbit_i.v / np.linalg.norm(orbit_i.v)
+        # Velocity unit vector - extract value from Quantity
+        v_vec = orbit_i.v.to(u.m / u.s).value if hasattr(orbit_i.v, 'unit') else orbit_i.v
+        v_hat = v_vec / np.linalg.norm(v_vec)
 
         # Three impulses
         dv1 = result["delta_v1"] * v_hat
@@ -427,9 +438,9 @@ class Maneuver:
                 f"Final epoch must be after initial epoch. " f"Time difference: {dt:.1f} seconds"
             )
 
-        # Get position vectors
-        r1 = orbit_i.r
-        r2 = orbit_f.r
+        # Get position vectors - extract values from Quantities
+        r1 = orbit_i.r.to(u.m).value if hasattr(orbit_i.r, 'unit') else orbit_i.r
+        r2 = orbit_f.r.to(u.m).value if hasattr(orbit_f.r, 'unit') else orbit_f.r
 
         # Solve Lambert's problem using Rust backend
         result = lambert_solve(r1, r2, dt, orbit_i.attractor.mu, short_way, num_revs)
@@ -438,9 +449,13 @@ class Maneuver:
         v1_transfer = np.array(result["v1"])  # Required initial velocity
         v2_transfer = np.array(result["v2"])  # Required final velocity
 
+        # Get current velocities as plain arrays
+        v_i = orbit_i.v.to(u.m / u.s).value if hasattr(orbit_i.v, 'unit') else orbit_i.v
+        v_f = orbit_f.v.to(u.m / u.s).value if hasattr(orbit_f.v, 'unit') else orbit_f.v
+
         # Calculate delta-v impulses
-        dv1 = v1_transfer - orbit_i.v  # Departure burn
-        dv2 = orbit_f.v - v2_transfer  # Arrival burn (to match target velocity)
+        dv1 = v1_transfer - v_i  # Departure burn
+        dv2 = v_f - v2_transfer  # Arrival burn (to match target velocity)
 
         return cls((0.0, dv1), (dt, dv2))
 
