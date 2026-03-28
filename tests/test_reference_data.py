@@ -447,6 +447,36 @@ def new_horizons_hyperbolic():
 
 
 # =============================================================================
+# Geodesic Reference Data
+# =============================================================================
+
+GEODESIC_REFERENCE_DATA = {
+    "description": "Reference values for gravitational lensing and geodesic calculations",
+    "sun_limb_deflection": {
+        "value_arcsec": 1.7505,
+        "source": "Einstein (1916), confirmed by Eddington (1919), Will (2014)",
+        "tolerance_arcsec": 0.01,
+    },
+    "sgr_a_star_schwarzschild_radius_m": {
+        "value": 1.227e10,
+        "source": "GRAVITY Collaboration (2022), computed from GM/c^2",
+        "tolerance_percent": 5.0,
+    },
+    "sgr_a_star_shadow_angular_size_uas": {
+        "value": 52.0,
+        "source": "EHT Collaboration (2022), Sgr A* results",
+        "tolerance_uas": 20.0,
+    },
+    "shapiro_delay_cassini_us": {
+        "value": 240.0,
+        "source": "Bertotti et al. (2003), Cassini measurement",
+        "note": "Approximate; depends on exact geometry",
+        "tolerance_us": 150.0,
+    },
+}
+
+
+# =============================================================================
 # Validation Test: Ensure Data Integrity
 # =============================================================================
 

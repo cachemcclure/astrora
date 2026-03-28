@@ -1662,7 +1662,8 @@ mod tests {
         let (r_twobody, _v_twobody) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
 
         // J2-perturbed propagation
-        let (r_j2, _v_j2) = propagate_j2_rk4(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
+        let (r_j2, _v_j2) =
+            propagate_j2_rk4(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
 
         // Positions should differ (J2 causes secular drift)
         let pos_diff = (r_twobody - r_j2).norm();
@@ -1680,7 +1681,8 @@ mod tests {
         let r0 = Vector3::new(7000e3, 0.0, 0.0);
         let v0 = Vector3::new(0.0, 7546.0, 0.0);
 
-        let (r1, v1) = propagate_j2_rk4(&r0, &v0, 3600.0, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
+        let (r1, v1) =
+            propagate_j2_rk4(&r0, &v0, 3600.0, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
 
         // Calculate specific energies
         let e0 = v0.norm_squared() / 2.0 - GM_EARTH / r0.norm();
@@ -1720,8 +1722,10 @@ mod tests {
         let dt = 3600.0;
 
         // Both with same tolerance
-        let (r_dop853, v_dop853) = propagate_j2_dop853(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10)).unwrap();
-        let (r_dopri5, v_dopri5) = propagate_j2_dopri5(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10)).unwrap();
+        let (r_dop853, v_dop853) =
+            propagate_j2_dop853(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10)).unwrap();
+        let (r_dopri5, v_dopri5) =
+            propagate_j2_dopri5(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(1e-10)).unwrap();
 
         // Results should be very close (both high accuracy)
         let pos_diff = (r_dop853 - r_dopri5).norm();
@@ -1749,7 +1753,11 @@ mod tests {
         // After one period, should be roughly back to same position
         // (J2 causes secular drift, so won't be exact)
         let pos_diff = (r1 - r0).norm();
-        assert!(pos_diff < 150e3, "Position drift after 1 orbit: {} km", pos_diff / 1e3);
+        assert!(
+            pos_diff < 150e3,
+            "Position drift after 1 orbit: {} km",
+            pos_diff / 1e3
+        );
 
         // Velocity magnitude should be preserved
         let v_ratio = v1.norm() / v0.norm();
@@ -1799,7 +1807,7 @@ mod tests {
 
     #[test]
     fn test_drag_acceleration_opposes_velocity() {
-        use crate::core::constants::{H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{H0_EARTH, RHO0_EARTH, R_EARTH};
 
         // ISS-like orbit at 400 km altitude
         let r = Vector3::new(6778e3, 0.0, 0.0);
@@ -1823,7 +1831,7 @@ mod tests {
 
     #[test]
     fn test_drag_acceleration_magnitude() {
-        use crate::core::constants::{H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{H0_EARTH, RHO0_EARTH, R_EARTH};
 
         // ISS at 400 km altitude
         let r = Vector3::new(6778e3, 0.0, 0.0);
@@ -1836,12 +1844,16 @@ mod tests {
         // Note: This simple model underestimates drag at high altitudes
         // Real drag at 400 km would be ~1e-7 to 1e-6 m/s² with accurate density models
         let mag = a_drag.norm();
-        assert!(mag > 0.0 && mag < 1e-5, "Drag magnitude at 400km: {} m/s²", mag);
+        assert!(
+            mag > 0.0 && mag < 1e-5,
+            "Drag magnitude at 400km: {} m/s²",
+            mag
+        );
     }
 
     #[test]
     fn test_drag_acceleration_increases_at_lower_altitude() {
-        use crate::core::constants::{H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{H0_EARTH, RHO0_EARTH, R_EARTH};
 
         let B = 50.0;
 
@@ -1860,7 +1872,7 @@ mod tests {
 
     #[test]
     fn test_drag_acceleration_zero_velocity() {
-        use crate::core::constants::{H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{H0_EARTH, RHO0_EARTH, R_EARTH};
 
         let r = Vector3::new(6778e3, 0.0, 0.0);
         let v = Vector3::zeros(); // No velocity
@@ -1874,7 +1886,7 @@ mod tests {
 
     #[test]
     fn test_drag_ballistic_coefficient_effect() {
-        use crate::core::constants::{H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{H0_EARTH, RHO0_EARTH, R_EARTH};
 
         let r = Vector3::new(6778e3, 0.0, 0.0);
         let v = Vector3::new(0.0, 7670.0, 0.0);
@@ -1897,14 +1909,24 @@ mod tests {
 
     #[test]
     fn test_propagate_drag_rk4_basic() {
-        use crate::core::constants::{GM_EARTH, H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{GM_EARTH, H0_EARTH, RHO0_EARTH, R_EARTH};
 
         // ISS-like orbit
         let r0 = Vector3::new(6778e3, 0.0, 0.0);
         let v0 = Vector3::new(0.0, 7670.0, 0.0);
         let B = 50.0;
 
-        let result = propagate_drag_rk4(&r0, &v0, 600.0, GM_EARTH, R_EARTH, RHO0_EARTH, H0_EARTH, B, Some(100));
+        let result = propagate_drag_rk4(
+            &r0,
+            &v0,
+            600.0,
+            GM_EARTH,
+            R_EARTH,
+            RHO0_EARTH,
+            H0_EARTH,
+            B,
+            Some(100),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -1916,13 +1938,23 @@ mod tests {
 
     #[test]
     fn test_propagate_drag_dopri5_basic() {
-        use crate::core::constants::{GM_EARTH, H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{GM_EARTH, H0_EARTH, RHO0_EARTH, R_EARTH};
 
         let r0 = Vector3::new(6778e3, 0.0, 0.0);
         let v0 = Vector3::new(0.0, 7670.0, 0.0);
         let B = 50.0;
 
-        let result = propagate_drag_dopri5(&r0, &v0, 600.0, GM_EARTH, R_EARTH, RHO0_EARTH, H0_EARTH, B, Some(1e-8));
+        let result = propagate_drag_dopri5(
+            &r0,
+            &v0,
+            600.0,
+            GM_EARTH,
+            R_EARTH,
+            RHO0_EARTH,
+            H0_EARTH,
+            B,
+            Some(1e-8),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -1933,7 +1965,7 @@ mod tests {
 
     #[test]
     fn test_drag_causes_orbit_decay() {
-        use crate::core::constants::{GM_EARTH, H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{GM_EARTH, H0_EARTH, RHO0_EARTH, R_EARTH};
         use crate::propagators::keplerian::propagate_state_keplerian;
 
         let r0 = Vector3::new(6778e3, 0.0, 0.0);
@@ -1945,7 +1977,18 @@ mod tests {
         let (r_twobody, v_twobody) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
 
         // Drag propagation
-        let (r_drag, v_drag) = propagate_drag_rk4(&r0, &v0, dt, GM_EARTH, R_EARTH, RHO0_EARTH, H0_EARTH, B, Some(100)).unwrap();
+        let (r_drag, v_drag) = propagate_drag_rk4(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            R_EARTH,
+            RHO0_EARTH,
+            H0_EARTH,
+            B,
+            Some(100),
+        )
+        .unwrap();
 
         // With drag, orbit should decay: energy should decrease
         let e_twobody = v_twobody.norm_squared() / 2.0 - GM_EARTH / r_twobody.norm();
@@ -1954,18 +1997,32 @@ mod tests {
         assert!(e_drag < e_twobody, "Drag should decrease orbital energy");
 
         // Orbital altitude should decrease
-        assert!(r_drag.norm() < r_twobody.norm(), "Drag should cause orbit to decay");
+        assert!(
+            r_drag.norm() < r_twobody.norm(),
+            "Drag should cause orbit to decay"
+        );
     }
 
     #[test]
     fn test_propagate_j2_drag_combined() {
-        use crate::core::constants::{GM_EARTH, H0_EARTH, J2_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{GM_EARTH, H0_EARTH, J2_EARTH, RHO0_EARTH, R_EARTH};
 
         let r0 = Vector3::new(6778e3, 0.0, 1000e3); // Slightly inclined
         let v0 = Vector3::new(100.0, 7670.0, 0.0);
         let B = 50.0;
 
-        let result = propagate_j2_drag_rk4(&r0, &v0, 600.0, GM_EARTH, J2_EARTH, R_EARTH, RHO0_EARTH, H0_EARTH, B, Some(100));
+        let result = propagate_j2_drag_rk4(
+            &r0,
+            &v0,
+            600.0,
+            GM_EARTH,
+            J2_EARTH,
+            R_EARTH,
+            RHO0_EARTH,
+            H0_EARTH,
+            B,
+            Some(100),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -1976,13 +2033,24 @@ mod tests {
 
     #[test]
     fn test_propagate_j2_drag_dopri5() {
-        use crate::core::constants::{GM_EARTH, H0_EARTH, J2_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{GM_EARTH, H0_EARTH, J2_EARTH, RHO0_EARTH, R_EARTH};
 
         let r0 = Vector3::new(6778e3, 0.0, 0.0);
         let v0 = Vector3::new(0.0, 7670.0, 0.0);
         let B = 50.0;
 
-        let result = propagate_j2_drag_dopri5(&r0, &v0, 600.0, GM_EARTH, J2_EARTH, R_EARTH, RHO0_EARTH, H0_EARTH, B, Some(1e-8));
+        let result = propagate_j2_drag_dopri5(
+            &r0,
+            &v0,
+            600.0,
+            GM_EARTH,
+            J2_EARTH,
+            R_EARTH,
+            RHO0_EARTH,
+            H0_EARTH,
+            B,
+            Some(1e-8),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -2089,7 +2157,9 @@ where
         }
         _ => {
             return Err(PoliastroError::ComputationError {
-                message: format!("Invalid integration method '{method}'. Expected either 'rk4' or 'dopri5'"),
+                message: format!(
+                    "Invalid integration method '{method}'. Expected either 'rk4' or 'dopri5'"
+                ),
             });
         }
     };
@@ -2118,7 +2188,8 @@ mod cowell_tests {
 
         // Cowell with no perturbations
         let perts: Vec<Box<dyn Fn(f64, &Vector3, &Vector3) -> Vector3>> = vec![];
-        let (r_cowell, v_cowell) = propagate_cowell(&r0, &v0, dt, GM_EARTH, &perts, "rk4", Some(100), None).unwrap();
+        let (r_cowell, v_cowell) =
+            propagate_cowell(&r0, &v0, dt, GM_EARTH, &perts, "rk4", Some(100), None).unwrap();
 
         // Keplerian propagation
         let (r_kep, v_kep) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
@@ -2138,15 +2209,16 @@ mod cowell_tests {
         let dt = 3600.0;
 
         // Create J2 perturbation function
-        let j2_pert = |_t: f64, r: &Vector3, _v: &Vector3| {
-            j2_perturbation(r, GM_EARTH, J2_EARTH, R_EARTH)
-        };
+        let j2_pert =
+            |_t: f64, r: &Vector3, _v: &Vector3| j2_perturbation(r, GM_EARTH, J2_EARTH, R_EARTH);
 
         let perts: Vec<Box<dyn Fn(f64, &Vector3, &Vector3) -> Vector3>> = vec![Box::new(j2_pert)];
-        let (r_cowell, v_cowell) = propagate_cowell(&r0, &v0, dt, GM_EARTH, &perts, "rk4", Some(100), None).unwrap();
+        let (r_cowell, v_cowell) =
+            propagate_cowell(&r0, &v0, dt, GM_EARTH, &perts, "rk4", Some(100), None).unwrap();
 
         // Compare with dedicated J2 propagator
-        let (r_j2, v_j2) = propagate_j2_rk4(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
+        let (r_j2, v_j2) =
+            propagate_j2_rk4(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
 
         // Should be identical (same algorithm)
         assert_relative_eq!(r_cowell.x, r_j2.x, epsilon = 1.0);
@@ -2304,14 +2376,8 @@ mod thirdbody_tests {
         // At GEO, Sun perturbation is relatively larger (distance matters less)
         // Actually, the perturbation magnitude can be larger at GEO
         // because the indirect term becomes more significant
-        println!(
-            "Sun perturbation at LEO: {} m/s²",
-            a_sun_leo.norm()
-        );
-        println!(
-            "Sun perturbation at GEO: {} m/s²",
-            a_sun_geo.norm()
-        );
+        println!("Sun perturbation at LEO: {} m/s²", a_sun_leo.norm());
+        println!("Sun perturbation at GEO: {} m/s²", a_sun_geo.norm());
 
         // Both should be reasonable magnitudes
         assert!(a_sun_leo.norm() > 1e-7 && a_sun_leo.norm() < 1e-4);
@@ -2539,7 +2605,11 @@ mod thirdbody_tests {
 
         // Should be in penumbra (0 < nu < 1)
         // The exact value depends on geometry
-        assert!(nu >= 0.0 && nu <= 1.0, "Shadow function out of range: {}", nu);
+        assert!(
+            nu >= 0.0 && nu <= 1.0,
+            "Shadow function out of range: {}",
+            nu
+        );
     }
 
     #[test]
@@ -2559,7 +2629,10 @@ mod thirdbody_tests {
 
         // GEO should be more likely to be out of shadow
         // (Earth's shadow cone doesn't extend as far)
-        assert!(nu_geo >= nu_leo, "GEO should have >= shadow function than LEO");
+        assert!(
+            nu_geo >= nu_leo,
+            "GEO should have >= shadow function than LEO"
+        );
     }
 
     #[test]
@@ -2615,7 +2688,17 @@ mod srp_tests {
         let C_r = 1.3; // Reflectivity coefficient
         let t0 = 0.0;
 
-        let result = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100));
+        let result = propagate_srp_rk4(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(100),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -2636,7 +2719,17 @@ mod srp_tests {
         let C_r = 1.3;
         let t0 = 0.0;
 
-        let result = propagate_srp_dopri5(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(1e-8));
+        let result = propagate_srp_dopri5(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(1e-8),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -2656,8 +2749,30 @@ mod srp_tests {
         let C_r = 1.3;
         let t0 = 0.0;
 
-        let (r_rk4, v_rk4) = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100)).unwrap();
-        let (r_dopri5, v_dopri5) = propagate_srp_dopri5(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(1e-8)).unwrap();
+        let (r_rk4, v_rk4) = propagate_srp_rk4(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(100),
+        )
+        .unwrap();
+        let (r_dopri5, v_dopri5) = propagate_srp_dopri5(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(1e-8),
+        )
+        .unwrap();
 
         // Results should be close (both accurate integrators)
         let pos_diff = (r_rk4 - r_dopri5).norm();
@@ -2685,7 +2800,18 @@ mod srp_tests {
         let (r_twobody, _v_twobody) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
 
         // SRP propagation
-        let (r_srp, _v_srp) = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(1000)).unwrap();
+        let (r_srp, _v_srp) = propagate_srp_rk4(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(1000),
+        )
+        .unwrap();
 
         // Positions should differ (SRP causes perturbations)
         let pos_diff = (r_twobody - r_srp).norm();
@@ -2709,7 +2835,18 @@ mod srp_tests {
         let C_r = 1.3;
         let t0 = 0.0;
 
-        let (r_srp, v_srp) = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100)).unwrap();
+        let (r_srp, v_srp) = propagate_srp_rk4(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(100),
+        )
+        .unwrap();
         let (r_twobody, v_twobody) = propagate_state_keplerian(&r0, &v0, dt, GM_EARTH).unwrap();
 
         // Should be very close to two-body (only numerical errors)
@@ -2732,7 +2869,17 @@ mod srp_tests {
         let t0 = 0.0;
 
         // Propagate - should handle shadow transitions
-        let result = propagate_srp_rk4(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, Some(100));
+        let result = propagate_srp_rk4(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            Some(100),
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -2754,7 +2901,17 @@ mod srp_tests {
         let C_r = 1.3;
         let t0 = 0.0;
 
-        let result = propagate_srp_dopri5(&r0, &v0, dt, GM_EARTH, area_mass_ratio, C_r, R_EARTH, t0, None);
+        let result = propagate_srp_dopri5(
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            area_mass_ratio,
+            C_r,
+            R_EARTH,
+            t0,
+            None,
+        );
         assert!(result.is_ok());
 
         let (r1, v1) = result.unwrap();
@@ -2765,11 +2922,19 @@ mod srp_tests {
         let a1 = r1.norm();
         let a_ratio = a1 / a0;
 
-        assert!((a_ratio - 1.0).abs() < 0.01, "Semi-major axis change: {}", a_ratio);
+        assert!(
+            (a_ratio - 1.0).abs() < 0.01,
+            "Semi-major axis change: {}",
+            a_ratio
+        );
 
         // Velocity magnitude roughly preserved
         let v_ratio = v1.norm() / v0.norm();
-        assert!((v_ratio - 1.0).abs() < 0.05, "Velocity magnitude change: {}", v_ratio);
+        assert!(
+            (v_ratio - 1.0).abs() < 0.05,
+            "Velocity magnitude change: {}",
+            v_ratio
+        );
     }
 }
 
@@ -2968,7 +3133,7 @@ impl DragPerturbation {
     ///   - ISS: 50-100 kg/m²
     ///   - Large satellites: 100-500 kg/m²
     pub fn earth(ballistic_coeff: f64) -> Self {
-        use crate::core::constants::{H0_EARTH, R_EARTH, RHO0_EARTH};
+        use crate::core::constants::{H0_EARTH, RHO0_EARTH, R_EARTH};
         Self::new(R_EARTH, RHO0_EARTH, H0_EARTH, ballistic_coeff)
     }
 }
@@ -3108,12 +3273,11 @@ impl std::fmt::Debug for ThirdBodyPerturbation {
         match self {
             Self::Sun => write!(f, "ThirdBodyPerturbation::Sun"),
             Self::Moon => write!(f, "ThirdBodyPerturbation::Moon"),
-            Self::Custom { mu, body_name, .. } => {
-                f.debug_struct("ThirdBodyPerturbation::Custom")
-                    .field("mu", mu)
-                    .field("body_name", body_name)
-                    .finish()
-            }
+            Self::Custom { mu, body_name, .. } => f
+                .debug_struct("ThirdBodyPerturbation::Custom")
+                .field("mu", mu)
+                .field("body_name", body_name)
+                .finish(),
         }
     }
 }
@@ -3665,15 +3829,15 @@ mod perturbation_trait_tests {
         let v0 = Vector3::new(0.0, 7546.0, 0.0);
         let dt = 3600.0;
 
-        let result = propagate_with_perturbations(
-            &r0, &v0, dt, GM_EARTH, &perts, "rk4", Some(100), None
-        );
+        let result =
+            propagate_with_perturbations(&r0, &v0, dt, GM_EARTH, &perts, "rk4", Some(100), None);
 
         assert!(result.is_ok());
         let (r, v) = result.unwrap();
 
         // Should match dedicated J2 propagator
-        let (r_j2, v_j2) = propagate_j2_rk4(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
+        let (r_j2, v_j2) =
+            propagate_j2_rk4(&r0, &v0, dt, GM_EARTH, J2_EARTH, R_EARTH, Some(100)).unwrap();
 
         assert_relative_eq!(r.x, r_j2.x, epsilon = 1.0);
         assert_relative_eq!(r.y, r_j2.y, epsilon = 1.0);
@@ -3694,7 +3858,14 @@ mod perturbation_trait_tests {
         let dt = 600.0; // 10 minutes
 
         let result = propagate_with_perturbations(
-            &r0, &v0, dt, GM_EARTH, &perts, "dopri5", None, Some(1e-8)
+            &r0,
+            &v0,
+            dt,
+            GM_EARTH,
+            &perts,
+            "dopri5",
+            None,
+            Some(1e-8),
         );
 
         assert!(result.is_ok());
@@ -3720,9 +3891,8 @@ mod perturbation_trait_tests {
         let r0 = Vector3::new(7000e3, 0.0, 0.0);
         let v0 = Vector3::new(0.0, 7546.0, 0.0);
 
-        let result = propagate_with_perturbations(
-            &r0, &v0, 600.0, GM_EARTH, &perts, "invalid", None, None
-        );
+        let result =
+            propagate_with_perturbations(&r0, &v0, 600.0, GM_EARTH, &perts, "invalid", None, None);
 
         assert!(result.is_err());
     }

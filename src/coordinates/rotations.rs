@@ -108,11 +108,7 @@ use nalgebra::{Matrix3, Vector3};
 pub fn rotation_x(angle: f64) -> Matrix3<f64> {
     let (sin_a, cos_a) = angle.sin_cos();
 
-    Matrix3::new(
-        1.0,   0.0,    0.0,
-        0.0, cos_a, -sin_a,
-        0.0, sin_a,  cos_a,
-    )
+    Matrix3::new(1.0, 0.0, 0.0, 0.0, cos_a, -sin_a, 0.0, sin_a, cos_a)
 }
 
 /// Create a rotation matrix for rotation about the Y-axis (pitch)
@@ -158,11 +154,7 @@ pub fn rotation_x(angle: f64) -> Matrix3<f64> {
 pub fn rotation_y(angle: f64) -> Matrix3<f64> {
     let (sin_a, cos_a) = angle.sin_cos();
 
-    Matrix3::new(
-         cos_a, 0.0, sin_a,
-           0.0, 1.0,   0.0,
-        -sin_a, 0.0, cos_a,
-    )
+    Matrix3::new(cos_a, 0.0, sin_a, 0.0, 1.0, 0.0, -sin_a, 0.0, cos_a)
 }
 
 /// Create a rotation matrix for rotation about the Z-axis (yaw)
@@ -211,11 +203,7 @@ pub fn rotation_y(angle: f64) -> Matrix3<f64> {
 pub fn rotation_z(angle: f64) -> Matrix3<f64> {
     let (sin_a, cos_a) = angle.sin_cos();
 
-    Matrix3::new(
-        cos_a, -sin_a, 0.0,
-        sin_a,  cos_a, 0.0,
-          0.0,    0.0, 1.0,
-    )
+    Matrix3::new(cos_a, -sin_a, 0.0, sin_a, cos_a, 0.0, 0.0, 0.0, 1.0)
 }
 
 /// Verify that a matrix is a proper rotation matrix

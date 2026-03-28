@@ -53,8 +53,8 @@
 //! - Spacetrack Report #3 (Hoots & Roehrich, 1980)
 //! - CelesTrak TLE format specification
 
-use sgp4::Elements;
 use crate::satellite::sgp4_wrapper::Sgp4Error;
+use sgp4::Elements;
 
 /// Parse a TLE string (2-line or 3-line format)
 ///
@@ -111,11 +111,13 @@ pub fn parse_tle(tle_string: &str) -> Result<Elements, Sgp4Error> {
 fn parse_2line_tle(line1: &str, line2: &str) -> Result<Elements, Sgp4Error> {
     // Use sgp4 crate's built-in parser (returns Vec<Elements>)
     let tle_string = format!("{line1}\n{line2}");
-    let elements_vec = sgp4::parse_2les(&tle_string)
-        .map_err(|e| Sgp4Error::TleParsingFailed(e.to_string()))?;
+    let elements_vec =
+        sgp4::parse_2les(&tle_string).map_err(|e| Sgp4Error::TleParsingFailed(e.to_string()))?;
 
     // Extract first element (should only be one for single TLE)
-    elements_vec.into_iter().next()
+    elements_vec
+        .into_iter()
+        .next()
         .ok_or_else(|| Sgp4Error::TleParsingFailed("No elements found in TLE".to_string()))
 }
 
@@ -123,11 +125,13 @@ fn parse_2line_tle(line1: &str, line2: &str) -> Result<Elements, Sgp4Error> {
 fn parse_3line_tle(name: &str, line1: &str, line2: &str) -> Result<Elements, Sgp4Error> {
     // Use sgp4 crate's built-in parser (returns Vec<Elements>)
     let tle_string = format!("{name}\n{line1}\n{line2}");
-    let elements_vec = sgp4::parse_3les(&tle_string)
-        .map_err(|e| Sgp4Error::TleParsingFailed(e.to_string()))?;
+    let elements_vec =
+        sgp4::parse_3les(&tle_string).map_err(|e| Sgp4Error::TleParsingFailed(e.to_string()))?;
 
     // Extract first element (should only be one for single TLE)
-    elements_vec.into_iter().next()
+    elements_vec
+        .into_iter()
+        .next()
         .ok_or_else(|| Sgp4Error::TleParsingFailed("No elements found in TLE".to_string()))
 }
 
@@ -167,7 +171,8 @@ pub fn validate_checksum(line: &str) -> bool {
 mod tests {
     use super::*;
 
-    const ISS_TLE_2LINE: &str = "1 25544U 98067A   08264.51782528 -.00002182  00000-0 -11606-4 0  2927
+    const ISS_TLE_2LINE: &str =
+        "1 25544U 98067A   08264.51782528 -.00002182  00000-0 -11606-4 0  2927
 2 25544  51.6416 247.4627 0006703 130.5360 325.0288 15.72125391563537";
 
     const ISS_TLE_3LINE: &str = "ISS (ZARYA)
@@ -180,7 +185,10 @@ mod tests {
 
         assert_eq!(elements.norad_id, 25544);
         // sgp4 crate returns expanded format (1998-067A, not 98067A)
-        assert_eq!(elements.international_designator, Some("1998-067A".to_string()));
+        assert_eq!(
+            elements.international_designator,
+            Some("1998-067A".to_string())
+        );
         // Note: sgp4::Elements stores inclination in degrees (not radians)
         assert!((elements.inclination - 51.6416).abs() < 0.001);
         assert!((elements.eccentricity - 0.0006703).abs() < 0.0000001);
@@ -194,7 +202,10 @@ mod tests {
         assert_eq!(elements.norad_id, 25544);
         assert_eq!(elements.object_name, Some("ISS (ZARYA)".to_string()));
         // sgp4 crate returns expanded format (1998-067A, not 98067A)
-        assert_eq!(elements.international_designator, Some("1998-067A".to_string()));
+        assert_eq!(
+            elements.international_designator,
+            Some("1998-067A".to_string())
+        );
         // Note: sgp4::Elements stores inclination in degrees (not radians)
         assert!((elements.inclination - 51.6416).abs() < 0.001);
     }
@@ -218,7 +229,8 @@ mod tests {
     #[test]
     fn test_invalid_format() {
         // Only one line
-        let result = parse_tle("1 25544U 98067A   08264.51782528 -.00002182  00000-0 -11606-4 0  2927");
+        let result =
+            parse_tle("1 25544U 98067A   08264.51782528 -.00002182  00000-0 -11606-4 0  2927");
         assert!(result.is_err());
 
         // Too many lines
@@ -236,7 +248,10 @@ mod tests {
 
         let elements = parse_tle(satellite_tle).unwrap();
         assert_eq!(elements.norad_id, 25544);
-        assert_eq!(elements.object_name, Some("CUSTOM SATELLITE NAME".to_string()));
+        assert_eq!(
+            elements.object_name,
+            Some("CUSTOM SATELLITE NAME".to_string())
+        );
         // Note: sgp4::Elements stores inclination in degrees (not radians)
         assert!((elements.inclination - 51.6416).abs() < 0.001);
         assert!((elements.eccentricity - 0.0006703).abs() < 0.0000001);

@@ -45,15 +45,15 @@
 //! - <https://aa.usno.navy.mil/faq/ICRS_doc>
 //! - IERS Conventions (2010): <https://www.iers.org/IERS/EN/Publications/TechnicalNotes/tn36.html>
 
-use nalgebra::{Vector3, Matrix3};
-use pyo3::prelude::*;
-use numpy::{PyArray1, PyReadonlyArray1};
-use crate::core::PoliastroResult;
-use crate::core::time::Epoch;
-use hifitime::TimeScale;
 use crate::coordinates::rotations::{rotation_x, rotation_z};
-use std::f64::consts::PI;
+use crate::core::time::Epoch;
+use crate::core::PoliastroResult;
+use hifitime::TimeScale;
+use nalgebra::{Matrix3, Vector3};
+use numpy::{PyArray1, PyReadonlyArray1};
+use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::f64::consts::PI;
 
 /// International Celestial Reference System (ICRS)
 ///
@@ -94,13 +94,16 @@ impl ICRS {
     /// - `position`: Position vector in meters (barycentric) [x, y, z]
     /// - `velocity`: Velocity vector in m/s (barycentric) [vx, vy, vz]
     #[new]
-    pub fn py_new(position: PyReadonlyArray1<f64>, velocity: PyReadonlyArray1<f64>) -> PyResult<Self> {
+    pub fn py_new(
+        position: PyReadonlyArray1<f64>,
+        velocity: PyReadonlyArray1<f64>,
+    ) -> PyResult<Self> {
         let pos_slice = position.as_slice()?;
         let vel_slice = velocity.as_slice()?;
 
         if pos_slice.len() != 3 || vel_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position and velocity must be 3-element arrays"
+                "Position and velocity must be 3-element arrays",
             ));
         }
 
@@ -145,8 +148,12 @@ impl ICRS {
     fn __repr__(&self) -> String {
         format!(
             "ICRS(position=[{:.3e}, {:.3e}, {:.3e}] m, velocity=[{:.3e}, {:.3e}, {:.3e}] m/s)",
-            self.position.x, self.position.y, self.position.z,
-            self.velocity.x, self.velocity.y, self.velocity.z
+            self.position.x,
+            self.position.y,
+            self.position.z,
+            self.velocity.x,
+            self.velocity.y,
+            self.velocity.z
         )
     }
 }
@@ -236,7 +243,7 @@ impl GCRS {
 
         if pos_slice.len() != 3 || vel_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position and velocity must be 3-element arrays"
+                "Position and velocity must be 3-element arrays",
             ));
         }
 
@@ -423,7 +430,6 @@ pub fn earth_rotation_angle(epoch: &Epoch) -> f64 {
 
     // Normalize to [0, 1) rotations, then convert to [0, 2π) radians
     let era_normalized = era_rotations - era_rotations.floor();
-    
 
     2.0 * PI * era_normalized
 }
@@ -466,10 +472,9 @@ pub fn greenwich_mean_sidereal_time_82(epoch: &Epoch) -> f64 {
 
     // GMST in seconds (IAU 1982 polynomial formula)
     // Coefficients from Vallado Algorithm 15
-    let gmst_sec = 67310.54841
-        + (876600.0 * 3600.0 + 8640184.812866) * t_ut1
-        + 0.093104 * t_ut1 * t_ut1
-        - 6.2e-6 * t_ut1 * t_ut1 * t_ut1;
+    let gmst_sec =
+        67310.54841 + (876600.0 * 3600.0 + 8640184.812866) * t_ut1 + 0.093104 * t_ut1 * t_ut1
+            - 6.2e-6 * t_ut1 * t_ut1 * t_ut1;
 
     // Convert seconds to radians
     // 1 revolution = 86400 seconds of sidereal time = 2π radians
@@ -556,7 +561,7 @@ impl ITRS {
 
         if pos_slice.len() != 3 || vel_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position and velocity must be 3-element arrays"
+                "Position and velocity must be 3-element arrays",
             ));
         }
 
@@ -796,7 +801,7 @@ impl TEME {
 
         if pos_slice.len() != 3 || vel_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position and velocity must be 3-element arrays"
+                "Position and velocity must be 3-element arrays",
             ));
         }
 
@@ -1006,7 +1011,13 @@ impl Perifocal {
     /// - `raan`: Right ascension of ascending node (radians)
     /// - `inc`: Inclination (radians)
     /// - `argp`: Argument of periapsis (radians)
-    pub fn new(position: Vector3<f64>, velocity: Vector3<f64>, raan: f64, inc: f64, argp: f64) -> Self {
+    pub fn new(
+        position: Vector3<f64>,
+        velocity: Vector3<f64>,
+        raan: f64,
+        inc: f64,
+        argp: f64,
+    ) -> Self {
         Self {
             position,
             velocity,
@@ -1194,7 +1205,7 @@ impl Perifocal {
 
         if pos_slice.len() != 3 || vel_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position and velocity must be 3-element arrays"
+                "Position and velocity must be 3-element arrays",
             ));
         }
 
@@ -1466,13 +1477,16 @@ impl J2000 {
     /// - `position`: Position vector in meters [x, y, z]
     /// - `velocity`: Velocity vector in m/s [vx, vy, vz]
     #[new]
-    pub fn py_new(position: PyReadonlyArray1<f64>, velocity: PyReadonlyArray1<f64>) -> PyResult<Self> {
+    pub fn py_new(
+        position: PyReadonlyArray1<f64>,
+        velocity: PyReadonlyArray1<f64>,
+    ) -> PyResult<Self> {
         let pos_slice = position.as_slice()?;
         let vel_slice = velocity.as_slice()?;
 
         if pos_slice.len() != 3 || vel_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position and velocity must be 3-element arrays"
+                "Position and velocity must be 3-element arrays",
             ));
         }
 
@@ -1490,13 +1504,15 @@ impl J2000 {
 
         if pos_slice.len() != 3 {
             return Err(pyo3::exceptions::PyValueError::new_err(
-                "Position must be a 3-element array"
+                "Position must be a 3-element array",
             ));
         }
 
-        Ok(Self::from_position(
-            Vector3::new(pos_slice[0], pos_slice[1], pos_slice[2])
-        ))
+        Ok(Self::from_position(Vector3::new(
+            pos_slice[0],
+            pos_slice[1],
+            pos_slice[2],
+        )))
     }
 
     /// Convert to GCRS frame at J2000 epoch
@@ -1599,7 +1615,7 @@ pub fn batch_gcrs_to_itrs(
 ) -> PoliastroResult<(Vec<Vector3<f64>>, Vec<Vector3<f64>>)> {
     if positions.len() != velocities.len() || positions.len() != obstimes.len() {
         return Err(crate::core::PoliastroError::invalid_state(
-            "Position, velocity, and time arrays must have the same length".to_string()
+            "Position, velocity, and time arrays must have the same length".to_string(),
         ));
     }
 
@@ -1652,7 +1668,7 @@ pub fn batch_itrs_to_gcrs(
 ) -> PoliastroResult<(Vec<Vector3<f64>>, Vec<Vector3<f64>>)> {
     if positions.len() != velocities.len() || positions.len() != obstimes.len() {
         return Err(crate::core::PoliastroError::invalid_state(
-            "Position, velocity, and time arrays must have the same length".to_string()
+            "Position, velocity, and time arrays must have the same length".to_string(),
         ));
     }
 
@@ -1706,7 +1722,7 @@ pub fn batch_gcrs_to_teme(
 ) -> PoliastroResult<(Vec<Vector3<f64>>, Vec<Vector3<f64>>)> {
     if positions.len() != velocities.len() || positions.len() != obstimes.len() {
         return Err(crate::core::PoliastroError::invalid_state(
-            "Position, velocity, and time arrays must have the same length".to_string()
+            "Position, velocity, and time arrays must have the same length".to_string(),
         ));
     }
 
@@ -1757,7 +1773,7 @@ pub fn batch_teme_to_gcrs(
 ) -> PoliastroResult<(Vec<Vector3<f64>>, Vec<Vector3<f64>>)> {
     if positions.len() != velocities.len() || positions.len() != obstimes.len() {
         return Err(crate::core::PoliastroError::invalid_state(
-            "Position, velocity, and time arrays must have the same length".to_string()
+            "Position, velocity, and time arrays must have the same length".to_string(),
         ));
     }
 
@@ -1808,7 +1824,7 @@ pub fn batch_teme_to_itrs(
 ) -> PoliastroResult<(Vec<Vector3<f64>>, Vec<Vector3<f64>>)> {
     if positions.len() != velocities.len() || positions.len() != obstimes.len() {
         return Err(crate::core::PoliastroError::invalid_state(
-            "Position, velocity, and time arrays must have the same length".to_string()
+            "Position, velocity, and time arrays must have the same length".to_string(),
         ));
     }
 
@@ -1853,7 +1869,7 @@ pub fn batch_itrs_to_teme(
 ) -> PoliastroResult<(Vec<Vector3<f64>>, Vec<Vector3<f64>>)> {
     if positions.len() != velocities.len() || positions.len() != obstimes.len() {
         return Err(crate::core::PoliastroError::invalid_state(
-            "Position, velocity, and time arrays must have the same length".to_string()
+            "Position, velocity, and time arrays must have the same length".to_string(),
         ));
     }
 
@@ -2777,13 +2793,7 @@ mod tests {
     #[test]
     fn test_perifocal_rotation_matrix_orthogonal() {
         // Rotation matrices should be orthogonal (R^T * R = I)
-        let peri = Perifocal::new(
-            Vector3::zeros(),
-            Vector3::zeros(),
-            0.5,
-            0.3,
-            1.0,
-        );
+        let peri = Perifocal::new(Vector3::zeros(), Vector3::zeros(), 0.5, 0.3, 1.0);
 
         let r = peri.rotation_to_inertial();
         let r_t = r.transpose();
@@ -2801,13 +2811,7 @@ mod tests {
     #[test]
     fn test_perifocal_determinant_is_one() {
         // Rotation matrix determinant should be +1 (proper rotation, not reflection)
-        let peri = Perifocal::new(
-            Vector3::zeros(),
-            Vector3::zeros(),
-            1.2,
-            0.7,
-            0.4,
-        );
+        let peri = Perifocal::new(Vector3::zeros(), Vector3::zeros(), 1.2, 0.7, 0.4);
 
         let r = peri.rotation_to_inertial();
         let det = r.determinant();
@@ -3151,7 +3155,8 @@ mod tests {
         let (itrs_pos, itrs_vel) = batch_gcrs_to_itrs(&positions, &velocities, &obstimes).unwrap();
 
         // Reverse: ITRS → GCRS
-        let (gcrs_pos_rt, gcrs_vel_rt) = batch_itrs_to_gcrs(&itrs_pos, &itrs_vel, &obstimes).unwrap();
+        let (gcrs_pos_rt, gcrs_vel_rt) =
+            batch_itrs_to_gcrs(&itrs_pos, &itrs_vel, &obstimes).unwrap();
 
         // Verify round-trip accuracy
         for i in 0..positions.len() {
@@ -3237,7 +3242,8 @@ mod tests {
         let (teme_pos, teme_vel) = batch_gcrs_to_teme(&positions, &velocities, &obstimes).unwrap();
 
         // Reverse: TEME → GCRS
-        let (gcrs_pos_rt, gcrs_vel_rt) = batch_teme_to_gcrs(&teme_pos, &teme_vel, &obstimes).unwrap();
+        let (gcrs_pos_rt, gcrs_vel_rt) =
+            batch_teme_to_gcrs(&teme_pos, &teme_vel, &obstimes).unwrap();
 
         // Verify round-trip accuracy (note: TEME has lower accuracy than GCRS/ITRS)
         for i in 0..positions.len() {
@@ -3326,7 +3332,8 @@ mod tests {
         let (itrs_pos, itrs_vel) = batch_teme_to_itrs(&positions, &velocities, &obstimes).unwrap();
 
         // Reverse: ITRS → TEME
-        let (teme_pos_rt, teme_vel_rt) = batch_itrs_to_teme(&itrs_pos, &itrs_vel, &obstimes).unwrap();
+        let (teme_pos_rt, teme_vel_rt) =
+            batch_itrs_to_teme(&itrs_pos, &itrs_vel, &obstimes).unwrap();
 
         // Verify round-trip accuracy
         for i in 0..positions.len() {
@@ -3424,5 +3431,4 @@ mod tests {
         let dot_product = gcrs_pos[0].dot(&gcrs_vel[0]);
         assert!(dot_product.abs() < 1e6); // Near-perpendicular
     }
-
 }

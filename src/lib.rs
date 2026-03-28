@@ -6,14 +6,15 @@
 //! Formerly known as poliastro (archived 2023), astrora is a modern
 //! reimplementation with significant performance improvements.
 
-use pyo3::prelude::*;
 use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, PyReadwriteArray1};
+use pyo3::prelude::*;
 
 // Module declarations
-pub mod core;
-pub mod propagators;
 pub mod coordinates;
+pub mod core;
+pub mod geodesics;
 pub mod maneuvers;
+pub mod propagators;
 pub mod satellite;
 pub mod utils;
 
@@ -89,10 +90,16 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add batch anomaly conversion functions - Hyperbolic orbits
     m.add_function(wrap_pyfunction!(py_batch_mean_to_hyperbolic_anomaly, m)?)?;
-    m.add_function(wrap_pyfunction!(py_batch_mean_to_true_anomaly_hyperbolic, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        py_batch_mean_to_true_anomaly_hyperbolic,
+        m
+    )?)?;
 
     // Add batch anomaly conversion functions - Parabolic orbits
-    m.add_function(wrap_pyfunction!(py_batch_mean_to_true_anomaly_parabolic, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        py_batch_mean_to_true_anomaly_parabolic,
+        m
+    )?)?;
 
     // Add propagator functions
     m.add_function(wrap_pyfunction!(py_propagate_keplerian, m)?)?;
@@ -206,6 +213,17 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Conjunction analysis and collision detection
     m.add_function(wrap_pyfunction!(py_compute_conjunction, m)?)?;
     m.add_function(wrap_pyfunction!(py_closest_approach_distance, m)?)?;
+
+    // Geodesics and light path functions
+    m.add_function(wrap_pyfunction!(py_schwarzschild_geodesic, m)?)?;
+    m.add_function(wrap_pyfunction!(py_schwarzschild_geodesic_cartesian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_einstein_deflection, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sun_limb_deflection, m)?)?;
+    m.add_function(wrap_pyfunction!(py_black_hole_geometry, m)?)?;
+    m.add_function(wrap_pyfunction!(py_classify_trajectory, m)?)?;
+    m.add_function(wrap_pyfunction!(py_compute_light_path, m)?)?;
+    m.add_function(wrap_pyfunction!(py_shapiro_delay, m)?)?;
+    m.add_function(wrap_pyfunction!(py_einstein_ring_radius, m)?)?;
 
     Ok(())
 }
@@ -335,6 +353,12 @@ fn add_constants(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("R_SOI_SATURN", R_SOI_SATURN)?;
     m.add("R_SOI_URANUS", R_SOI_URANUS)?;
     m.add("R_SOI_NEPTUNE", R_SOI_NEPTUNE)?;
+
+    // Sagittarius A* (Galactic Center black hole)
+    m.add("MASS_SGR_A_STAR", MASS_SGR_A_STAR)?;
+    m.add("GM_SGR_A_STAR", GM_SGR_A_STAR)?;
+    m.add("R_SCHWARZSCHILD_SGR_A_STAR", R_SCHWARZSCHILD_SGR_A_STAR)?;
+    m.add("DISTANCE_SGR_A_STAR", DISTANCE_SGR_A_STAR)?;
 
     // Conversion factors
     m.add("KM_TO_M", KM_TO_M)?;
@@ -596,8 +620,7 @@ fn py_multiply_scalar_inplace(mut arr: PyReadwriteArray1<f64>, scalar: f64) {
 #[pyfunction]
 #[pyo3(name = "dot_product")]
 fn py_dot_product(a: PyReadonlyArray1<f64>, b: PyReadonlyArray1<f64>) -> PyResult<f64> {
-    core::numpy_integration::dot_product(a.as_array(), b.as_array())
-        .map_err(|e| e.into())
+    core::numpy_integration::dot_product(a.as_array(), b.as_array()).map_err(|e| e.into())
 }
 
 /// Compute the cross product of two 3D vectors
@@ -765,10 +788,8 @@ fn py_matrix_vector_multiply<'py>(
     matrix: PyReadonlyArray2<f64>,
     vector: PyReadonlyArray1<f64>,
 ) -> PyResult<Bound<'py, PyArray1<f64>>> {
-    let result = core::numpy_integration::matrix_vector_multiply(
-        matrix.as_array(),
-        vector.as_array(),
-    )?;
+    let result =
+        core::numpy_integration::matrix_vector_multiply(matrix.as_array(), vector.as_array())?;
     Ok(PyArray1::from_owned_array_bound(py, result))
 }
 
@@ -918,7 +939,7 @@ fn py_rv_to_coe(
 
     if r_array.len() != 3 || v_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1013,7 +1034,7 @@ fn py_rv_to_equinoctial(
 
     if r_array.len() != 3 || v_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1084,24 +1105,21 @@ fn py_mean_to_eccentric_anomaly(
 #[pyfunction]
 #[pyo3(name = "eccentric_to_mean_anomaly")]
 fn py_eccentric_to_mean_anomaly(eccentric_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
-    core::anomaly::eccentric_to_mean_anomaly(eccentric_anomaly, eccentricity)
-        .map_err(|e| e.into())
+    core::anomaly::eccentric_to_mean_anomaly(eccentric_anomaly, eccentricity).map_err(|e| e.into())
 }
 
 /// Convert eccentric anomaly to true anomaly for elliptical orbits
 #[pyfunction]
 #[pyo3(name = "eccentric_to_true_anomaly")]
 fn py_eccentric_to_true_anomaly(eccentric_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
-    core::anomaly::eccentric_to_true_anomaly(eccentric_anomaly, eccentricity)
-        .map_err(|e| e.into())
+    core::anomaly::eccentric_to_true_anomaly(eccentric_anomaly, eccentricity).map_err(|e| e.into())
 }
 
 /// Convert true anomaly to eccentric anomaly for elliptical orbits
 #[pyfunction]
 #[pyo3(name = "true_to_eccentric_anomaly")]
 fn py_true_to_eccentric_anomaly(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
-    core::anomaly::true_to_eccentric_anomaly(true_anomaly, eccentricity)
-        .map_err(|e| e.into())
+    core::anomaly::true_to_eccentric_anomaly(true_anomaly, eccentricity).map_err(|e| e.into())
 }
 
 /// Convert mean anomaly to true anomaly for elliptical orbits
@@ -1121,8 +1139,7 @@ fn py_mean_to_true_anomaly(
 #[pyfunction]
 #[pyo3(name = "true_to_mean_anomaly")]
 fn py_true_to_mean_anomaly(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
-    core::anomaly::true_to_mean_anomaly(true_anomaly, eccentricity)
-        .map_err(|e| e.into())
+    core::anomaly::true_to_mean_anomaly(true_anomaly, eccentricity).map_err(|e| e.into())
 }
 
 // ============================================================================
@@ -1162,8 +1179,7 @@ fn py_hyperbolic_to_true_anomaly(hyperbolic_anomaly: f64, eccentricity: f64) -> 
 #[pyfunction]
 #[pyo3(name = "true_to_hyperbolic_anomaly")]
 fn py_true_to_hyperbolic_anomaly(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
-    core::anomaly::true_to_hyperbolic_anomaly(true_anomaly, eccentricity)
-        .map_err(|e| e.into())
+    core::anomaly::true_to_hyperbolic_anomaly(true_anomaly, eccentricity).map_err(|e| e.into())
 }
 
 /// Convert mean anomaly to true anomaly for hyperbolic orbits
@@ -1183,8 +1199,7 @@ fn py_mean_to_true_anomaly_hyperbolic(
 #[pyfunction]
 #[pyo3(name = "true_to_mean_anomaly_hyperbolic")]
 fn py_true_to_mean_anomaly_hyperbolic(true_anomaly: f64, eccentricity: f64) -> PyResult<f64> {
-    core::anomaly::true_to_mean_anomaly_hyperbolic(true_anomaly, eccentricity)
-        .map_err(|e| e.into())
+    core::anomaly::true_to_mean_anomaly_hyperbolic(true_anomaly, eccentricity).map_err(|e| e.into())
 }
 
 // ============================================================================
@@ -1195,16 +1210,14 @@ fn py_true_to_mean_anomaly_hyperbolic(true_anomaly: f64, eccentricity: f64) -> P
 #[pyfunction]
 #[pyo3(name = "mean_to_true_anomaly_parabolic")]
 fn py_mean_to_true_anomaly_parabolic(mean_anomaly: f64) -> PyResult<f64> {
-    core::anomaly::mean_to_true_anomaly_parabolic(mean_anomaly)
-        .map_err(|e| e.into())
+    core::anomaly::mean_to_true_anomaly_parabolic(mean_anomaly).map_err(|e| e.into())
 }
 
 /// Convert true anomaly to mean anomaly for parabolic orbits
 #[pyfunction]
 #[pyo3(name = "true_to_mean_anomaly_parabolic")]
 fn py_true_to_mean_anomaly_parabolic(true_anomaly: f64) -> PyResult<f64> {
-    core::anomaly::true_to_mean_anomaly_parabolic(true_anomaly)
-        .map_err(|e| e.into())
+    core::anomaly::true_to_mean_anomaly_parabolic(true_anomaly).map_err(|e| e.into())
 }
 
 // ============================================================================
@@ -1314,8 +1327,9 @@ fn py_batch_mean_to_true_anomaly_hyperbolic<'py>(
     let m_array = mean_anomalies.as_slice()?;
     let e_array = eccentricities.as_slice()?;
 
-    let results = core::anomaly::batch_mean_to_true_anomaly_hyperbolic(m_array, e_array, tol, max_iter)
-        .map_err(Into::<PyErr>::into)?;
+    let results =
+        core::anomaly::batch_mean_to_true_anomaly_hyperbolic(m_array, e_array, tol, max_iter)
+            .map_err(Into::<PyErr>::into)?;
 
     Ok(PyArray1::from_vec_bound(py, results))
 }
@@ -1362,8 +1376,7 @@ fn py_propagate_keplerian(
     dt: f64,
     mu: f64,
 ) -> PyResult<core::elements::OrbitalElements> {
-    propagators::keplerian::propagate_keplerian(elements, dt, mu)
-        .map_err(|e| e.into())
+    propagators::keplerian::propagate_keplerian(elements, dt, mu).map_err(|e| e.into())
 }
 
 /// Propagate orbital elements using Duration object
@@ -1411,7 +1424,7 @@ fn py_propagate_state_keplerian<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1419,7 +1432,8 @@ fn py_propagate_state_keplerian<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     // Call propagator
-    let (r_vec, v_vec) = propagators::keplerian::propagate_state_keplerian(&r0_vec, &v0_vec, dt, mu)?;
+    let (r_vec, v_vec) =
+        propagators::keplerian::propagate_state_keplerian(&r0_vec, &v0_vec, dt, mu)?;
 
     // Convert back to NumPy arrays
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -1461,7 +1475,7 @@ fn py_propagate_lagrange<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1534,16 +1548,12 @@ fn py_batch_propagate_states<'py>(
         dt_array.as_array().to_vec()
     } else {
         return Err(pyo3::exceptions::PyTypeError::new_err(
-            "time_steps must be either a float or a 1D NumPy array of floats"
+            "time_steps must be either a float or a 1D NumPy array of floats",
         ));
     };
 
     // Call batch propagator
-    let result = propagators::keplerian::batch_propagate_states(
-        states_array,
-        &dt_vec,
-        mu
-    )?;
+    let result = propagators::keplerian::batch_propagate_states(states_array, &dt_vec, mu)?;
 
     // Return as NumPy array
     Ok(PyArray2::from_owned_array_bound(py, result))
@@ -1579,16 +1589,12 @@ fn py_batch_propagate_lagrange<'py>(
         dt_array.as_array().to_vec()
     } else {
         return Err(pyo3::exceptions::PyTypeError::new_err(
-            "time_steps must be either a float or a 1D NumPy array of floats"
+            "time_steps must be either a float or a 1D NumPy array of floats",
         ));
     };
 
     // Call batch propagator
-    let result = propagators::keplerian::batch_propagate_lagrange(
-        states_array,
-        &dt_vec,
-        mu
-    )?;
+    let result = propagators::keplerian::batch_propagate_lagrange(states_array, &dt_vec, mu)?;
 
     // Return as NumPy array
     Ok(PyArray2::from_owned_array_bound(py, result))
@@ -1634,7 +1640,7 @@ fn py_j2_perturbation<'py>(
 
     if r_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position vector must have exactly 3 components"
+            "Position vector must have exactly 3 components",
         ));
     }
 
@@ -1698,7 +1704,7 @@ fn py_propagate_j2_rk4<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1706,9 +1712,8 @@ fn py_propagate_j2_rk4<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     // Call propagator
-    let (r_vec, v_vec) = propagators::perturbations::propagate_j2_rk4(
-        &r0_vec, &v0_vec, dt, mu, j2, R, n_steps
-    )?;
+    let (r_vec, v_vec) =
+        propagators::perturbations::propagate_j2_rk4(&r0_vec, &v0_vec, dt, mu, j2, R, n_steps)?;
 
     // Convert back to NumPy arrays
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -1772,7 +1777,7 @@ fn py_propagate_j2_dopri5<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1780,9 +1785,8 @@ fn py_propagate_j2_dopri5<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     // Call propagator
-    let (r_vec, v_vec) = propagators::perturbations::propagate_j2_dopri5(
-        &r0_vec, &v0_vec, dt, mu, j2, R, tol
-    )?;
+    let (r_vec, v_vec) =
+        propagators::perturbations::propagate_j2_dopri5(&r0_vec, &v0_vec, dt, mu, j2, R, tol)?;
 
     // Convert back to NumPy arrays
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -1847,7 +1851,7 @@ fn py_propagate_j2_dop853<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -1855,9 +1859,8 @@ fn py_propagate_j2_dop853<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     // Call propagator
-    let (r_vec, v_vec) = propagators::perturbations::propagate_j2_dop853(
-        &r0_vec, &v0_vec, dt, mu, j2, R, tol
-    )?;
+    let (r_vec, v_vec) =
+        propagators::perturbations::propagate_j2_dop853(&r0_vec, &v0_vec, dt, mu, j2, R, tol)?;
 
     // Convert back to NumPy arrays
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -1939,13 +1942,17 @@ fn py_propagate_j2_rk4_static<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
     let state0 = StateVector6::new(
-        r0_array[0], r0_array[1], r0_array[2],
-        v0_array[0], v0_array[1], v0_array[2],
+        r0_array[0],
+        r0_array[1],
+        r0_array[2],
+        v0_array[0],
+        v0_array[1],
+        v0_array[2],
     );
 
     // Create J2 dynamics function
@@ -2030,13 +2037,17 @@ fn py_propagate_j2_j3_j4_rk4_static<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
     let state0 = StateVector6::new(
-        r0_array[0], r0_array[1], r0_array[2],
-        v0_array[0], v0_array[1], v0_array[2],
+        r0_array[0],
+        r0_array[1],
+        r0_array[2],
+        v0_array[0],
+        v0_array[1],
+        v0_array[2],
     );
 
     // Create J2+J3+J4 dynamics function
@@ -2131,7 +2142,7 @@ fn py_drag_acceleration<'py>(
 
     if r_array.len() != 3 || v_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2198,7 +2209,7 @@ fn py_propagate_drag_rk4<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2206,7 +2217,7 @@ fn py_propagate_drag_rk4<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_drag_rk4(
-        &r0_vec, &v0_vec, dt, mu, R, rho0, H0, B, n_steps
+        &r0_vec, &v0_vec, dt, mu, R, rho0, H0, B, n_steps,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2252,7 +2263,7 @@ fn py_propagate_drag_dopri5<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2260,7 +2271,7 @@ fn py_propagate_drag_dopri5<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_drag_dopri5(
-        &r0_vec, &v0_vec, dt, mu, R, rho0, H0, B, tol
+        &r0_vec, &v0_vec, dt, mu, R, rho0, H0, B, tol,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2310,7 +2321,7 @@ fn py_propagate_j2_drag_rk4<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2318,7 +2329,7 @@ fn py_propagate_j2_drag_rk4<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_j2_drag_rk4(
-        &r0_vec, &v0_vec, dt, mu, j2, R, rho0, H0, B, n_steps
+        &r0_vec, &v0_vec, dt, mu, j2, R, rho0, H0, B, n_steps,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2368,7 +2379,7 @@ fn py_propagate_j2_drag_dopri5<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2376,7 +2387,7 @@ fn py_propagate_j2_drag_dopri5<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_j2_drag_dopri5(
-        &r0_vec, &v0_vec, dt, mu, j2, R, rho0, H0, B, tol
+        &r0_vec, &v0_vec, dt, mu, j2, R, rho0, H0, B, tol,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2485,12 +2496,13 @@ fn py_third_body_perturbation<'py>(
 
     if r_array.len() != 3 || r_third_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position vectors must have exactly 3 components"
+            "Position vectors must have exactly 3 components",
         ));
     }
 
     let r_vec = core::linalg::Vector3::new(r_array[0], r_array[1], r_array[2]);
-    let r_third_vec = core::linalg::Vector3::new(r_third_array[0], r_third_array[1], r_third_array[2]);
+    let r_third_vec =
+        core::linalg::Vector3::new(r_third_array[0], r_third_array[1], r_third_array[2]);
 
     let a_vec = propagators::perturbations::third_body_perturbation(&r_vec, &r_third_vec, mu_third);
 
@@ -2533,7 +2545,7 @@ fn py_sun_moon_perturbation<'py>(
 
     if r_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position vector must have exactly 3 components"
+            "Position vector must have exactly 3 components",
         ));
     }
 
@@ -2597,7 +2609,7 @@ fn py_propagate_thirdbody_rk4<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2605,7 +2617,14 @@ fn py_propagate_thirdbody_rk4<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_thirdbody_rk4(
-        &r0_vec, &v0_vec, dt, mu, t0, include_sun, include_moon, n_steps
+        &r0_vec,
+        &v0_vec,
+        dt,
+        mu,
+        t0,
+        include_sun,
+        include_moon,
+        n_steps,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2667,7 +2686,7 @@ fn py_propagate_thirdbody_dopri5<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2675,7 +2694,14 @@ fn py_propagate_thirdbody_dopri5<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_thirdbody_dopri5(
-        &r0_vec, &v0_vec, dt, mu, t0, include_sun, include_moon, tol
+        &r0_vec,
+        &v0_vec,
+        dt,
+        mu,
+        t0,
+        include_sun,
+        include_moon,
+        tol,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2729,7 +2755,7 @@ fn py_shadow_function(
 
     if r_sat_array.len() != 3 || r_sun_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position vectors must have exactly 3 components"
+            "Position vectors must have exactly 3 components",
         ));
     }
 
@@ -2786,14 +2812,20 @@ fn py_srp_acceleration<'py>(
 
     if r_sat_array.len() != 3 || r_sun_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position vectors must have exactly 3 components"
+            "Position vectors must have exactly 3 components",
         ));
     }
 
     let r_sat_vec = core::linalg::Vector3::new(r_sat_array[0], r_sat_array[1], r_sat_array[2]);
     let r_sun_vec = core::linalg::Vector3::new(r_sun_array[0], r_sun_array[1], r_sun_array[2]);
 
-    let a_vec = propagators::perturbations::srp_acceleration(&r_sat_vec, &r_sun_vec, area_mass_ratio, C_r, R_earth);
+    let a_vec = propagators::perturbations::srp_acceleration(
+        &r_sat_vec,
+        &r_sun_vec,
+        area_mass_ratio,
+        C_r,
+        R_earth,
+    );
 
     let a_array = ndarray::arr1(&[a_vec.x, a_vec.y, a_vec.z]);
     Ok(PyArray1::from_owned_array_bound(py, a_array))
@@ -2858,7 +2890,7 @@ fn py_propagate_srp_rk4<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2866,7 +2898,15 @@ fn py_propagate_srp_rk4<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_srp_rk4(
-        &r0_vec, &v0_vec, dt, mu, area_mass_ratio, C_r, R_earth, t0, n_steps
+        &r0_vec,
+        &v0_vec,
+        dt,
+        mu,
+        area_mass_ratio,
+        C_r,
+        R_earth,
+        t0,
+        n_steps,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -2935,7 +2975,7 @@ fn py_propagate_srp_dopri5<'py>(
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -2943,7 +2983,15 @@ fn py_propagate_srp_dopri5<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     let (r_vec, v_vec) = propagators::perturbations::propagate_srp_dopri5(
-        &r0_vec, &v0_vec, dt, mu, area_mass_ratio, C_r, R_earth, t0, tol
+        &r0_vec,
+        &v0_vec,
+        dt,
+        mu,
+        area_mass_ratio,
+        C_r,
+        R_earth,
+        t0,
+        tol,
     )?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -3001,14 +3049,18 @@ fn py_propagate_stm_rk4<'py>(
     dt: f64,
     mu: f64,
     n_steps: usize,
-) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>, Bound<'py, PyArray2<f64>>)> {
+) -> PyResult<(
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray2<f64>>,
+)> {
     // Convert NumPy arrays to Vector3
     let r0_array = r0.as_array();
     let v0_array = v0.as_array();
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
@@ -3016,9 +3068,8 @@ fn py_propagate_stm_rk4<'py>(
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
     // Call STM propagator
-    let (r_vec, v_vec, stm) = propagators::stm::propagate_stm_rk4(
-        &r0_vec, &v0_vec, dt, mu, n_steps
-    )?;
+    let (r_vec, v_vec, stm) =
+        propagators::stm::propagate_stm_rk4(&r0_vec, &v0_vec, dt, mu, n_steps)?;
 
     // Convert state vectors to NumPy arrays
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
@@ -3079,22 +3130,25 @@ fn py_propagate_stm_dopri5<'py>(
     dt: f64,
     mu: f64,
     tol: Option<f64>,
-) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>, Bound<'py, PyArray2<f64>>)> {
+) -> PyResult<(
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray2<f64>>,
+)> {
     let r0_array = r0.as_array();
     let v0_array = v0.as_array();
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
     let r0_vec = core::linalg::Vector3::new(r0_array[0], r0_array[1], r0_array[2]);
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
-    let (r_vec, v_vec, stm) = propagators::stm::propagate_stm_dopri5(
-        &r0_vec, &v0_vec, dt, mu, tol
-    )?;
+    let (r_vec, v_vec, stm) =
+        propagators::stm::propagate_stm_dopri5(&r0_vec, &v0_vec, dt, mu, tol)?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
     let v_array = ndarray::arr1(&[v_vec.x, v_vec.y, v_vec.z]);
@@ -3157,22 +3211,25 @@ fn py_propagate_stm_j2_rk4<'py>(
     j2: f64,
     R: f64,
     n_steps: usize,
-) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>, Bound<'py, PyArray2<f64>>)> {
+) -> PyResult<(
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray2<f64>>,
+)> {
     let r0_array = r0.as_array();
     let v0_array = v0.as_array();
 
     if r0_array.len() != 3 || v0_array.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity vectors must have exactly 3 components"
+            "Position and velocity vectors must have exactly 3 components",
         ));
     }
 
     let r0_vec = core::linalg::Vector3::new(r0_array[0], r0_array[1], r0_array[2]);
     let v0_vec = core::linalg::Vector3::new(v0_array[0], v0_array[1], v0_array[2]);
 
-    let (r_vec, v_vec, stm) = propagators::stm::propagate_stm_j2_rk4(
-        &r0_vec, &v0_vec, dt, mu, j2, R, n_steps
-    )?;
+    let (r_vec, v_vec, stm) =
+        propagators::stm::propagate_stm_j2_rk4(&r0_vec, &v0_vec, dt, mu, j2, R, n_steps)?;
 
     let r_array = ndarray::arr1(&[r_vec.x, r_vec.y, r_vec.z]);
     let v_array = ndarray::arr1(&[v_vec.x, v_vec.y, v_vec.z]);
@@ -3237,13 +3294,13 @@ fn py_batch_gcrs_to_itrs<'py>(
 
     if pos_array.shape()[1] != 3 || vel_array.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity arrays must have shape (N, 3)"
+            "Position and velocity arrays must have shape (N, 3)",
         ));
     }
 
     if pos_array.shape()[0] != obstimes.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Number of positions must match number of epochs"
+            "Number of positions must match number of epochs",
         ));
     }
 
@@ -3257,7 +3314,8 @@ fn py_batch_gcrs_to_itrs<'py>(
         .collect();
 
     // Call batch transformation
-    let (itrs_pos, itrs_vel) = coordinates::frames::batch_gcrs_to_itrs(&pos_vec, &vel_vec, &obstimes)?;
+    let (itrs_pos, itrs_vel) =
+        coordinates::frames::batch_gcrs_to_itrs(&pos_vec, &vel_vec, &obstimes)?;
 
     // Convert back to NumPy arrays
     let n = itrs_pos.len();
@@ -3319,13 +3377,13 @@ fn py_batch_itrs_to_gcrs<'py>(
 
     if pos_array.shape()[1] != 3 || vel_array.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity arrays must have shape (N, 3)"
+            "Position and velocity arrays must have shape (N, 3)",
         ));
     }
 
     if pos_array.shape()[0] != obstimes.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Number of positions must match number of epochs"
+            "Number of positions must match number of epochs",
         ));
     }
 
@@ -3339,7 +3397,8 @@ fn py_batch_itrs_to_gcrs<'py>(
         .collect();
 
     // Call batch transformation
-    let (gcrs_pos, gcrs_vel) = coordinates::frames::batch_itrs_to_gcrs(&pos_vec, &vel_vec, &obstimes)?;
+    let (gcrs_pos, gcrs_vel) =
+        coordinates::frames::batch_itrs_to_gcrs(&pos_vec, &vel_vec, &obstimes)?;
 
     // Convert back to NumPy arrays
     let n = gcrs_pos.len();
@@ -3400,13 +3459,13 @@ fn py_batch_gcrs_to_teme<'py>(
 
     if pos_array.shape()[1] != 3 || vel_array.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity arrays must have shape (N, 3)"
+            "Position and velocity arrays must have shape (N, 3)",
         ));
     }
 
     if pos_array.shape()[0] != obstimes.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Number of positions must match number of epochs"
+            "Number of positions must match number of epochs",
         ));
     }
 
@@ -3420,7 +3479,8 @@ fn py_batch_gcrs_to_teme<'py>(
         .collect();
 
     // Call batch transformation
-    let (teme_pos, teme_vel) = coordinates::frames::batch_gcrs_to_teme(&pos_vec, &vel_vec, &obstimes)?;
+    let (teme_pos, teme_vel) =
+        coordinates::frames::batch_gcrs_to_teme(&pos_vec, &vel_vec, &obstimes)?;
 
     // Convert back to NumPy arrays
     let n = teme_pos.len();
@@ -3482,13 +3542,13 @@ fn py_batch_teme_to_gcrs<'py>(
 
     if pos_array.shape()[1] != 3 || vel_array.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity arrays must have shape (N, 3)"
+            "Position and velocity arrays must have shape (N, 3)",
         ));
     }
 
     if pos_array.shape()[0] != obstimes.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Number of positions must match number of epochs"
+            "Number of positions must match number of epochs",
         ));
     }
 
@@ -3502,7 +3562,8 @@ fn py_batch_teme_to_gcrs<'py>(
         .collect();
 
     // Call batch transformation
-    let (gcrs_pos, gcrs_vel) = coordinates::frames::batch_teme_to_gcrs(&pos_vec, &vel_vec, &obstimes)?;
+    let (gcrs_pos, gcrs_vel) =
+        coordinates::frames::batch_teme_to_gcrs(&pos_vec, &vel_vec, &obstimes)?;
 
     // Convert back to NumPy arrays
     let n = gcrs_pos.len();
@@ -3564,13 +3625,13 @@ fn py_batch_teme_to_itrs<'py>(
 
     if pos_array.shape()[1] != 3 || vel_array.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity arrays must have shape (N, 3)"
+            "Position and velocity arrays must have shape (N, 3)",
         ));
     }
 
     if pos_array.shape()[0] != obstimes.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Number of positions must match number of epochs"
+            "Number of positions must match number of epochs",
         ));
     }
 
@@ -3584,7 +3645,8 @@ fn py_batch_teme_to_itrs<'py>(
         .collect();
 
     // Call batch transformation
-    let (itrs_pos, itrs_vel) = coordinates::frames::batch_teme_to_itrs(&pos_vec, &vel_vec, &obstimes)?;
+    let (itrs_pos, itrs_vel) =
+        coordinates::frames::batch_teme_to_itrs(&pos_vec, &vel_vec, &obstimes)?;
 
     // Convert back to NumPy arrays
     let n = itrs_pos.len();
@@ -3646,13 +3708,13 @@ fn py_batch_itrs_to_teme<'py>(
 
     if pos_array.shape()[1] != 3 || vel_array.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Position and velocity arrays must have shape (N, 3)"
+            "Position and velocity arrays must have shape (N, 3)",
         ));
     }
 
     if pos_array.shape()[0] != obstimes.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Number of positions must match number of epochs"
+            "Number of positions must match number of epochs",
         ));
     }
 
@@ -3666,7 +3728,8 @@ fn py_batch_itrs_to_teme<'py>(
         .collect();
 
     // Call batch transformation
-    let (teme_pos, teme_vel) = coordinates::frames::batch_itrs_to_teme(&pos_vec, &vel_vec, &obstimes)?;
+    let (teme_pos, teme_vel) =
+        coordinates::frames::batch_itrs_to_teme(&pos_vec, &vel_vec, &obstimes)?;
 
     // Convert back to NumPy arrays
     let n = teme_pos.len();
@@ -3786,13 +3849,8 @@ fn py_hohmann_transfer(
 /// ```
 #[pyfunction]
 #[pyo3(name = "hohmann_phase_angle")]
-fn py_hohmann_phase_angle(
-    r_initial: f64,
-    r_final: f64,
-    mu: f64,
-) -> PyResult<f64> {
-    maneuvers::HohmannTransfer::phase_angle(r_initial, r_final, mu)
-        .map_err(|e| e.into())
+fn py_hohmann_phase_angle(r_initial: f64, r_final: f64, mu: f64) -> PyResult<f64> {
+    maneuvers::HohmannTransfer::phase_angle(r_initial, r_final, mu).map_err(|e| e.into())
 }
 
 /// Calculate synodic period between two orbits
@@ -3822,13 +3880,8 @@ fn py_hohmann_phase_angle(
 /// ```
 #[pyfunction]
 #[pyo3(name = "hohmann_synodic_period")]
-fn py_hohmann_synodic_period(
-    r_initial: f64,
-    r_final: f64,
-    mu: f64,
-) -> PyResult<f64> {
-    maneuvers::HohmannTransfer::synodic_period(r_initial, r_final, mu)
-        .map_err(|e| e.into())
+fn py_hohmann_synodic_period(r_initial: f64, r_final: f64, mu: f64) -> PyResult<f64> {
+    maneuvers::HohmannTransfer::synodic_period(r_initial, r_final, mu).map_err(|e| e.into())
 }
 
 /// Calculate time until next optimal transfer window
@@ -3866,13 +3919,8 @@ fn py_hohmann_time_to_window(
     r_final: f64,
     mu: f64,
 ) -> PyResult<f64> {
-    maneuvers::HohmannTransfer::time_to_transfer_window(
-        current_phase,
-        r_initial,
-        r_final,
-        mu,
-    )
-    .map_err(|e| e.into())
+    maneuvers::HohmannTransfer::time_to_transfer_window(current_phase, r_initial, r_final, mu)
+        .map_err(|e| e.into())
 }
 
 /// Calculate bi-elliptic transfer parameters between two circular orbits
@@ -3990,7 +4038,12 @@ fn py_compare_bielliptic_hohmann(
     mu: f64,
 ) -> PyResult<PyObject> {
     let (bielliptic, hohmann, dv_savings, time_penalty) =
-        maneuvers::BiellipticTransfer::compare_with_hohmann(r_initial, r_final, r_intermediate, mu)?;
+        maneuvers::BiellipticTransfer::compare_with_hohmann(
+            r_initial,
+            r_final,
+            r_intermediate,
+            mu,
+        )?;
 
     // Create bi-elliptic result dictionary
     let bielliptic_dict = pyo3::types::PyDict::new_bound(py);
@@ -4108,11 +4161,7 @@ fn py_find_optimal_bielliptic(
 /// ```
 #[pyfunction]
 #[pyo3(name = "pure_plane_change")]
-fn py_pure_plane_change(
-    py: Python<'_>,
-    velocity: f64,
-    delta_angle: f64,
-) -> PyResult<PyObject> {
+fn py_pure_plane_change(py: Python<'_>, velocity: f64, delta_angle: f64) -> PyResult<PyObject> {
     let result = maneuvers::PlaneChange::pure_plane_change(velocity, delta_angle)?;
 
     // Create Python dictionary with results
@@ -4165,8 +4214,7 @@ fn py_combined_plane_change(
     v_final: f64,
     delta_angle: f64,
 ) -> PyResult<PyObject> {
-    let result =
-        maneuvers::PlaneChange::combined_plane_change(v_initial, v_final, delta_angle)?;
+    let result = maneuvers::PlaneChange::combined_plane_change(v_initial, v_final, delta_angle)?;
 
     // Create Python dictionary with results
     let dict = pyo3::types::PyDict::new_bound(py);
@@ -4412,7 +4460,10 @@ fn py_coorbital_rendezvous(
     phasing_dict.set_item("period_phasing", result.phasing.period_phasing)?;
     phasing_dict.set_item("num_phasing_orbits", result.phasing.num_phasing_orbits)?;
     phasing_dict.set_item("phasing_time", result.phasing.phasing_time)?;
-    phasing_dict.set_item("phase_change_per_orbit", result.phasing.phase_change_per_orbit)?;
+    phasing_dict.set_item(
+        "phase_change_per_orbit",
+        result.phasing.phase_change_per_orbit,
+    )?;
     phasing_dict.set_item("total_phase_change", result.phasing.total_phase_change)?;
 
     // Create main result dictionary
@@ -4477,8 +4528,7 @@ fn py_coplanar_rendezvous(
     current_phase: f64,
     mu: f64,
 ) -> PyResult<PyObject> {
-    let result =
-        maneuvers::Rendezvous::coplanar_rendezvous(r_chaser, r_target, current_phase, mu)?;
+    let result = maneuvers::Rendezvous::coplanar_rendezvous(r_chaser, r_target, current_phase, mu)?;
 
     // Create Python dictionary with results
     let dict = pyo3::types::PyDict::new_bound(py);
@@ -4690,11 +4740,7 @@ fn py_gravity_assist(
 /// ```
 #[pyfunction]
 #[pyo3(name = "periapsis_from_b_parameter")]
-fn py_periapsis_from_b_parameter(
-    v_infinity: f64,
-    b_parameter: f64,
-    mu: f64,
-) -> f64 {
+fn py_periapsis_from_b_parameter(v_infinity: f64, b_parameter: f64, mu: f64) -> f64 {
     maneuvers::GravityAssist::periapsis_from_b_parameter(v_infinity, b_parameter, mu)
 }
 
@@ -4863,7 +4909,8 @@ fn py_lambert_solve_batch<'py>(
     };
 
     let tofs_vec: Vec<f64> = tofs_array.to_vec();
-    let solutions = maneuvers::Lambert::solve_batch(r1_vec, r2_vec, &tofs_vec, mu, transfer_kind, revs)?;
+    let solutions =
+        maneuvers::Lambert::solve_batch(r1_vec, r2_vec, &tofs_vec, mu, transfer_kind, revs)?;
 
     // Convert each solution to a Python dictionary
     solutions
@@ -4973,7 +5020,14 @@ fn py_lambert_solve_batch_parallel<'py>(
         maneuvers::TransferKind::LongWay
     };
 
-    let solutions = maneuvers::Lambert::solve_batch_parallel(&r1s_vec, &r2s_vec, &tofs_vec, mu, transfer_kind, revs)?;
+    let solutions = maneuvers::Lambert::solve_batch_parallel(
+        &r1s_vec,
+        &r2s_vec,
+        &tofs_vec,
+        mu,
+        transfer_kind,
+        revs,
+    )?;
 
     // Convert each solution to a Python dictionary
     solutions
@@ -5221,7 +5275,7 @@ fn py_compute_azimuth_elevation<'py>(
     observer_lon_deg: f64,
     observer_alt_km: f64,
 ) -> PyResult<PyObject> {
-    use crate::satellite::visibility::{Observer, compute_azimuth_elevation};
+    use crate::satellite::visibility::{compute_azimuth_elevation, Observer};
 
     let observer = Observer::new(
         observer_lat_deg.to_radians(),
@@ -5276,7 +5330,7 @@ fn py_compute_azimuth_elevation_rate<'py>(
     observer_lon_deg: f64,
     observer_alt_km: f64,
 ) -> PyResult<PyObject> {
-    use crate::satellite::visibility::{Observer, compute_azimuth_elevation_rate};
+    use crate::satellite::visibility::{compute_azimuth_elevation_rate, Observer};
 
     let observer = Observer::new(
         observer_lat_deg.to_radians(),
@@ -5328,7 +5382,7 @@ fn py_is_visible(
     observer_alt_km: f64,
     min_elevation_deg: f64,
 ) -> PyResult<bool> {
-    use crate::satellite::visibility::{Observer, is_visible};
+    use crate::satellite::visibility::{is_visible, Observer};
 
     let observer = Observer::new(
         observer_lat_deg.to_radians(),
@@ -5336,7 +5390,11 @@ fn py_is_visible(
         observer_alt_km,
     );
 
-    Ok(is_visible(&sat_ecef, &observer, min_elevation_deg.to_radians()))
+    Ok(is_visible(
+        &sat_ecef,
+        &observer,
+        min_elevation_deg.to_radians(),
+    ))
 }
 
 /// Find all satellite passes over a ground station within a time window
@@ -5400,7 +5458,10 @@ fn py_find_satellite_passes<'py>(
     min_elevation_deg: f64,
     time_step_minutes: f64,
 ) -> PyResult<PyObject> {
-    use crate::satellite::{parse_tle, propagate_from_elements, visibility::{Observer, find_all_passes}};
+    use crate::satellite::{
+        parse_tle, propagate_from_elements,
+        visibility::{find_all_passes, Observer},
+    };
 
     // Parse TLE once
     let elements = parse_tle(tle_string)?;
@@ -5415,8 +5476,7 @@ fn py_find_satellite_passes<'py>(
     // Create propagation function that converts TEME to ECEF
     let propagate_fn = |t_minutes: f64| -> [f64; 3] {
         // Propagate in TEME frame
-        let state = propagate_from_elements(&elements, t_minutes)
-            .expect("SGP4 propagation failed");
+        let state = propagate_from_elements(&elements, t_minutes).expect("SGP4 propagation failed");
 
         // Convert TEME to ITRS (ECEF)
         // Note: For satellite visibility, TEME → ITRS transformation should be used
@@ -5494,7 +5554,7 @@ fn py_ecef_to_geodetic<'py>(
     let ecef = ecef_position.as_array();
     if ecef.len() != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "ECEF position must be a 3-element array [x, y, z]"
+            "ECEF position must be a 3-element array [x, y, z]",
         ));
     }
 
@@ -5558,15 +5618,16 @@ fn py_compute_ground_track<'py>(
     // Check dimensions
     if positions.shape()[1] != 3 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "ECEF positions must have shape (N, 3)"
+            "ECEF positions must have shape (N, 3)",
         ));
     }
 
     if positions.shape()[0] != times.len() {
-        return Err(pyo3::exceptions::PyValueError::new_err(
-            format!("Number of positions ({}) must match number of times ({})",
-                    positions.shape()[0], times.len())
-        ));
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "Number of positions ({}) must match number of times ({})",
+            positions.shape()[0],
+            times.len()
+        )));
     }
 
     // Convert to Vec of arrays
@@ -5600,7 +5661,10 @@ fn py_compute_ground_track<'py>(
     dict.set_item("latitudes_deg", numpy::PyArray1::from_vec_bound(py, lats))?;
     dict.set_item("longitudes_deg", numpy::PyArray1::from_vec_bound(py, lons))?;
     dict.set_item("altitudes_km", numpy::PyArray1::from_vec_bound(py, alts))?;
-    dict.set_item("times_minutes", numpy::PyArray1::from_vec_bound(py, times_out))?;
+    dict.set_item(
+        "times_minutes",
+        numpy::PyArray1::from_vec_bound(py, times_out),
+    )?;
 
     Ok(dict.into())
 }
@@ -5712,7 +5776,13 @@ fn py_visibility_circle<'py>(
     let num_pts = num_points.unwrap_or(64);
 
     // Compute visibility circle
-    let circle = visibility_circle(lat_sub_deg, lon_sub_deg, altitude_km, min_elevation_deg, num_pts);
+    let circle = visibility_circle(
+        lat_sub_deg,
+        lon_sub_deg,
+        altitude_km,
+        min_elevation_deg,
+        num_pts,
+    );
 
     // Extract latitudes and longitudes
     let latitudes: Vec<f64> = circle.iter().map(|p| p.latitude).collect();
@@ -5823,8 +5893,16 @@ fn py_compute_eclipse_state(r_sat_km: [f64; 3], r_sun_km: [f64; 3]) -> &'static 
     use nalgebra::Vector3;
 
     // Convert km to m
-    let r_sat = Vector3::new(r_sat_km[0] * 1000.0, r_sat_km[1] * 1000.0, r_sat_km[2] * 1000.0);
-    let r_sun = Vector3::new(r_sun_km[0] * 1000.0, r_sun_km[1] * 1000.0, r_sun_km[2] * 1000.0);
+    let r_sat = Vector3::new(
+        r_sat_km[0] * 1000.0,
+        r_sat_km[1] * 1000.0,
+        r_sat_km[2] * 1000.0,
+    );
+    let r_sun = Vector3::new(
+        r_sun_km[0] * 1000.0,
+        r_sun_km[1] * 1000.0,
+        r_sun_km[2] * 1000.0,
+    );
 
     let state = compute_eclipse_state(&r_sat, &r_sun);
 
@@ -5857,11 +5935,7 @@ fn py_compute_eclipse_state(r_sat_km: [f64; 3], r_sun_km: [f64; 3]) -> &'static 
 /// print(f"Beta angle: {beta:.2f}°")
 /// ```
 #[pyfunction(name = "solar_beta_angle")]
-fn py_solar_beta_angle(
-    inclination_deg: f64,
-    raan_deg: f64,
-    solar_longitude_deg: f64,
-) -> f64 {
+fn py_solar_beta_angle(inclination_deg: f64, raan_deg: f64, solar_longitude_deg: f64) -> f64 {
     use crate::satellite::eclipse::solar_beta_angle;
 
     let i = inclination_deg.to_radians();
@@ -5933,16 +6007,16 @@ fn py_solar_beta_angle_precise(
 /// ```
 #[pyfunction(name = "sun_synchronous_inclination", signature = (altitude_km, eccentricity=0.0))]
 fn py_sun_synchronous_inclination(altitude_km: f64, eccentricity: f64) -> PyResult<f64> {
+    use crate::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
     use crate::satellite::eclipse::sun_synchronous_inclination;
-    use crate::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
 
     let semi_major_axis = R_EARTH + altitude_km * 1000.0;
 
     match sun_synchronous_inclination(semi_major_axis, eccentricity, J2_EARTH, R_EARTH, GM_EARTH) {
         Ok(inclination) => Ok(inclination.to_degrees()),
-        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Sun-synchronous orbit not possible: {e}")
-        )),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Sun-synchronous orbit not possible: {e}"
+        ))),
     }
 }
 
@@ -5969,17 +6043,17 @@ fn py_sun_synchronous_inclination(altitude_km: f64, eccentricity: f64) -> PyResu
 /// ```
 #[pyfunction(name = "eclipse_duration")]
 fn py_eclipse_duration(altitude_km: f64, beta_angle_deg: f64) -> PyResult<f64> {
-    use crate::satellite::eclipse::eclipse_duration;
     use crate::core::constants::{GM_EARTH, R_EARTH};
+    use crate::satellite::eclipse::eclipse_duration;
 
     let semi_major_axis = R_EARTH + altitude_km * 1000.0;
     let beta_angle = beta_angle_deg.to_radians();
 
     match eclipse_duration(semi_major_axis, beta_angle, GM_EARTH) {
         Ok(duration_sec) => Ok(duration_sec / 60.0), // Convert to minutes
-        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Eclipse duration calculation failed: {e}")
-        )),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Eclipse duration calculation failed: {e}"
+        ))),
     }
 }
 
@@ -6027,8 +6101,8 @@ fn py_estimate_satellite_lifetime(
     terminal_altitude_km: f64,
     max_time_days: f64,
 ) -> PyResult<f64> {
-    use crate::satellite::lifetime::estimate_lifetime;
     use crate::core::linalg::Vector3;
+    use crate::satellite::lifetime::estimate_lifetime;
 
     // Convert from km to meters
     let r = Vector3::new(r_km[0] * 1000.0, r_km[1] * 1000.0, r_km[2] * 1000.0);
@@ -6038,9 +6112,9 @@ fn py_estimate_satellite_lifetime(
 
     match estimate_lifetime(&r, &v, ballistic_coeff, terminal_altitude, max_time, 60.0) {
         Ok(lifetime_sec) => Ok(lifetime_sec / 86400.0), // Convert to days
-        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Lifetime estimation failed: {e}")
-        )),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Lifetime estimation failed: {e}"
+        ))),
     }
 }
 
@@ -6128,28 +6202,44 @@ fn py_compute_conjunction(
     search_window_hours: f64,
     collision_threshold_km: f64,
 ) -> PyResult<(f64, f64, bool)> {
-    use crate::satellite::conjunction::compute_conjunction;
-    use crate::core::linalg::Vector3;
     use crate::core::constants::GM_EARTH;
+    use crate::core::linalg::Vector3;
+    use crate::satellite::conjunction::compute_conjunction;
 
     // Convert from km to meters
     let r1 = Vector3::new(r1_km[0] * 1000.0, r1_km[1] * 1000.0, r1_km[2] * 1000.0);
-    let v1 = Vector3::new(v1_km_s[0] * 1000.0, v1_km_s[1] * 1000.0, v1_km_s[2] * 1000.0);
+    let v1 = Vector3::new(
+        v1_km_s[0] * 1000.0,
+        v1_km_s[1] * 1000.0,
+        v1_km_s[2] * 1000.0,
+    );
     let r2 = Vector3::new(r2_km[0] * 1000.0, r2_km[1] * 1000.0, r2_km[2] * 1000.0);
-    let v2 = Vector3::new(v2_km_s[0] * 1000.0, v2_km_s[1] * 1000.0, v2_km_s[2] * 1000.0);
+    let v2 = Vector3::new(
+        v2_km_s[0] * 1000.0,
+        v2_km_s[1] * 1000.0,
+        v2_km_s[2] * 1000.0,
+    );
 
     let search_window = search_window_hours * 3600.0; // hours to seconds
     let collision_threshold = collision_threshold_km * 1000.0; // km to meters
 
-    match compute_conjunction(&r1, &v1, &r2, &v2, GM_EARTH, search_window, collision_threshold) {
+    match compute_conjunction(
+        &r1,
+        &v1,
+        &r2,
+        &v2,
+        GM_EARTH,
+        search_window,
+        collision_threshold,
+    ) {
         Ok(result) => Ok((
-            result.tca / 60.0, // TCA in minutes
+            result.tca / 60.0,             // TCA in minutes
             result.miss_distance / 1000.0, // miss distance in km
             result.collision_risk,
         )),
-        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Conjunction analysis failed: {e}")
-        )),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Conjunction analysis failed: {e}"
+        ))),
     }
 }
 
@@ -6192,22 +6282,318 @@ fn py_closest_approach_distance(
     v2_km_s: [f64; 3],
     search_window_hours: f64,
 ) -> PyResult<f64> {
-    use crate::satellite::conjunction::closest_approach_distance;
-    use crate::core::linalg::Vector3;
     use crate::core::constants::GM_EARTH;
+    use crate::core::linalg::Vector3;
+    use crate::satellite::conjunction::closest_approach_distance;
 
     // Convert from km to meters
     let r1 = Vector3::new(r1_km[0] * 1000.0, r1_km[1] * 1000.0, r1_km[2] * 1000.0);
-    let v1 = Vector3::new(v1_km_s[0] * 1000.0, v1_km_s[1] * 1000.0, v1_km_s[2] * 1000.0);
+    let v1 = Vector3::new(
+        v1_km_s[0] * 1000.0,
+        v1_km_s[1] * 1000.0,
+        v1_km_s[2] * 1000.0,
+    );
     let r2 = Vector3::new(r2_km[0] * 1000.0, r2_km[1] * 1000.0, r2_km[2] * 1000.0);
-    let v2 = Vector3::new(v2_km_s[0] * 1000.0, v2_km_s[1] * 1000.0, v2_km_s[2] * 1000.0);
+    let v2 = Vector3::new(
+        v2_km_s[0] * 1000.0,
+        v2_km_s[1] * 1000.0,
+        v2_km_s[2] * 1000.0,
+    );
 
     let search_window = search_window_hours * 3600.0; // hours to seconds
 
     match closest_approach_distance(&r1, &v1, &r2, &v2, GM_EARTH, search_window) {
         Ok(distance) => Ok(distance / 1000.0), // Convert to km
-        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("Closest approach calculation failed: {e}")
-        )),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Closest approach calculation failed: {e}"
+        ))),
     }
+}
+
+// =============================================================================
+// Geodesics and Light Path Functions
+// =============================================================================
+
+/// Integrate a null geodesic in Schwarzschild spacetime.
+///
+/// Numerically integrates the Binet equation for a photon trajectory
+/// around a non-rotating, spherically symmetric mass.
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter GM (m³/s²)
+/// * `impact_parameter` - Impact parameter (m)
+/// * `phi_range` - Angular range to integrate (radians)
+/// * `num_steps` - Number of integration steps
+///
+/// # Returns
+/// Dictionary with: radii, phi_values, deflection_angle, closest_approach,
+/// captured, steps_taken
+///
+/// # Example
+/// ```python
+/// from astrora._core import schwarzschild_geodesic
+/// from astrora._core.constants import GM_SUN, R_SUN
+/// import math
+///
+/// result = schwarzschild_geodesic(GM_SUN, R_SUN, math.pi, 100000)
+/// print(f"Deflection: {result['deflection_angle'] * 206265:.4f} arcsec")
+/// ```
+#[pyfunction]
+#[pyo3(name = "schwarzschild_geodesic")]
+fn py_schwarzschild_geodesic(
+    py: Python<'_>,
+    gm: f64,
+    impact_parameter: f64,
+    phi_range: f64,
+    num_steps: usize,
+) -> PyResult<PyObject> {
+    let result =
+        geodesics::SchwarzschildGeodesic::integrate(gm, impact_parameter, phi_range, num_steps)?;
+
+    let dict = pyo3::types::PyDict::new_bound(py);
+    dict.set_item("radii", result.radii)?;
+    dict.set_item("phi_values", result.phi_values)?;
+    dict.set_item("deflection_angle", result.deflection_angle)?;
+    dict.set_item("closest_approach", result.closest_approach)?;
+    dict.set_item("captured", result.captured)?;
+    dict.set_item("steps_taken", result.steps_taken)?;
+
+    Ok(dict.into())
+}
+
+/// Integrate a null geodesic and return Cartesian coordinates.
+///
+/// Same as `schwarzschild_geodesic` but returns [x, y, z] points
+/// in the orbital plane (z=0) for direct use in 3D rendering.
+///
+/// # Returns
+/// List of [x, y, z] coordinate triples (meters).
+#[pyfunction]
+#[pyo3(name = "schwarzschild_geodesic_cartesian")]
+fn py_schwarzschild_geodesic_cartesian(
+    py: Python<'_>,
+    gm: f64,
+    impact_parameter: f64,
+    phi_range: f64,
+    num_steps: usize,
+) -> PyResult<PyObject> {
+    let points = geodesics::SchwarzschildGeodesic::integrate_to_cartesian(
+        gm,
+        impact_parameter,
+        phi_range,
+        num_steps,
+    )?;
+
+    let py_list: Vec<[f64; 3]> = points;
+    Ok(py_list.into_py(py))
+}
+
+/// Compute Einstein gravitational deflection angle.
+///
+/// First-order weak-field approximation: α = 4GM / (c² · b)
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter GM (m³/s²)
+/// * `impact_parameter` - Impact parameter (m)
+///
+/// # Returns
+/// Dictionary with: deflection_angle (rad), deflection_arcsec, impact_parameter,
+/// gm, is_weak_field
+///
+/// # Example
+/// ```python
+/// from astrora._core import einstein_deflection
+/// from astrora._core.constants import GM_SUN, R_SUN
+///
+/// result = einstein_deflection(GM_SUN, R_SUN)
+/// print(f"Solar limb deflection: {result['deflection_arcsec']:.4f} arcsec")
+/// ```
+#[pyfunction]
+#[pyo3(name = "einstein_deflection")]
+fn py_einstein_deflection(py: Python<'_>, gm: f64, impact_parameter: f64) -> PyResult<PyObject> {
+    let result = geodesics::Deflection::einstein_deflection(gm, impact_parameter)?;
+
+    let dict = pyo3::types::PyDict::new_bound(py);
+    dict.set_item("deflection_angle", result.deflection_angle)?;
+    dict.set_item("deflection_arcsec", result.deflection_arcsec)?;
+    dict.set_item("impact_parameter", result.impact_parameter)?;
+    dict.set_item("gm", result.gm)?;
+    dict.set_item("is_weak_field", result.is_weak_field)?;
+
+    Ok(dict.into())
+}
+
+/// Solar limb deflection — Einstein's famous 1.75 arcsecond prediction.
+///
+/// # Returns
+/// Dictionary with deflection result for a photon grazing the Sun's limb.
+#[pyfunction]
+#[pyo3(name = "sun_limb_deflection")]
+fn py_sun_limb_deflection(py: Python<'_>) -> PyResult<PyObject> {
+    let result = geodesics::Deflection::sun_limb_deflection();
+
+    let dict = pyo3::types::PyDict::new_bound(py);
+    dict.set_item("deflection_angle", result.deflection_angle)?;
+    dict.set_item("deflection_arcsec", result.deflection_arcsec)?;
+    dict.set_item("impact_parameter", result.impact_parameter)?;
+    dict.set_item("gm", result.gm)?;
+    dict.set_item("is_weak_field", result.is_weak_field)?;
+
+    Ok(dict.into())
+}
+
+/// Compute black hole geometry for a given mass.
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter GM (m³/s²)
+///
+/// # Returns
+/// Dictionary with: schwarzschild_radius, photon_sphere_radius, isco_radius,
+/// critical_impact_parameter, shadow_radius (all in meters)
+///
+/// # Example
+/// ```python
+/// from astrora._core import black_hole_geometry
+/// from astrora._core.constants import GM_SGR_A_STAR
+///
+/// geom = black_hole_geometry(GM_SGR_A_STAR)
+/// print(f"Sgr A* Schwarzschild radius: {geom['schwarzschild_radius']/1e3:.0f} km")
+/// ```
+#[pyfunction]
+#[pyo3(name = "black_hole_geometry")]
+fn py_black_hole_geometry(py: Python<'_>, gm: f64) -> PyResult<PyObject> {
+    let geom = geodesics::PhotonSphere::geometry(gm)?;
+
+    let dict = pyo3::types::PyDict::new_bound(py);
+    dict.set_item("gm", geom.gm)?;
+    dict.set_item("schwarzschild_radius", geom.schwarzschild_radius)?;
+    dict.set_item("photon_sphere_radius", geom.photon_sphere_radius)?;
+    dict.set_item("isco_radius", geom.isco_radius)?;
+    dict.set_item("critical_impact_parameter", geom.critical_impact_parameter)?;
+    dict.set_item("shadow_radius", geom.shadow_radius)?;
+
+    Ok(dict.into())
+}
+
+/// Classify a photon trajectory near a Schwarzschild black hole.
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter GM (m³/s²)
+/// * `impact_parameter` - Impact parameter (m)
+///
+/// # Returns
+/// String: "capture", "unstable_orbit", or "deflection"
+#[pyfunction]
+#[pyo3(name = "classify_trajectory")]
+fn py_classify_trajectory(gm: f64, impact_parameter: f64) -> PyResult<String> {
+    let ttype = geodesics::PhotonSphere::classify_trajectory(gm, impact_parameter)?;
+    Ok(match ttype {
+        geodesics::TrajectoryType::Capture => "capture".to_string(),
+        geodesics::TrajectoryType::UnstableOrbit => "unstable_orbit".to_string(),
+        geodesics::TrajectoryType::Deflection => "deflection".to_string(),
+    })
+}
+
+/// Compute a light path from source to target with gravitational lensing.
+///
+/// # Arguments
+/// * `source` - Source position [x, y, z] in meters
+/// * `target` - Target position [x, y, z] in meters
+/// * `body_positions` - List of body positions [[x,y,z], ...] in meters
+/// * `body_gms` - List of body GM values (m³/s²)
+/// * `points_per_segment` - Interpolation points per path segment
+///
+/// # Returns
+/// Dictionary with: points, total_distance, travel_time, straight_line_distance,
+/// deflections (list of dicts), total_deflection
+///
+/// # Example
+/// ```python
+/// from astrora._core import compute_light_path
+/// from astrora._core.constants import GM_SUN, R_SUN, AU
+///
+/// source = [0.0, 10.0 * AU, 0.0]
+/// target = [0.0, -AU, 0.0]
+/// body_positions = [[R_SUN * 10.0, 0.0, 0.0]]
+/// body_gms = [GM_SUN]
+///
+/// result = compute_light_path(source, target, body_positions, body_gms, 200)
+/// print(f"Travel time: {result['travel_time']:.1f} seconds")
+/// ```
+#[pyfunction]
+#[pyo3(name = "compute_light_path")]
+fn py_compute_light_path(
+    py: Python<'_>,
+    source: [f64; 3],
+    target: [f64; 3],
+    body_positions: Vec<[f64; 3]>,
+    body_gms: Vec<f64>,
+    points_per_segment: usize,
+) -> PyResult<PyObject> {
+    if body_positions.len() != body_gms.len() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "body_positions and body_gms must have the same length",
+        ));
+    }
+
+    let bodies: Vec<geodesics::LensingBody> = body_positions
+        .iter()
+        .zip(body_gms.iter())
+        .map(|(&pos, &gm)| geodesics::LensingBody { position: pos, gm })
+        .collect();
+
+    let result = geodesics::LightPath::compute(source, target, &bodies, points_per_segment)?;
+
+    let dict = pyo3::types::PyDict::new_bound(py);
+    dict.set_item("points", result.points)?;
+    dict.set_item("total_distance", result.total_distance)?;
+    dict.set_item("travel_time", result.travel_time)?;
+    dict.set_item("straight_line_distance", result.straight_line_distance)?;
+    dict.set_item("total_deflection", result.total_deflection)?;
+
+    // Convert deflection events to list of dicts
+    let deflection_list = pyo3::types::PyList::empty_bound(py);
+    for d in &result.deflections {
+        let d_dict = pyo3::types::PyDict::new_bound(py);
+        d_dict.set_item("body_index", d.body_index)?;
+        d_dict.set_item("deflection_angle", d.deflection_angle)?;
+        d_dict.set_item("closest_approach", d.closest_approach)?;
+        d_dict.set_item("numerical", d.numerical)?;
+        deflection_list.append(d_dict)?;
+    }
+    dict.set_item("deflections", deflection_list)?;
+
+    Ok(dict.into())
+}
+
+/// Compute Shapiro time delay for light passing near a massive body.
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter GM (m³/s²)
+/// * `r_source` - Distance from lens to source (m)
+/// * `r_target` - Distance from lens to target (m)
+/// * `impact_parameter` - Closest approach distance (m)
+///
+/// # Returns
+/// Excess travel time in seconds.
+#[pyfunction]
+#[pyo3(name = "shapiro_delay")]
+fn py_shapiro_delay(gm: f64, r_source: f64, r_target: f64, impact_parameter: f64) -> PyResult<f64> {
+    geodesics::Deflection::shapiro_delay(gm, r_source, r_target, impact_parameter)
+        .map_err(|e| e.into())
+}
+
+/// Compute Einstein ring angular radius.
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter of the lens (m³/s²)
+/// * `d_lens` - Distance from observer to lens (m)
+/// * `d_source` - Distance from observer to source (m)
+///
+/// # Returns
+/// Angular radius in radians.
+#[pyfunction]
+#[pyo3(name = "einstein_ring_radius")]
+fn py_einstein_ring_radius(gm: f64, d_lens: f64, d_source: f64) -> PyResult<f64> {
+    geodesics::PhotonSphere::einstein_ring_radius(gm, d_lens, d_source).map_err(|e| e.into())
 }

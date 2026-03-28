@@ -81,8 +81,8 @@
 use nalgebra::Vector3;
 use std::f64::consts::PI;
 
-use crate::core::{PoliastroError, PoliastroResult};
-use crate::core::fast_math; // Optimized Stumpff functions for 30-50% speedup
+use crate::core::fast_math;
+use crate::core::{PoliastroError, PoliastroResult}; // Optimized Stumpff functions for 30-50% speedup
 
 /// Transfer direction for Lambert's problem
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -1225,7 +1225,7 @@ mod tests {
         // Near-zero (parabolic)
         let (c2, c3) = stumpff_functions(0.0);
         assert!((c2 - 0.5).abs() < 1e-10);
-        assert!((c3 - 1.0/6.0).abs() < 1e-10);
+        assert!((c3 - 1.0 / 6.0).abs() < 1e-10);
 
         // Small positive (near-parabolic elliptic)
         let (c2_small, c3_small) = stumpff_functions(0.001);
@@ -1235,7 +1235,7 @@ mod tests {
         // Small negative (near-parabolic hyperbolic)
         let (c2_neg, c3_neg) = stumpff_functions(-0.001);
         assert!(c2_neg > 0.0); // c2 is always positive
-        // c3 is NEGATIVE for hyperbolic orbits (z < 0) - this is mathematically correct
+                               // c3 is NEGATIVE for hyperbolic orbits (z < 0) - this is mathematically correct
         assert!(c3_neg < 0.0, "c3 should be negative for hyperbolic orbits");
 
         // Large positive (high-energy elliptic)
@@ -1246,7 +1246,7 @@ mod tests {
         // Large negative (high-energy hyperbolic)
         let (c2_hyp, c3_hyp) = stumpff_functions(-100.0);
         assert!(c2_hyp > 0.0); // c2 is always positive
-        // c3 is negative for hyperbolic orbits
+                               // c3 is negative for hyperbolic orbits
         assert!(c3_hyp < 0.0, "c3 should be negative for hyperbolic orbits");
     }
 
@@ -1265,7 +1265,11 @@ mod tests {
 
             // Check if it's hyperbolic (v > v_escape)
             let v_esc = (2.0 * mu / r1.norm()).sqrt();
-            println!("Initial velocity: {}, Escape velocity: {}", solution.v1.norm(), v_esc);
+            println!(
+                "Initial velocity: {}, Escape velocity: {}",
+                solution.v1.norm(),
+                v_esc
+            );
 
             // Should be valid solution
             assert!(solution.v1.norm() > 0.0);

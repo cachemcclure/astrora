@@ -338,12 +338,7 @@ impl DeltaVBudget {
             ));
         }
         if !(0.0..=1.0).contains(&margin) {
-            return Err(PoliastroError::out_of_range(
-                "margin",
-                margin,
-                0.0,
-                1.0,
-            ));
+            return Err(PoliastroError::out_of_range("margin", margin, 0.0, 1.0));
         }
         self.contingency_margin = margin;
         Ok(())

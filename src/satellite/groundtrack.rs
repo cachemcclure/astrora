@@ -93,8 +93,8 @@
 use std::f64::consts::PI;
 
 /// WGS84 Earth ellipsoid parameters
-const WGS84_A: f64 = 6378.137;           // Semi-major axis (km)
-const WGS84_B: f64 = 6356.752314245;     // Semi-minor axis (km)
+const WGS84_A: f64 = 6378.137; // Semi-major axis (km)
+const WGS84_B: f64 = 6356.752314245; // Semi-minor axis (km)
 const WGS84_F: f64 = 1.0 / 298.257223563; // Flattening
 const WGS84_E2: f64 = WGS84_F * (2.0 - WGS84_F); // First eccentricity squared
 const WGS84_EP2: f64 = (WGS84_A * WGS84_A - WGS84_B * WGS84_B) / (WGS84_B * WGS84_B); // Second eccentricity squared
@@ -326,10 +326,7 @@ impl GroundTrackPoint {
 ///              point.time, point.latitude.to_degrees(), point.longitude.to_degrees());
 /// }
 /// ```
-pub fn compute_ground_track(
-    ecef_positions: &[[f64; 3]],
-    times: &[f64],
-) -> Vec<GroundTrackPoint> {
+pub fn compute_ground_track(ecef_positions: &[[f64; 3]], times: &[f64]) -> Vec<GroundTrackPoint> {
     assert_eq!(
         ecef_positions.len(),
         times.len(),
@@ -397,7 +394,6 @@ pub fn calculate_swath_width(altitude: f64, min_elevation: f64) -> f64 {
     let elevation_factor = (PI / 2.0 - min_elevation) / (PI / 2.0);
 
     // Swath width (rough approximation)
-    
 
     2.0 * max_range * elevation_factor
 }
@@ -432,7 +428,6 @@ pub fn maximum_ground_range(altitude: f64) -> f64 {
     let lambda = (r_earth / r_sat).acos();
 
     // Ground range is arc length from sub-satellite point to horizon
-    
 
     r_earth * lambda
 }
@@ -545,10 +540,7 @@ mod tests {
     #[test]
     fn test_compute_ground_track() {
         // Simulate simple ground track with two points
-        let positions = vec![
-            [WGS84_A + 400.0, 0.0, 0.0],
-            [WGS84_A + 400.0, 100.0, 50.0],
-        ];
+        let positions = vec![[WGS84_A + 400.0, 0.0, 0.0], [WGS84_A + 400.0, 100.0, 50.0]];
         let times = vec![0.0, 1.0];
 
         let track = compute_ground_track(&positions, &times);
@@ -577,7 +569,11 @@ mod tests {
         // Using simplified approximation, check for reasonable value
         // Should be less than 2x maximum ground range
         let max_range = maximum_ground_range(altitude);
-        assert!(swath > 0.0 && swath < 2.0 * max_range, "Swath was {:.1} km", swath);
+        assert!(
+            swath > 0.0 && swath < 2.0 * max_range,
+            "Swath was {:.1} km",
+            swath
+        );
     }
 
     #[test]
@@ -602,7 +598,12 @@ mod tests {
 
         // Lower elevation constraint should give WIDER swath
         // (can see more of Earth near the horizon)
-        assert!(swath_5 > swath_10, "swath_5={:.1}, swath_10={:.1}", swath_5, swath_10);
+        assert!(
+            swath_5 > swath_10,
+            "swath_5={:.1}, swath_10={:.1}",
+            swath_5,
+            swath_10
+        );
     }
 
     #[test]

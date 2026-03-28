@@ -275,7 +275,8 @@ fn lagrange_coefficients(
     let g = (r_mag * r0_mag / h_mag) * sin_dnu;
 
     // Time derivatives
-    let fdot = (mu / h_mag) * ((1.0 - cos_dnu) / sin_dnu)
+    let fdot = (mu / h_mag)
+        * ((1.0 - cos_dnu) / sin_dnu)
         * ((mu / (h_mag * h_mag)) * (1.0 - cos_dnu) - 1.0 / r0_mag - 1.0 / r_mag);
     let gdot = 1.0 - (mu * r0_mag / (h_mag * h_mag)) * (1.0 - cos_dnu);
 
@@ -431,9 +432,7 @@ pub fn batch_propagate_states(
         return Err(PoliastroError::InvalidParameter {
             parameter: "time_steps".into(),
             value: time_steps.len() as f64,
-            constraint: format!(
-                "must be 1 or match number of states ({n_states})"
-            ),
+            constraint: format!("must be 1 or match number of states ({n_states})"),
         });
     };
 
@@ -503,9 +502,7 @@ pub fn batch_propagate_lagrange(
         return Err(PoliastroError::InvalidParameter {
             parameter: "time_steps".into(),
             value: time_steps.len() as f64,
-            constraint: format!(
-                "must be 1 or match number of states ({n_states})"
-            ),
+            constraint: format!("must be 1 or match number of states ({n_states})"),
         });
     };
 
@@ -747,10 +744,7 @@ mod tests {
         let v1 = (GM_EARTH / r1).sqrt();
         let v2 = (GM_EARTH / r2).sqrt();
 
-        let states = array![
-            [r1, 0.0, 0.0, 0.0, v1, 0.0],
-            [r2, 0.0, 0.0, 0.0, v2, 0.0]
-        ];
+        let states = array![[r1, 0.0, 0.0, 0.0, v1, 0.0], [r2, 0.0, 0.0, 0.0, v2, 0.0]];
 
         let dt = 3600.0; // 1 hour
         let result = batch_propagate_states(states.view(), &[dt], GM_EARTH).unwrap();
@@ -759,8 +753,10 @@ mod tests {
         assert_eq!(result.shape(), &[2, 6]);
 
         // Both orbits should maintain their radius (circular orbits)
-        let r1_new = (result[[0, 0]].powi(2) + result[[0, 1]].powi(2) + result[[0, 2]].powi(2)).sqrt();
-        let r2_new = (result[[1, 0]].powi(2) + result[[1, 1]].powi(2) + result[[1, 2]].powi(2)).sqrt();
+        let r1_new =
+            (result[[0, 0]].powi(2) + result[[0, 1]].powi(2) + result[[0, 2]].powi(2)).sqrt();
+        let r2_new =
+            (result[[1, 0]].powi(2) + result[[1, 1]].powi(2) + result[[1, 2]].powi(2)).sqrt();
 
         assert_relative_eq!(r1_new, r1, epsilon = 1.0);
         assert_relative_eq!(r2_new, r2, epsilon = 1.0);
@@ -774,10 +770,7 @@ mod tests {
         let r = 7000e3;
         let v = (GM_EARTH / r).sqrt();
 
-        let states = array![
-            [r, 0.0, 0.0, 0.0, v, 0.0],
-            [r, 0.0, 0.0, 0.0, v, 0.0]
-        ];
+        let states = array![[r, 0.0, 0.0, 0.0, v, 0.0], [r, 0.0, 0.0, 0.0, v, 0.0]];
 
         // Different time steps
         let dt = vec![1800.0, 3600.0]; // 30 min and 1 hour
@@ -785,8 +778,10 @@ mod tests {
 
         // Second orbit should have traveled farther
         // Both should still be circular
-        let r1_new = (result[[0, 0]].powi(2) + result[[0, 1]].powi(2) + result[[0, 2]].powi(2)).sqrt();
-        let r2_new = (result[[1, 0]].powi(2) + result[[1, 1]].powi(2) + result[[1, 2]].powi(2)).sqrt();
+        let r1_new =
+            (result[[0, 0]].powi(2) + result[[0, 1]].powi(2) + result[[0, 2]].powi(2)).sqrt();
+        let r2_new =
+            (result[[1, 0]].powi(2) + result[[1, 1]].powi(2) + result[[1, 2]].powi(2)).sqrt();
 
         assert_relative_eq!(r1_new, r, epsilon = 1.0);
         assert_relative_eq!(r2_new, r, epsilon = 1.0);
@@ -829,17 +824,15 @@ mod tests {
         let r0 = 7000e3;
         let v0 = 8000.0;
 
-        let states = array![
-            [r0, 0.0, 0.0, 0.0, v0, 0.0],
-            [r0, 0.0, 0.0, 0.0, v0, 0.0]
-        ];
+        let states = array![[r0, 0.0, 0.0, 0.0, v0, 0.0], [r0, 0.0, 0.0, 0.0, v0, 0.0]];
 
         let dt = 3600.0;
         let result = batch_propagate_states(states.view(), &[dt], GM_EARTH).unwrap();
 
         // Check energy conservation for both
         for i in 0..2 {
-            let r_mag = (result[[i, 0]].powi(2) + result[[i, 1]].powi(2) + result[[i, 2]].powi(2)).sqrt();
+            let r_mag =
+                (result[[i, 0]].powi(2) + result[[i, 1]].powi(2) + result[[i, 2]].powi(2)).sqrt();
             let v_mag_sq = result[[i, 3]].powi(2) + result[[i, 4]].powi(2) + result[[i, 5]].powi(2);
 
             let energy_initial = 0.5 * v0 * v0 - GM_EARTH / r0;
@@ -856,9 +849,7 @@ mod tests {
         let r = 7000e3;
         let v = (GM_EARTH / r).sqrt();
 
-        let states = array![
-            [r, 0.0, 0.0, 0.0, v, 0.0],
-        ];
+        let states = array![[r, 0.0, 0.0, 0.0, v, 0.0],];
 
         let dt = 3600.0;
 

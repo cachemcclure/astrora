@@ -422,6 +422,33 @@ pub const R_POLAR_PLUTO: f64 = 1_188_300.0;
 pub const R_MEAN_PLUTO: f64 = 1_188_300.0;
 
 // =============================================================================
+// SAGITTARIUS A* (GALACTIC CENTER BLACK HOLE)
+// =============================================================================
+
+/// Mass of Sagittarius A* (kg)
+///
+/// From GRAVITY Collaboration (2022) measurement: 4.154 × 10⁶ solar masses.
+/// Reference: GRAVITY Collaboration, A&A 657, L12 (2022)
+pub const MASS_SGR_A_STAR: f64 = 4.154e6 * 1.989e30; // ≈ 8.26e36 kg
+
+/// Sgr A* standard gravitational parameter (m³/s²)
+///
+/// Computed as 4.154 × 10⁶ × GM_SUN for maximum precision.
+/// Using the heliocentric GM (known to much higher precision than G and M separately).
+pub const GM_SGR_A_STAR: f64 = 4.154e6 * GM_SUN;
+
+/// Schwarzschild radius of Sgr A* (m)
+///
+/// r_s = 2GM/c² ≈ 1.227 × 10¹⁰ m (≈ 12.27 million km, ~0.082 AU)
+pub const R_SCHWARZSCHILD_SGR_A_STAR: f64 = 2.0 * GM_SGR_A_STAR / (C * C);
+
+/// Distance from the Sun to Sgr A* (m)
+///
+/// Approximately 26,670 light-years.
+/// Reference: GRAVITY Collaboration (2021), A&A 647, A59
+pub const DISTANCE_SGR_A_STAR: f64 = 2.522e20;
+
+// =============================================================================
 // PLANETARY ORBITAL PARAMETERS
 // =============================================================================
 
@@ -608,6 +635,32 @@ pub fn sec_to_days(sec: f64) -> f64 {
     sec * SEC_TO_DAY
 }
 
+/// Convert radians to arcseconds
+#[inline]
+pub fn rad_to_arcsec(rad: f64) -> f64 {
+    rad * RAD_TO_DEG * 3600.0
+}
+
+/// Convert arcseconds to radians
+#[inline]
+pub fn arcsec_to_rad(arcsec: f64) -> f64 {
+    arcsec / 3600.0 * DEG_TO_RAD
+}
+
+/// Calculate Schwarzschild radius for a given gravitational parameter
+///
+/// r_s = 2GM / c²
+///
+/// # Arguments
+/// * `gm` - Gravitational parameter GM (m³/s²)
+///
+/// # Returns
+/// Schwarzschild radius in meters
+#[inline]
+pub fn schwarzschild_radius(gm: f64) -> f64 {
+    2.0 * gm / (C * C)
+}
+
 // =============================================================================
 // Tests
 // =============================================================================
@@ -672,6 +725,53 @@ mod tests {
 
         let days = 3.14159;
         assert_relative_eq!(sec_to_days(days_to_sec(days)), days);
+    }
+
+    #[test]
+    fn test_arcsec_conversions() {
+        // 1 degree = 3600 arcseconds
+        assert_relative_eq!(rad_to_arcsec(deg_to_rad(1.0)), 3600.0, epsilon = 1e-6);
+        // Round-trip
+        let arcsec = 1.75;
+        assert_relative_eq!(
+            rad_to_arcsec(arcsec_to_rad(arcsec)),
+            arcsec,
+            epsilon = 1e-12
+        );
+    }
+
+    #[test]
+    fn test_schwarzschild_radius_helper() {
+        // Sun: r_s ≈ 2953 m
+        let r_s_sun = schwarzschild_radius(GM_SUN);
+        assert_relative_eq!(r_s_sun, 2953.0, epsilon = 5.0);
+
+        // Earth: r_s ≈ 8.87 mm
+        let r_s_earth = schwarzschild_radius(GM_EARTH);
+        assert!(r_s_earth > 0.008 && r_s_earth < 0.010);
+    }
+
+    #[test]
+    fn test_sgr_a_star_constants() {
+        // Mass should be ~4 million solar masses
+        assert!(MASS_SGR_A_STAR > 8e36);
+        assert!(MASS_SGR_A_STAR < 9e36);
+
+        // GM should be positive and very large
+        assert!(GM_SGR_A_STAR > 0.0);
+
+        // Schwarzschild radius should be ~12 million km
+        assert_relative_eq!(
+            R_SCHWARZSCHILD_SGR_A_STAR,
+            schwarzschild_radius(GM_SGR_A_STAR),
+            epsilon = 1.0
+        );
+        assert!(R_SCHWARZSCHILD_SGR_A_STAR > 1e10);
+        assert!(R_SCHWARZSCHILD_SGR_A_STAR < 2e10);
+
+        // Distance should be ~26,000 light-years (~2.5e20 m)
+        assert!(DISTANCE_SGR_A_STAR > 2e20);
+        assert!(DISTANCE_SGR_A_STAR < 3e20);
     }
 
     #[test]

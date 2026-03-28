@@ -7,9 +7,9 @@
 //!   cargo build --release --example profile_lambert --no-default-features
 //!   cargo flamegraph --no-default-features -- target/release/examples/profile_lambert
 
-use nalgebra::Vector3;
 use astrora_core::core::constants::{GM_EARTH, GM_SUN};
 use astrora_core::maneuvers::{Lambert, TransferKind};
+use nalgebra::Vector3;
 use std::f64::consts::PI;
 use std::time::Instant;
 
@@ -54,16 +54,8 @@ fn main() {
 
     for i in 0..5_000 {
         let angle = (i as f64) * 0.01;
-        let r1 = Vector3::new(
-            5000e3 * angle.cos(),
-            10000e3 * angle.sin(),
-            2100e3
-        );
-        let r2 = Vector3::new(
-            -14600e3 * angle.sin(),
-            2500e3 * angle.cos(),
-            7000e3
-        );
+        let r1 = Vector3::new(5000e3 * angle.cos(), 10000e3 * angle.sin(), 2100e3);
+        let r2 = Vector3::new(-14600e3 * angle.sin(), 2500e3 * angle.cos(), 7000e3);
         let tof = 3600.0 + (i as f64);
 
         let _ = Lambert::solve(r1, r2, tof, GM_EARTH, TransferKind::ShortWay, 0);
@@ -83,7 +75,11 @@ fn main() {
 
         let angle = (i as f64) * 0.1;
         let r1 = Vector3::new(r_earth * angle.cos(), r_earth * angle.sin(), 0.0);
-        let r2 = Vector3::new(r_mars * (angle + PI/4.0).cos(), r_mars * (angle + PI/4.0).sin(), 0.0);
+        let r2 = Vector3::new(
+            r_mars * (angle + PI / 4.0).cos(),
+            r_mars * (angle + PI / 4.0).sin(),
+            0.0,
+        );
 
         let a_transfer = (r_earth + r_mars) / 2.0;
         let tof = PI * (a_transfer.powi(3) / GM_SUN).sqrt();

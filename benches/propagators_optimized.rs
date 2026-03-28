@@ -6,12 +6,14 @@
 //!
 //! Expected speedup: 3-5x for standard 6-DOF propagation
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use astrora_core::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
-use astrora_core::core::integrators_static::{StateVector6, propagate_rk4_final_only};
-use astrora_core::propagators::perturbations_static::{j2_dynamics, j2_perturbation_static, Vector3Static};
+use astrora_core::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
+use astrora_core::core::integrators_static::{propagate_rk4_final_only, StateVector6};
 use astrora_core::core::numerical::rk4_step;
 use astrora_core::propagators::perturbations::j2_perturbation;
+use astrora_core::propagators::perturbations_static::{
+    j2_dynamics, j2_perturbation_static, Vector3Static,
+};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use nalgebra as na;
 
 // ============================================================================
@@ -32,10 +34,7 @@ fn circular_leo_state_dynamic() -> na::DVector<f64> {
 }
 
 /// Two-body dynamics (dynamic vectors)
-fn two_body_dynamics_dynamic(
-    _t: f64,
-    state: &na::DVector<f64>,
-) -> na::DVector<f64> {
+fn two_body_dynamics_dynamic(_t: f64, state: &na::DVector<f64>) -> na::DVector<f64> {
     let x = state[0];
     let y = state[1];
     let z = state[2];
@@ -67,10 +66,7 @@ fn two_body_dynamics_static(_t: f64, state: &StateVector6) -> StateVector6 {
 }
 
 /// J2-perturbed dynamics (dynamic vectors)
-fn j2_dynamics_dynamic(
-    _t: f64,
-    state: &na::DVector<f64>,
-) -> na::DVector<f64> {
+fn j2_dynamics_dynamic(_t: f64, state: &na::DVector<f64>) -> na::DVector<f64> {
     let x = state[0];
     let y = state[1];
     let z = state[2];
@@ -206,11 +202,7 @@ fn bench_j2_propagation(c: &mut Criterion) {
                 b.iter(|| {
                     let dynamics = j2_dynamics(GM_EARTH, J2_EARTH, R_EARTH);
                     black_box(propagate_rk4_final_only(
-                        dynamics,
-                        0.0,
-                        &state0,
-                        t_final,
-                        steps,
+                        dynamics, 0.0, &state0, t_final, steps,
                     ))
                 });
             },
@@ -228,14 +220,14 @@ fn bench_perturbation_functions(c: &mut Criterion) {
 
     // J2 perturbation comparison
     group.bench_function("j2_dynamic", |b| {
-        b.iter(|| {
-            black_box(j2_perturbation(&r_dynamic, GM_EARTH, J2_EARTH, R_EARTH))
-        });
+        b.iter(|| black_box(j2_perturbation(&r_dynamic, GM_EARTH, J2_EARTH, R_EARTH)));
     });
 
     group.bench_function("j2_static", |b| {
         b.iter(|| {
-            black_box(j2_perturbation_static(&r_static, GM_EARTH, J2_EARTH, R_EARTH))
+            black_box(j2_perturbation_static(
+                &r_static, GM_EARTH, J2_EARTH, R_EARTH,
+            ))
         });
     });
 

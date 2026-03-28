@@ -64,7 +64,9 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Self {
-        Self::new(HifiEpoch::from_gregorian_utc(year, month, day, hour, minute, second, nanos))
+        Self::new(HifiEpoch::from_gregorian_utc(
+            year, month, day, hour, minute, second, nanos,
+        ))
     }
 
     /// Create epoch from Gregorian date in TAI
@@ -77,7 +79,9 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Self {
-        Self::new(HifiEpoch::from_gregorian_tai(year, month, day, hour, minute, second, nanos))
+        Self::new(HifiEpoch::from_gregorian_tai(
+            year, month, day, hour, minute, second, nanos,
+        ))
     }
 
     /// Create epoch from Gregorian date in TT (Terrestrial Time)
@@ -90,7 +94,16 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Self {
-        Self::new(HifiEpoch::from_gregorian(year, month, day, hour, minute, second, nanos, TimeScale::TT))
+        Self::new(HifiEpoch::from_gregorian(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            nanos,
+            TimeScale::TT,
+        ))
     }
 
     /// Create epoch from Gregorian date in TDB (Barycentric Dynamical Time)
@@ -103,7 +116,16 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Self {
-        Self::new(HifiEpoch::from_gregorian(year, month, day, hour, minute, second, nanos, TimeScale::TDB))
+        Self::new(HifiEpoch::from_gregorian(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            nanos,
+            TimeScale::TDB,
+        ))
     }
 
     /// Create epoch at midnight UTC
@@ -406,15 +428,7 @@ impl Epoch {
     /// Create epoch from Gregorian date in UTC
     #[new]
     #[pyo3(signature = (year, month, day, hour=0, minute=0, second=0, nanos=0))]
-    fn py_new(
-        year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
-        nanos: u32,
-    ) -> Self {
+    fn py_new(year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8, nanos: u32) -> Self {
         Self::from_gregorian_utc(year, month, day, hour, minute, second, nanos)
     }
 
@@ -455,9 +469,11 @@ impl Epoch {
             "TT" => TimeScale::TT,
             "TDB" => TimeScale::TDB,
             "GPST" => TimeScale::GPST,
-            _ => return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("Unsupported time scale: {scale}. Use UTC, TAI, TT, TDB, or GPST")
-            )),
+            _ => {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Unsupported time scale: {scale}. Use UTC, TAI, TT, TDB, or GPST"
+                )))
+            }
         };
         Ok(Self::from_jd(jd, time_scale))
     }
@@ -481,9 +497,11 @@ impl Epoch {
             "TT" => TimeScale::TT,
             "TDB" => TimeScale::TDB,
             "GPST" => TimeScale::GPST,
-            _ => return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("Unsupported time scale: {scale}. Use UTC, TAI, TT, TDB, or GPST")
-            )),
+            _ => {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Unsupported time scale: {scale}. Use UTC, TAI, TT, TDB, or GPST"
+                )))
+            }
         };
         Ok(Self::from_mjd(mjd, time_scale))
     }
@@ -572,7 +590,7 @@ impl Epoch {
             return Ok(self.duration_since(&epoch).into_py(py));
         }
         Err(pyo3::exceptions::PyTypeError::new_err(
-            "Can only subtract Duration or Epoch from Epoch"
+            "Can only subtract Duration or Epoch from Epoch",
         ))
     }
 

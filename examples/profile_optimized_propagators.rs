@@ -9,8 +9,8 @@
 //!   --output optimized_propagators_flamegraph.svg
 //! ```
 
-use astrora_core::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
-use astrora_core::core::integrators_static::{StateVector6, propagate_rk4_final_only};
+use astrora_core::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
+use astrora_core::core::integrators_static::{propagate_rk4_final_only, StateVector6};
 use astrora_core::propagators::perturbations_static::j2_dynamics;
 
 fn main() {
@@ -27,7 +27,11 @@ fn main() {
 
     println!("Running high-accuracy J2 propagations...");
     println!("  Orbit: LEO circular at {} km", r0 / 1000.0);
-    println!("  Period: {:.2} seconds ({:.2} minutes)", period, period / 60.0);
+    println!(
+        "  Period: {:.2} seconds ({:.2} minutes)",
+        period,
+        period / 60.0
+    );
     println!();
 
     // J2 dynamics
@@ -37,18 +41,16 @@ fn main() {
     let num_propagations = 10_000;
     let steps_per_orbit = 1000;
 
-    println!("Propagating {} orbits with {} steps each...", num_propagations, steps_per_orbit);
+    println!(
+        "Propagating {} orbits with {} steps each...",
+        num_propagations, steps_per_orbit
+    );
 
     let start = std::time::Instant::now();
 
     for i in 0..num_propagations {
-        let state_final = propagate_rk4_final_only(
-            &dynamics,
-            0.0,
-            &state0,
-            period,
-            steps_per_orbit,
-        );
+        let state_final =
+            propagate_rk4_final_only(&dynamics, 0.0, &state0, period, steps_per_orbit);
 
         // Prevent optimization from eliminating the computation
         if i == 0 {
@@ -60,10 +62,20 @@ fn main() {
     let elapsed = start.elapsed();
     let total_steps = num_propagations * steps_per_orbit;
 
-    println!("\n✅ Completed {} propagations in {:.3} seconds", num_propagations, elapsed.as_secs_f64());
+    println!(
+        "\n✅ Completed {} propagations in {:.3} seconds",
+        num_propagations,
+        elapsed.as_secs_f64()
+    );
     println!("   Total integration steps: {}", total_steps);
-    println!("   Average time per propagation: {:.3} µs", elapsed.as_micros() as f64 / num_propagations as f64);
-    println!("   Average time per step: {:.3} ns", elapsed.as_nanos() as f64 / total_steps as f64);
+    println!(
+        "   Average time per propagation: {:.3} µs",
+        elapsed.as_micros() as f64 / num_propagations as f64
+    );
+    println!(
+        "   Average time per step: {:.3} ns",
+        elapsed.as_nanos() as f64 / total_steps as f64
+    );
     println!();
     println!("Profiling complete. Check the flamegraph for hotspots.");
 }

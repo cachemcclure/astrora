@@ -256,11 +256,7 @@ pub fn compute_eclipse_state(r_sat: &Vector3<f64>, r_sun: &Vector3<f64>) -> Ecli
 /// let beta = solar_beta_angle(i, raan, solar_lon);
 /// println!("Beta angle: {:.2}°", beta.to_degrees());
 /// ```
-pub fn solar_beta_angle(
-    inclination: f64,
-    raan: f64,
-    solar_longitude: f64,
-) -> f64 {
+pub fn solar_beta_angle(inclination: f64, raan: f64, solar_longitude: f64) -> f64 {
     // β = arcsin[sin(i)·sin(Ω - λ_☉)]
     let sin_beta = inclination.sin() * (raan - solar_longitude).sin();
     sin_beta.clamp(-1.0, 1.0).asin()
@@ -299,11 +295,7 @@ pub fn solar_beta_angle(
 ///
 /// let beta = solar_beta_angle_precise(i, raan, solar_lon);
 /// ```
-pub fn solar_beta_angle_precise(
-    inclination: f64,
-    raan: f64,
-    solar_longitude: f64,
-) -> f64 {
+pub fn solar_beta_angle_precise(inclination: f64, raan: f64, solar_longitude: f64) -> f64 {
     use eclipse_constants::OBLIQUITY_ECLIPTIC;
 
     let eps = OBLIQUITY_ECLIPTIC;
@@ -407,7 +399,7 @@ pub fn sun_synchronous_inclination(
                 "Sun-synchronous orbit not possible at this altitude. \
                 Required cos(i) = {cos_i:.4} is outside [-1, 1]. \
                 Try altitude between 200-6000 km."
-            )
+            ),
         ));
     }
 
@@ -462,11 +454,7 @@ pub fn sun_synchronous_inclination(
 /// println!("Eclipse duration: {:.1} minutes", duration / 60.0);
 /// // Output: ~37 minutes
 /// ```
-pub fn eclipse_duration(
-    semi_major_axis: f64,
-    beta_angle: f64,
-    mu: f64,
-) -> PoliastroResult<f64> {
+pub fn eclipse_duration(semi_major_axis: f64, beta_angle: f64, mu: f64) -> PoliastroResult<f64> {
     use eclipse_constants::EARTH_RADIUS;
 
     // Critical beta angle: above this, no eclipse occurs
@@ -555,7 +543,7 @@ mod tests {
     #[test]
     fn test_sun_synchronous_inclination_typical_leo() {
         // Typical sun-sync orbit at 600 km
-        use crate::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
+        use crate::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
 
         let altitude = 600e3; // 600 km
         let a = R_EARTH + altitude;
@@ -568,7 +556,7 @@ mod tests {
 
     #[test]
     fn test_sun_synchronous_inclination_800km() {
-        use crate::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
+        use crate::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
 
         let altitude = 800e3; // 800 km
         let a = R_EARTH + altitude;

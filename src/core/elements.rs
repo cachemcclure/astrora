@@ -14,7 +14,7 @@
 //! - Parabolic and hyperbolic trajectories
 
 use crate::core::error::{PoliastroError, PoliastroResult};
-use crate::core::linalg::{Vector3, Matrix3};
+use crate::core::linalg::{Matrix3, Vector3};
 use pyo3::prelude::*;
 use std::f64::consts::PI;
 
@@ -207,12 +207,7 @@ impl EquinoctialElements {
         if e >= 1.0 {
             return Err(PoliastroError::UnsupportedOrbitType {
                 operation: "semi-major axis calculation".into(),
-                orbit_type: if e > 1.0 {
-                    "hyperbolic"
-                } else {
-                    "parabolic"
-                }
-                .into(),
+                orbit_type: if e > 1.0 { "hyperbolic" } else { "parabolic" }.into(),
             });
         }
         Ok(self.p / (1.0 - e * e))
@@ -266,12 +261,7 @@ impl EquinoctialElements {
 /// let v = Vector3::new(0.0, 7.5e3, 0.0);
 /// let elements = rv_to_coe(&r, &v, GM_EARTH, 1e-8).unwrap();
 /// ```
-pub fn rv_to_coe(
-    r: &Vector3,
-    v: &Vector3,
-    mu: f64,
-    tol: f64,
-) -> PoliastroResult<OrbitalElements> {
+pub fn rv_to_coe(r: &Vector3, v: &Vector3, mu: f64, tol: f64) -> PoliastroResult<OrbitalElements> {
     // Step 1: Calculate magnitudes
     let r_mag = r.norm();
     let v_mag = v.norm();
@@ -312,9 +302,9 @@ pub fn rv_to_coe(
     } else if e.abs() < 1.0 + tol {
         // Parabolic orbit (e ≈ 1)
         return Err(PoliastroError::UnsupportedOrbitType {
-                operation: "rv_to_coe".into(),
-                orbit_type: "parabolic (e ≈ 1)".into(),
-            });
+            operation: "rv_to_coe".into(),
+            orbit_type: "parabolic (e ≈ 1)".into(),
+        });
     } else {
         // Hyperbolic orbit (e > 1)
         -mu / (2.0 * energy) // Note: a will be negative for hyperbolic orbits
@@ -601,14 +591,7 @@ pub fn equinoctial_to_coe(
     elements: &EquinoctialElements,
     tol: f64,
 ) -> PoliastroResult<OrbitalElements> {
-    let EquinoctialElements {
-        p,
-        f,
-        g,
-        h,
-        k,
-        L,
-    } = *elements;
+    let EquinoctialElements { p, f, g, h, k, L } = *elements;
 
     // Calculate eccentricity
     let e = (f * f + g * g).sqrt();
@@ -1201,7 +1184,7 @@ mod tests {
     #[test]
     fn test_roundtrip_coe_equinoctial_elliptical() {
         // Test COE -> Equinoctial -> COE for elliptical orbit
-        let coe_orig = OrbitalElements::new(8000e3, 0.1, PI/4.0, 0.5, 0.3, 0.7);
+        let coe_orig = OrbitalElements::new(8000e3, 0.1, PI / 4.0, 0.5, 0.3, 0.7);
         let eq = coe_to_equinoctial(&coe_orig);
         let coe_new = equinoctial_to_coe(&eq, DEFAULT_TOL).unwrap();
 
@@ -1296,7 +1279,7 @@ mod tests {
     #[test]
     fn test_equinoctial_singularity_free_near_circular() {
         // Near-circular orbit (e = 1e-10) - would be problematic for classical elements
-        let coe = OrbitalElements::new(7000e3, 1e-10, PI/4.0, 0.5, 0.0, 0.3);
+        let coe = OrbitalElements::new(7000e3, 1e-10, PI / 4.0, 0.5, 0.0, 0.3);
         let eq = coe_to_equinoctial(&coe);
 
         // Should successfully convert back

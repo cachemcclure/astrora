@@ -321,8 +321,16 @@ mod tests {
         let icrs = gcrs.transform_to_icrs().unwrap();
 
         // At J2000, GCRS ≈ ICRS (barycentric correction is small for Earth satellites)
-        assert_abs_diff_eq!(icrs.position().norm(), gcrs.position().norm(), epsilon = 1.0);
-        assert_abs_diff_eq!(icrs.velocity().norm(), gcrs.velocity().norm(), epsilon = 0.1);
+        assert_abs_diff_eq!(
+            icrs.position().norm(),
+            gcrs.position().norm(),
+            epsilon = 1.0
+        );
+        assert_abs_diff_eq!(
+            icrs.velocity().norm(),
+            gcrs.velocity().norm(),
+            epsilon = 0.1
+        );
     }
 
     #[test]
@@ -353,7 +361,11 @@ mod tests {
         let itrs = gcrs.transform_to_itrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(itrs.position().norm(), gcrs.position().norm(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            itrs.position().norm(),
+            gcrs.position().norm(),
+            epsilon = 1e-6
+        );
 
         // Velocity will differ due to Earth rotation and Coriolis effect
         assert!(itrs.velocity().norm() > 0.0);
@@ -371,10 +383,18 @@ mod tests {
         let teme = gcrs.transform_to_teme().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(teme.position().norm(), gcrs.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            teme.position().norm(),
+            gcrs.position().norm(),
+            epsilon = 1.0
+        );
 
         // TEME and GCRS are both inertial, so velocities should be similar
-        assert_abs_diff_eq!(teme.velocity().norm(), gcrs.velocity().norm(), epsilon = 100.0);
+        assert_abs_diff_eq!(
+            teme.velocity().norm(),
+            gcrs.velocity().norm(),
+            epsilon = 100.0
+        );
     }
 
     #[test]
@@ -568,7 +588,11 @@ mod tests {
         let gcrs = icrs.transform_to_gcrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(gcrs.position().norm(), icrs.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            gcrs.position().norm(),
+            icrs.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -581,7 +605,11 @@ mod tests {
         let j2000 = icrs.transform_to_j2000().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(j2000.position().norm(), icrs.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            j2000.position().norm(),
+            icrs.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -594,7 +622,11 @@ mod tests {
         let itrs = icrs.transform_to_itrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(itrs.position().norm(), icrs.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            itrs.position().norm(),
+            icrs.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -607,7 +639,11 @@ mod tests {
         let teme = icrs.transform_to_teme().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(teme.position().norm(), icrs.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            teme.position().norm(),
+            icrs.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -635,7 +671,11 @@ mod tests {
         let icrs = j2000.transform_to_icrs().unwrap();
 
         // At J2000 epoch, should be very similar
-        assert_abs_diff_eq!(icrs.position().norm(), j2000.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            icrs.position().norm(),
+            j2000.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -648,7 +688,11 @@ mod tests {
         let itrs = j2000.transform_to_itrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(itrs.position().norm(), j2000.position().norm(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            itrs.position().norm(),
+            j2000.position().norm(),
+            epsilon = 1e-6
+        );
     }
 
     #[test]
@@ -661,7 +705,11 @@ mod tests {
         let teme = j2000.transform_to_teme().unwrap();
 
         // Both are inertial, magnitude should be conserved
-        assert_abs_diff_eq!(teme.position().norm(), j2000.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            teme.position().norm(),
+            j2000.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -692,7 +740,11 @@ mod tests {
         let icrs = itrs.transform_to_icrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(icrs.position().norm(), itrs.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            icrs.position().norm(),
+            itrs.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -707,7 +759,11 @@ mod tests {
         let j2000 = itrs.transform_to_j2000().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(j2000.position().norm(), itrs.position().norm(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            j2000.position().norm(),
+            itrs.position().norm(),
+            epsilon = 1e-6
+        );
     }
 
     #[test]
@@ -722,7 +778,11 @@ mod tests {
         let teme = itrs.transform_to_teme().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(teme.position().norm(), itrs.position().norm(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            teme.position().norm(),
+            itrs.position().norm(),
+            epsilon = 1e-6
+        );
     }
 
     // Test TEME transformations
@@ -738,7 +798,11 @@ mod tests {
         let icrs = teme.transform_to_icrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(icrs.position().norm(), teme.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            icrs.position().norm(),
+            teme.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -753,7 +817,11 @@ mod tests {
         let j2000 = teme.transform_to_j2000().unwrap();
 
         // Both inertial, magnitude should be conserved
-        assert_abs_diff_eq!(j2000.position().norm(), teme.position().norm(), epsilon = 1.0);
+        assert_abs_diff_eq!(
+            j2000.position().norm(),
+            teme.position().norm(),
+            epsilon = 1.0
+        );
     }
 
     #[test]
@@ -768,7 +836,11 @@ mod tests {
         let itrs = teme.transform_to_itrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(itrs.position().norm(), teme.position().norm(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            itrs.position().norm(),
+            teme.position().norm(),
+            epsilon = 1e-6
+        );
     }
 
     #[test]
@@ -869,7 +941,11 @@ mod tests {
         let itrs = gcrs.transform_to_itrs().unwrap();
 
         // Position magnitude should be conserved
-        assert_abs_diff_eq!(itrs.position().norm(), gcrs.position().norm(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            itrs.position().norm(),
+            gcrs.position().norm(),
+            epsilon = 1e-6
+        );
         // Frame type should be correct
         assert_eq!(itrs.frame_type(), FrameType::ITRS);
     }
@@ -959,7 +1035,15 @@ mod tests {
         let gcrs_back = icrs.to_gcrs_frame().unwrap();
 
         // At J2000, should be very similar (barycentric correction is small)
-        assert_abs_diff_eq!(gcrs_back.position().norm(), gcrs.position().norm(), epsilon = 1.0);
-        assert_abs_diff_eq!(gcrs_back.velocity().norm(), gcrs.velocity().norm(), epsilon = 0.1);
+        assert_abs_diff_eq!(
+            gcrs_back.position().norm(),
+            gcrs.position().norm(),
+            epsilon = 1.0
+        );
+        assert_abs_diff_eq!(
+            gcrs_back.velocity().norm(),
+            gcrs.velocity().norm(),
+            epsilon = 0.1
+        );
     }
 }

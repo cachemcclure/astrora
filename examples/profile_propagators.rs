@@ -3,9 +3,9 @@
 //! This binary runs propagators many times for profiling purposes.
 //! Run with: cargo flamegraph --example profile_propagators --no-default-features
 
-use nalgebra::Vector3;
-use astrora_core::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
+use astrora_core::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
 use astrora_core::propagators::perturbations::propagate_j2_rk4;
+use nalgebra::Vector3;
 use std::time::Instant;
 
 fn main() {

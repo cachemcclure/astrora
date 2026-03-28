@@ -52,45 +52,38 @@
 //! // state.velocity: [vx, vy, vz] in km/s (TEME frame)
 //! ```
 
-pub mod sgp4_wrapper;
-pub mod tle;
-pub mod omm;
-pub mod visibility;
-pub mod groundtrack;
+pub mod conjunction;
 pub mod coverage;
 pub mod eclipse;
+pub mod groundtrack;
 pub mod lifetime;
-pub mod conjunction;
+pub mod omm;
+pub mod sgp4_wrapper;
+pub mod tle;
+pub mod visibility;
 
-pub use sgp4_wrapper::{propagate_from_elements, propagate_batch, SatelliteState, Sgp4Error};
-pub use tle::parse_tle;
-pub use omm::parse_omm;
-pub use visibility::{
-    Observer, TopocentricCoordinates, SatellitePass,
-    compute_azimuth_elevation, compute_azimuth_elevation_rate,
-    is_visible, has_line_of_sight,
-    find_next_pass, find_all_passes,
-};
-pub use groundtrack::{
-    GeodeticCoordinates, GroundTrackPoint,
-    ecef_to_geodetic, sub_satellite_point, compute_ground_track,
-    calculate_swath_width, maximum_ground_range,
+pub use conjunction::{
+    check_collision, closest_approach_distance, compute_conjunction, ConjunctionResult,
 };
 pub use coverage::{
-    GeodeticPoint, AccessStatistics,
-    visibility_circle, coverage_area,
-    compute_access_statistics, coverage_percentage,
+    compute_access_statistics, coverage_area, coverage_percentage, visibility_circle,
+    AccessStatistics, GeodeticPoint,
 };
 pub use eclipse::{
-    EclipseState,
-    compute_eclipse_state, solar_beta_angle, solar_beta_angle_precise,
-    sun_synchronous_inclination, eclipse_duration,
+    compute_eclipse_state, eclipse_duration, solar_beta_angle, solar_beta_angle_precise,
+    sun_synchronous_inclination, EclipseState,
+};
+pub use groundtrack::{
+    calculate_swath_width, compute_ground_track, ecef_to_geodetic, maximum_ground_range,
+    sub_satellite_point, GeodeticCoordinates, GroundTrackPoint,
 };
 pub use lifetime::{
-    estimate_lifetime, estimate_decay_rate,
-    DEFAULT_TERMINAL_ALTITUDE, TYPICAL_DRAG_COEFFICIENT,
+    estimate_decay_rate, estimate_lifetime, DEFAULT_TERMINAL_ALTITUDE, TYPICAL_DRAG_COEFFICIENT,
 };
-pub use conjunction::{
-    ConjunctionResult,
-    compute_conjunction, check_collision, closest_approach_distance,
+pub use omm::parse_omm;
+pub use sgp4_wrapper::{propagate_batch, propagate_from_elements, SatelliteState, Sgp4Error};
+pub use tle::parse_tle;
+pub use visibility::{
+    compute_azimuth_elevation, compute_azimuth_elevation_rate, find_all_passes, find_next_pass,
+    has_line_of_sight, is_visible, Observer, SatellitePass, TopocentricCoordinates,
 };

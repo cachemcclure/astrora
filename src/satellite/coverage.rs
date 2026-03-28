@@ -97,8 +97,8 @@
 //! println!("Coverage area: {:.0} km²", area);
 //! ```
 
-use std::f64::consts::PI;
 use crate::satellite::visibility::SatellitePass;
+use std::f64::consts::PI;
 
 /// WGS84 Earth parameters
 const R_EARTH: f64 = 6371.0; // Mean Earth radius (km)
@@ -206,11 +206,12 @@ pub fn visibility_circle(
         let bearing = 2.0 * PI * (i as f64) / (num_points as f64);
 
         // Destination point formula (spherical trigonometry)
-        let lat2 = (lat_rad.sin() * lambda.cos()
-                    + lat_rad.cos() * lambda.sin() * bearing.cos()).asin();
+        let lat2 =
+            (lat_rad.sin() * lambda.cos() + lat_rad.cos() * lambda.sin() * bearing.cos()).asin();
 
-        let lon2 = lon_rad + (bearing.sin() * lambda.sin() * lat_rad.cos())
-            .atan2(lambda.cos() - lat_rad.sin() * lat2.sin());
+        let lon2 = lon_rad
+            + (bearing.sin() * lambda.sin() * lat_rad.cos())
+                .atan2(lambda.cos() - lat_rad.sin() * lat2.sin());
 
         points.push(GeodeticPoint {
             latitude: lat2.to_degrees(),
@@ -258,7 +259,6 @@ pub fn coverage_area(altitude: f64, min_elevation: f64) -> f64 {
 
     // Spherical cap area: A = 2πR²(1 - cos(λ))
     // Using WGS84 semi-major axis for more accurate Earth surface area
-    
 
     2.0 * PI * WGS84_A * WGS84_A * (1.0 - lambda.cos())
 }
@@ -331,7 +331,11 @@ pub fn compute_access_statistics(passes: &[SatellitePass]) -> Option<AccessStati
         average_pass_duration: average_duration,
         max_elevation,
         best_pass_index: Some(best_pass_index),
-        min_pass_duration: if min_duration == f64::INFINITY { 0.0 } else { min_duration },
+        min_pass_duration: if min_duration == f64::INFINITY {
+            0.0
+        } else {
+            min_duration
+        },
         max_pass_duration: max_duration,
     })
 }
@@ -391,8 +395,11 @@ mod tests {
         for point in &circle {
             let distance = angular_distance(0.0, 0.0, point.latitude, point.longitude);
             // Should be consistent across all points (within numerical tolerance)
-            assert!(distance > 19.0 && distance < 21.0,
-                    "Distance {:.2}° outside expected range", distance);
+            assert!(
+                distance > 19.0 && distance < 21.0,
+                "Distance {:.2}° outside expected range",
+                distance
+            );
         }
     }
 
@@ -402,7 +409,7 @@ mod tests {
         let circle = visibility_circle(0.0, 0.0, 400.0, 10.0, 36);
 
         // Points at opposite sides should have equal but opposite longitudes
-        let point_0 = &circle[0];   // North
+        let point_0 = &circle[0]; // North
         let point_18 = &circle[18]; // South
 
         // Should be symmetric in latitude (opposite signs, similar magnitude)
@@ -412,23 +419,26 @@ mod tests {
     #[test]
     fn test_coverage_area_increases_with_altitude() {
         // Higher altitude should give larger coverage area
-        let area_leo = coverage_area(400.0, 10.0);    // ISS
-        let area_meo = coverage_area(20000.0, 10.0);  // GPS-like
-        let area_geo = coverage_area(35786.0, 10.0);  // GEO
+        let area_leo = coverage_area(400.0, 10.0); // ISS
+        let area_meo = coverage_area(20000.0, 10.0); // GPS-like
+        let area_geo = coverage_area(35786.0, 10.0); // GEO
 
         assert!(area_leo < area_meo);
         assert!(area_meo < area_geo);
 
         // ISS at 400 km with 10° elevation should cover ~5-7 million km²
         // (λ ≈ 12°, spherical cap area ≈ 5.7M km²)
-        assert!(area_leo > 5_000_000.0 && area_leo < 7_000_000.0,
-                "ISS coverage area {:.0} km² outside expected range", area_leo);
+        assert!(
+            area_leo > 5_000_000.0 && area_leo < 7_000_000.0,
+            "ISS coverage area {:.0} km² outside expected range",
+            area_leo
+        );
     }
 
     #[test]
     fn test_coverage_area_decreases_with_elevation() {
         // Higher minimum elevation should give smaller coverage area
-        let area_0deg = coverage_area(400.0, 0.0);   // Horizon
+        let area_0deg = coverage_area(400.0, 0.0); // Horizon
         let area_10deg = coverage_area(400.0, 10.0); // Typical ground station
         let area_45deg = coverage_area(400.0, 45.0); // High elevation
 
@@ -511,7 +521,7 @@ mod tests {
 
         // Haversine formula
         let a = ((lat2_rad - lat1_rad) / 2.0).sin().powi(2)
-              + lat1_rad.cos() * lat2_rad.cos() * (dlon / 2.0).sin().powi(2);
+            + lat1_rad.cos() * lat2_rad.cos() * (dlon / 2.0).sin().powi(2);
         let c = 2.0 * a.sqrt().asin();
 
         c.to_degrees()

@@ -23,7 +23,6 @@
 ///     }
 /// }
 /// ```
-
 use approx::{assert_relative_eq, relative_eq};
 use nalgebra::{Vector3, Vector6};
 use proptest::prelude::*;
@@ -143,13 +142,18 @@ pub fn velocity_magnitude_strategy() -> impl Strategy<Value = f64> {
 
 /// Strategy for generating 3D position vectors in orbital regime
 pub fn position_vector_strategy() -> impl Strategy<Value = Vector3<f64>> {
-    (orbital_radius_strategy(), angle_strategy(), angle_strategy()).prop_map(|(r, theta, phi)| {
-        Vector3::new(
-            r * theta.sin() * phi.cos(),
-            r * theta.sin() * phi.sin(),
-            r * theta.cos(),
-        )
-    })
+    (
+        orbital_radius_strategy(),
+        angle_strategy(),
+        angle_strategy(),
+    )
+        .prop_map(|(r, theta, phi)| {
+            Vector3::new(
+                r * theta.sin() * phi.cos(),
+                r * theta.sin() * phi.sin(),
+                r * theta.cos(),
+            )
+        })
 }
 
 /// Strategy for generating 3D velocity vectors with reasonable magnitudes

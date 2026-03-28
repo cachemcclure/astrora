@@ -121,34 +121,38 @@ impl HohmannTransfer {
     /// println!("Total ΔV: {:.1} m/s", result.delta_v_total);
     /// println!("Transfer time: {:.1} hours", result.transfer_time / 3600.0);
     /// ```
-    pub fn calculate(r_initial: f64, r_final: f64, mu: f64) -> PoliastroResult<HohmannTransferResult> {
+    pub fn calculate(
+        r_initial: f64,
+        r_final: f64,
+        mu: f64,
+    ) -> PoliastroResult<HohmannTransferResult> {
         // Validation
         if r_initial <= 0.0 {
             return Err(PoliastroError::invalid_parameter(
                 "r_initial",
                 r_initial,
-                "must be positive"
+                "must be positive",
             ));
         }
         if r_final <= 0.0 {
             return Err(PoliastroError::invalid_parameter(
                 "r_final",
                 r_final,
-                "must be positive"
+                "must be positive",
             ));
         }
         if mu <= 0.0 {
             return Err(PoliastroError::invalid_parameter(
                 "mu",
                 mu,
-                "must be positive"
+                "must be positive",
             ));
         }
         if (r_initial - r_final).abs() < 1e-6 {
             return Err(PoliastroError::invalid_parameter(
                 "r_initial, r_final",
                 r_initial,
-                "radii must be different - no transfer needed"
+                "radii must be different - no transfer needed",
             ));
         }
 
@@ -298,7 +302,7 @@ impl HohmannTransfer {
             return Err(PoliastroError::invalid_parameter(
                 "r_initial, r_final, mu",
                 0.0,
-                "all parameters must be positive"
+                "all parameters must be positive",
             ));
         }
 
@@ -375,7 +379,11 @@ mod tests {
         // Verify basic properties
         assert!(result.delta_v1 > 0.0, "First burn should be positive");
         assert!(result.delta_v2 > 0.0, "Second burn should be positive");
-        assert_relative_eq!(result.delta_v_total, result.delta_v1 + result.delta_v2, epsilon = 1e-6);
+        assert_relative_eq!(
+            result.delta_v_total,
+            result.delta_v1 + result.delta_v2,
+            epsilon = 1e-6
+        );
 
         // Expected values (from standard references)
         // ΔV₁ ≈ 2,427 m/s, ΔV₂ ≈ 1,469 m/s, Total ≈ 3,896 m/s
@@ -406,7 +414,11 @@ mod tests {
 
         // Total ΔV should be same for both directions
         let ascending = HohmannTransfer::calculate(r_leo, r_geo, EARTH_MU).unwrap();
-        assert_relative_eq!(result.delta_v_total, ascending.delta_v_total, epsilon = 1e-6);
+        assert_relative_eq!(
+            result.delta_v_total,
+            ascending.delta_v_total,
+            epsilon = 1e-6
+        );
     }
 
     #[test]
@@ -495,7 +507,8 @@ mod tests {
         let r_geo = EARTH_RADIUS + 35_786e3;
 
         // Test with current phase = 0 (worst case)
-        let wait_time = HohmannTransfer::time_to_transfer_window(0.0, r_leo, r_geo, EARTH_MU).unwrap();
+        let wait_time =
+            HohmannTransfer::time_to_transfer_window(0.0, r_leo, r_geo, EARTH_MU).unwrap();
 
         // Wait time should be positive and less than synodic period
         assert!(wait_time >= 0.0);
