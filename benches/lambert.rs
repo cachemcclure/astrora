@@ -9,13 +9,13 @@
 // Run with: cargo bench --bench lambert
 // For comparison with Python: python benchmarks/lambert_benchmark.py
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, PlotConfiguration,
-    AxisScale,
-};
-use nalgebra::Vector3;
 use astrora_core::core::constants::{GM_EARTH, GM_SUN};
 use astrora_core::maneuvers::{Lambert, TransferKind};
+use criterion::{
+    black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
+    PlotConfiguration,
+};
+use nalgebra::Vector3;
 use std::f64::consts::PI;
 
 //=============================================================================
@@ -76,7 +76,7 @@ fn complex_3d_transfer() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
 /// Earth to Mars-like interplanetary transfer (simplified)
 fn interplanetary_like_transfer() -> (Vector3<f64>, Vector3<f64>, f64, f64) {
     let r_earth: f64 = 149.6e9; // ~1 AU
-    let r_mars: f64 = 227.9e9;  // ~1.52 AU
+    let r_mars: f64 = 227.9e9; // ~1.52 AU
 
     let r1 = Vector3::new(r_earth, 0.0, 0.0);
     let r2 = Vector3::new(0.0, r_mars, 0.0);

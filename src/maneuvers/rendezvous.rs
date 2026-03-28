@@ -238,7 +238,11 @@ impl Rendezvous {
             ));
         }
         if mu <= 0.0 {
-            return Err(PoliastroError::invalid_parameter("mu", mu, "must be positive"));
+            return Err(PoliastroError::invalid_parameter(
+                "mu",
+                mu,
+                "must be positive",
+            ));
         }
         if phase_change.abs() < 1e-10 {
             return Err(PoliastroError::invalid_parameter(
@@ -307,8 +311,8 @@ impl Rendezvous {
         }
 
         // Calculate eccentricity
-        let e_phasing = (r_phasing_apoapsis - r_phasing_periapsis)
-            / (r_phasing_apoapsis + r_phasing_periapsis);
+        let e_phasing =
+            (r_phasing_apoapsis - r_phasing_periapsis) / (r_phasing_apoapsis + r_phasing_periapsis);
 
         // Calculate phasing orbit velocities using vis-viva equation
         let v_phasing_periapsis = (mu * (2.0 / r_phasing_periapsis - 1.0 / a_phasing)).sqrt();
@@ -482,7 +486,11 @@ impl Rendezvous {
             ));
         }
         if mu <= 0.0 {
-            return Err(PoliastroError::invalid_parameter("mu", mu, "must be positive"));
+            return Err(PoliastroError::invalid_parameter(
+                "mu",
+                mu,
+                "must be positive",
+            ));
         }
 
         // Normalize current phase to [0, 2π)

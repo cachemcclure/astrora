@@ -14,31 +14,17 @@ pub mod stm;
 
 // Re-export commonly used functions
 pub use keplerian::{
-    propagate_keplerian,
-    propagate_keplerian_duration,
+    propagate_keplerian, propagate_keplerian_duration, propagate_lagrange,
     propagate_state_keplerian,
-    propagate_lagrange,
 };
 
-pub use perturbations::{
-    j2_perturbation,
-    propagate_j2_rk4,
-    propagate_j2_dopri5,
-};
+pub use perturbations::{j2_perturbation, propagate_j2_dopri5, propagate_j2_rk4};
 
 pub use stm::{
-    jacobian_two_body,
-    jacobian_j2,
-    propagate_stm_rk4,
-    propagate_stm_dopri5,
-    propagate_stm_j2_rk4,
+    jacobian_j2, jacobian_two_body, propagate_stm_dopri5, propagate_stm_j2_rk4, propagate_stm_rk4,
 };
 
 pub use perturbations_static::{
-    j2_perturbation_static,
-    j3_perturbation_static,
-    j4_perturbation_static,
-    j2_j3_j4_perturbation_static,
-    j2_dynamics,
-    j2_j3_j4_dynamics,
+    j2_dynamics, j2_j3_j4_dynamics, j2_j3_j4_perturbation_static, j2_perturbation_static,
+    j3_perturbation_static, j4_perturbation_static,
 };

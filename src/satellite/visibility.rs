@@ -74,11 +74,11 @@
 //!          result.azimuth.to_degrees(), result.elevation.to_degrees());
 //! ```
 
-use nalgebra::{Vector3, Matrix3};
+use nalgebra::{Matrix3, Vector3};
 use std::f64::consts::PI;
 
 /// WGS84 Earth ellipsoid parameters
-const WGS84_A: f64 = 6378.137;           // Semi-major axis (km)
+const WGS84_A: f64 = 6378.137; // Semi-major axis (km)
 const WGS84_F: f64 = 1.0 / 298.257223563; // Flattening
 const WGS84_E2: f64 = WGS84_F * (2.0 - WGS84_F); // Eccentricity squared
 
@@ -104,7 +104,11 @@ impl Observer {
     /// - `longitude`: Geodetic longitude in radians (-π to π)
     /// - `altitude`: Altitude above WGS84 ellipsoid in km
     pub fn new(latitude: f64, longitude: f64, altitude: f64) -> Self {
-        Observer { latitude, longitude, altitude }
+        Observer {
+            latitude,
+            longitude,
+            altitude,
+        }
     }
 
     /// Convert observer geodetic coordinates to ECEF position vector (km)
@@ -161,9 +165,15 @@ impl Observer {
 
         // ECEF to ENU transformation matrix
         Matrix3::new(
-            -sin_lon,          cos_lon,           0.0,
-            -cos_lon * sin_lat, -sin_lon * sin_lat, cos_lat,
-            cos_lon * cos_lat,  sin_lon * cos_lat,  sin_lat,
+            -sin_lon,
+            cos_lon,
+            0.0,
+            -cos_lon * sin_lat,
+            -sin_lon * sin_lat,
+            cos_lat,
+            cos_lon * cos_lat,
+            sin_lon * cos_lat,
+            sin_lat,
         )
     }
 
@@ -185,9 +195,15 @@ impl Observer {
 
         // ECEF to SEZ transformation matrix
         Matrix3::new(
-            sin_lat * cos_lon,  sin_lat * sin_lon, -cos_lat,
-            -sin_lon,           cos_lon,            0.0,
-            cos_lat * cos_lon,  cos_lat * sin_lon,  sin_lat,
+            sin_lat * cos_lon,
+            sin_lat * sin_lon,
+            -cos_lat,
+            -sin_lon,
+            cos_lon,
+            0.0,
+            cos_lat * cos_lon,
+            cos_lat * sin_lon,
+            sin_lat,
         )
     }
 }
@@ -260,7 +276,11 @@ pub fn compute_azimuth_elevation(
     let horizontal_range = (e * e + n * n).sqrt();
     let elevation = if horizontal_range < SMALL {
         // At zenith or nadir (singular case)
-        if u > 0.0 { PI / 2.0 } else { -PI / 2.0 }
+        if u > 0.0 {
+            PI / 2.0
+        } else {
+            -PI / 2.0
+        }
     } else {
         u.atan2(horizontal_range)
     };
@@ -324,11 +344,7 @@ pub fn compute_azimuth_elevation_rate(
 /// let sat_ecef = [7000.0, 0.0, 0.0];
 /// let visible = is_visible(&sat_ecef, &observer, 0.0); // 0° minimum elevation
 /// ```
-pub fn is_visible(
-    sat_ecef: &[f64; 3],
-    observer: &Observer,
-    min_elevation: f64,
-) -> bool {
+pub fn is_visible(sat_ecef: &[f64; 3], observer: &Observer, min_elevation: f64) -> bool {
     let topo = compute_azimuth_elevation(sat_ecef, observer);
     topo.elevation >= min_elevation
 }
@@ -347,10 +363,7 @@ pub fn is_visible(
 /// - Atmospheric refraction (~0.5° at horizon)
 /// - Terrain masking
 /// - Obstructions (buildings, trees)
-pub fn has_line_of_sight(
-    sat_ecef: &[f64; 3],
-    observer: &Observer,
-) -> bool {
+pub fn has_line_of_sight(sat_ecef: &[f64; 3], observer: &Observer) -> bool {
     is_visible(sat_ecef, observer, 0.0)
 }
 
@@ -603,12 +616,7 @@ where
 ///
 /// This is a derivative-free optimization method that's more efficient than
 /// uniform sampling for finding the maximum of a unimodal function.
-fn golden_section_search<F>(
-    propagate_fn: &F,
-    observer: &Observer,
-    mut a: f64,
-    mut b: f64,
-) -> f64
+fn golden_section_search<F>(propagate_fn: &F, observer: &Observer, mut a: f64, mut b: f64) -> f64
 where
     F: Fn(f64) -> [f64; 3],
 {
@@ -761,9 +769,12 @@ mod tests {
         let topo = compute_azimuth_elevation(&sat_ecef, &obs);
 
         // Azimuth should be close to 0° (North) - allowing small numerical error
-        assert!(topo.azimuth < 0.1 || topo.azimuth > 2.0 * PI - 0.1,
-                "Azimuth was {:.4} rad ({:.1}°), expected ~0°",
-                topo.azimuth, topo.azimuth.to_degrees());
+        assert!(
+            topo.azimuth < 0.1 || topo.azimuth > 2.0 * PI - 0.1,
+            "Azimuth was {:.4} rad ({:.1}°), expected ~0°",
+            topo.azimuth,
+            topo.azimuth.to_degrees()
+        );
 
         // Elevation should be around 45°
         assert_relative_eq!(topo.elevation, PI / 4.0, epsilon = 0.1);
@@ -793,19 +804,11 @@ mod tests {
     #[test]
     fn test_visibility_below_horizon() {
         // MIT location
-        let obs = Observer::new(
-            42.36_f64.to_radians(),
-            -71.09_f64.to_radians(),
-            0.010,
-        );
+        let obs = Observer::new(42.36_f64.to_radians(), -71.09_f64.to_radians(), 0.010);
 
         // Satellite on opposite side of Earth
         let obs_ecef = obs.to_ecef();
-        let sat_ecef = [
-            -obs_ecef[0],
-            -obs_ecef[1],
-            -obs_ecef[2],
-        ];
+        let sat_ecef = [-obs_ecef[0], -obs_ecef[1], -obs_ecef[2]];
 
         assert!(!is_visible(&sat_ecef, &obs, 0.0));
         assert!(!has_line_of_sight(&sat_ecef, &obs));
@@ -820,7 +823,7 @@ mod tests {
         let sat_ecef = [
             obs_ecef[0] + 400.0,
             obs_ecef[1],
-            obs_ecef[2] + 35.0,  // Small altitude for low elevation
+            obs_ecef[2] + 35.0, // Small altitude for low elevation
         ];
 
         let topo = compute_azimuth_elevation(&sat_ecef, &obs);
@@ -830,7 +833,10 @@ mod tests {
 
         // May not be visible with 10° threshold (depends on exact geometry)
         let min_el_10deg = 10.0_f64.to_radians();
-        assert_eq!(is_visible(&sat_ecef, &obs, min_el_10deg), topo.elevation >= min_el_10deg);
+        assert_eq!(
+            is_visible(&sat_ecef, &obs, min_el_10deg),
+            topo.elevation >= min_el_10deg
+        );
     }
 
     #[test]
@@ -1074,8 +1080,8 @@ mod tests {
 
             // Position: 500 km above observer at max, moving north
             let enu = Vector3::new(
-                0.0,  // East
-                t_minutes * 50.0, // North (moving)
+                0.0,                              // East
+                t_minutes * 50.0,                 // North (moving)
                 elevation_factor * 500.0 - 100.0, // Up (parabolic)
             );
 
@@ -1149,11 +1155,13 @@ mod tests {
         assert!(pass_0deg.is_some());
 
         // With 10° minimum, should still find a pass
-        let pass_10deg = find_next_pass(&propagate, &observer, 0.0, 25.0, 10.0_f64.to_radians(), 0.5);
+        let pass_10deg =
+            find_next_pass(&propagate, &observer, 0.0, 25.0, 10.0_f64.to_radians(), 0.5);
         assert!(pass_10deg.is_some());
 
         // With 60° minimum, should not find a pass (satellite doesn't reach that high)
-        let pass_60deg = find_next_pass(&propagate, &observer, 0.0, 25.0, 60.0_f64.to_radians(), 0.5);
+        let pass_60deg =
+            find_next_pass(&propagate, &observer, 0.0, 25.0, 60.0_f64.to_radians(), 0.5);
         assert!(pass_60deg.is_none());
     }
 
@@ -1171,11 +1179,7 @@ mod tests {
             let phase = (t_in_period - 5.0) / 5.0;
             let elevation_factor = 1.0 - phase * phase;
 
-            let enu = Vector3::new(
-                0.0,
-                t_minutes * 50.0,
-                elevation_factor * 500.0 - 100.0,
-            );
+            let enu = Vector3::new(0.0, t_minutes * 50.0, elevation_factor * 500.0 - 100.0);
 
             let rot_enu = observer.ecef_to_enu_matrix();
             let ecef_offset = rot_enu.transpose() * enu;
@@ -1187,7 +1191,7 @@ mod tests {
 
         // Should find 2 passes
         assert!(passes.len() >= 1); // At least one pass
-        // Each pass should have valid properties
+                                    // Each pass should have valid properties
         for pass in &passes {
             assert!(pass.rise_time < pass.set_time);
             assert!(pass.max_elevation_time >= pass.rise_time);
@@ -1279,7 +1283,11 @@ mod tests {
 
         let pass = pass.unwrap();
         // Duration should equal set_time - rise_time
-        assert_relative_eq!(pass.duration, pass.set_time - pass.rise_time, epsilon = 1e-10);
+        assert_relative_eq!(
+            pass.duration,
+            pass.set_time - pass.rise_time,
+            epsilon = 1e-10
+        );
     }
 
     #[test]

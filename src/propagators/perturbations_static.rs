@@ -111,7 +111,7 @@ pub fn j2_perturbation_static(r: &Vector3Static, mu: f64, j2: f64, r_eq: f64) ->
 
     // Precompute common terms for efficiency
     let r2 = r_mag * r_mag;
-    let r5 = r2 * r2 * r_mag;  // r⁵ = r² * r² * r
+    let r5 = r2 * r2 * r_mag; // r⁵ = r² * r² * r
     let z2 = z * z;
 
     // Common coefficient: (3/2) * J2 * μ * R² / r⁵
@@ -171,7 +171,7 @@ pub fn j3_perturbation_static(r: &Vector3Static, mu: f64, j3: f64, r_eq: f64) ->
     let r_mag = r.norm();
     let r2 = r_mag * r_mag;
     let r5 = r2 * r2 * r_mag;
-    let r7 = r5 * r2;  // r⁷ for J3
+    let r7 = r5 * r2; // r⁷ for J3
     let z2 = z * z;
     let z4 = z2 * z2;
 
@@ -216,7 +216,7 @@ pub fn j4_perturbation_static(r: &Vector3Static, mu: f64, j4: f64, r_eq: f64) ->
 
     let r_mag = r.norm();
     let r2 = r_mag * r_mag;
-    let r7 = r2 * r2 * r2 * r_mag;  // r⁷ for J4
+    let r7 = r2 * r2 * r2 * r_mag; // r⁷ for J4
     let z2 = z * z;
     let z4 = z2 * z2;
 
@@ -338,7 +338,11 @@ pub fn j2_j3_j4_perturbation_static(
 /// let state0 = StateVector6::new(7000e3, 0.0, 0.0, 0.0, 7500.0, 0.0);
 /// let state_final = propagate_rk4_final_only(dynamics, 0.0, &state0, 5400.0, 1000);
 /// ```
-pub fn j2_dynamics(mu: f64, j2: f64, r_eq: f64) -> impl Fn(f64, &na::SVector<f64, 6>) -> na::SVector<f64, 6> {
+pub fn j2_dynamics(
+    mu: f64,
+    j2: f64,
+    r_eq: f64,
+) -> impl Fn(f64, &na::SVector<f64, 6>) -> na::SVector<f64, 6> {
     move |_t: f64, state: &na::SVector<f64, 6>| {
         // Extract position and velocity
         let x = state[0];
@@ -362,9 +366,7 @@ pub fn j2_dynamics(mu: f64, j2: f64, r_eq: f64) -> impl Fn(f64, &na::SVector<f64
 
         // State derivative: [dx/dt, dy/dt, dz/dt, dvx/dt, dvy/dt, dvz/dt]
         // which is: [vx, vy, vz, ax, ay, az]
-        na::SVector::<f64, 6>::new(
-            vx, vy, vz, a_total[0], a_total[1], a_total[2],
-        )
+        na::SVector::<f64, 6>::new(vx, vy, vz, a_total[0], a_total[1], a_total[2])
     }
 }
 
@@ -394,9 +396,7 @@ pub fn j2_j3_j4_dynamics(
         let a_pert = j2_j3_j4_perturbation_static(&r_vec, mu, j2, j3, j4, r_eq);
         let a_total = a_twobody + a_pert;
 
-        na::SVector::<f64, 6>::new(
-            vx, vy, vz, a_total[0], a_total[1], a_total[2],
-        )
+        na::SVector::<f64, 6>::new(vx, vy, vz, a_total[0], a_total[1], a_total[2])
     }
 }
 
@@ -606,7 +606,8 @@ mod tests {
         let r_final = state_final.fixed_rows::<3>(0).norm();
         assert!(
             r_final > 5000e3 && r_final < 10000e3,
-            "Final radius out of bounds: {} m", r_final
+            "Final radius out of bounds: {} m",
+            r_final
         );
 
         // Verify energy is roughly conserved (J2 is conservative)

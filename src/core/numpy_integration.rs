@@ -62,7 +62,7 @@ pub fn dot_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> PoliastroResult<f6
         return Err(PoliastroError::invalid_parameter(
             "array_length",
             a.len() as f64,
-            format!("must match other array length ({})", b.len())
+            format!("must match other array length ({})", b.len()),
         ));
     }
     Ok(a.dot(&b))
@@ -84,14 +84,14 @@ pub fn cross_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> PoliastroResult<
         return Err(PoliastroError::invalid_parameter(
             "vector_length",
             a.len() as f64,
-            "must be 3 for cross product"
+            "must be 3 for cross product",
         ));
     }
     if b.len() != 3 {
         return Err(PoliastroError::invalid_parameter(
             "vector_length",
             b.len() as f64,
-            "must be 3 for cross product"
+            "must be 3 for cross product",
         ));
     }
 
@@ -125,7 +125,7 @@ pub fn matrix_vector_multiply(
         return Err(PoliastroError::invalid_parameter(
             "matrix_columns",
             matrix.ncols() as f64,
-            format!("must match vector length ({})", vector.len())
+            format!("must match vector length ({})", vector.len()),
         ));
     }
 
@@ -145,15 +145,12 @@ pub fn matrix_vector_multiply(
 ///
 /// # Errors
 /// Returns error if matrix dimensions are incompatible
-pub fn matrix_multiply(
-    a: ArrayView2<f64>,
-    b: ArrayView2<f64>,
-) -> PoliastroResult<Array2<f64>> {
+pub fn matrix_multiply(a: ArrayView2<f64>, b: ArrayView2<f64>) -> PoliastroResult<Array2<f64>> {
     if a.ncols() != b.nrows() {
         return Err(PoliastroError::invalid_parameter(
             "matrix_dimensions",
             a.ncols() as f64,
-            format!("matrix A columns must match matrix B rows ({})", b.nrows())
+            format!("matrix A columns must match matrix B rows ({})", b.nrows()),
         ));
     }
 
@@ -176,7 +173,7 @@ pub fn add_arrays(a: ArrayView1<f64>, b: ArrayView1<f64>) -> PoliastroResult<Arr
         return Err(PoliastroError::invalid_parameter(
             "array_length",
             a.len() as f64,
-            format!("must match other array length ({})", b.len())
+            format!("must match other array length ({})", b.len()),
         ));
     }
     Ok(&a + &b)
@@ -256,7 +253,7 @@ pub fn identity_matrix(size: usize) -> PoliastroResult<Array2<f64>> {
         return Err(PoliastroError::invalid_parameter(
             "matrix_size",
             size as f64,
-            "must be positive"
+            "must be positive",
         ));
     }
 
@@ -281,7 +278,7 @@ pub fn batch_normalize_vectors(vectors: ArrayView2<f64>) -> PoliastroResult<Arra
         return Err(PoliastroError::invalid_parameter(
             "vector_dimensions",
             vectors.ncols() as f64,
-            "must be 3 for 3D vectors"
+            "must be 3 for 3D vectors",
         ));
     }
 

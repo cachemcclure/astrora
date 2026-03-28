@@ -9,18 +9,18 @@
 // Run with: cargo bench --bench propagators
 // For detailed output: cargo bench --bench propagators -- --verbose
 
+use astrora_core::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
+use astrora_core::core::state::CartesianState;
+use astrora_core::propagators::keplerian::propagate_keplerian;
+use astrora_core::propagators::perturbations::{
+    j2_perturbation, propagate_j2_dopri5, propagate_j2_rk4,
+};
 use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, PlotConfiguration,
-    AxisScale,
+    black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
+    PlotConfiguration,
 };
 use hifitime::{Duration, Epoch};
 use nalgebra as na;
-use astrora_core::core::constants::{GM_EARTH, R_EARTH, J2_EARTH};
-use astrora_core::core::state::CartesianState;
-use astrora_core::propagators::perturbations::{
-    j2_perturbation, propagate_j2_rk4, propagate_j2_dopri5,
-};
-use astrora_core::propagators::keplerian::propagate_keplerian;
 
 /// LEO satellite initial state (ISS-like orbit)
 /// Altitude: ~400 km, inclination: ~51.6°
@@ -64,7 +64,11 @@ fn heo_initial_state() -> CartesianState {
     let inclination = 63.4_f64.to_radians();
 
     CartesianState::new(
-        na::Vector3::new(r_perigee * inclination.cos(), 0.0, r_perigee * inclination.sin()),
+        na::Vector3::new(
+            r_perigee * inclination.cos(),
+            0.0,
+            r_perigee * inclination.sin(),
+        ),
         na::Vector3::new(0.0, v_perigee, 0.0),
     )
 }
@@ -442,9 +446,7 @@ fn bench_rk4_step_size_performance(c: &mut Criterion) {
     let duration = Duration::from_hours(24.0);
 
     // Test a wide range of step counts
-    let step_counts = vec![
-        50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000,
-    ];
+    let step_counts = vec![50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
     for &steps in &step_counts {
         group.bench_with_input(

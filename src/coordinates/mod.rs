@@ -43,23 +43,15 @@
 //! ```
 
 pub mod frames;
-pub mod rotations;
 pub mod precession_nutation;
+pub mod rotations;
 pub mod transform;
 
 // Re-export commonly used types
-pub use frames::{ICRS, GCRS, J2000, ITRS, TEME, Perifocal};
+pub use frames::{Perifocal, GCRS, ICRS, ITRS, J2000, TEME};
 pub use precession_nutation::{
-    PrecessionAngles,
+    fukushima_williams_to_matrix, iau2006_precession, iau2006_precession_matrix,
+    iau2006_precession_nutation_matrix, simplified_nutation_matrix, PrecessionAngles,
     PrecessionNutationError,
-    iau2006_precession,
-    fukushima_williams_to_matrix,
-    iau2006_precession_matrix,
-    simplified_nutation_matrix,
-    iau2006_precession_nutation_matrix,
 };
-pub use transform::{
-    CoordinateFrame,
-    FrameType,
-    transform_position_velocity,
-};
+pub use transform::{transform_position_velocity, CoordinateFrame, FrameType};

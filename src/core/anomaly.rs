@@ -22,7 +22,7 @@
 //! - True anomaly from parabolic: tan(ν/2) = D
 
 use crate::core::error::{PoliastroError, PoliastroResult};
-use crate::core::numerical::{newton_raphson_ratio, DEFAULT_TOL, DEFAULT_MAX_ITER};
+use crate::core::numerical::{newton_raphson_ratio, DEFAULT_MAX_ITER, DEFAULT_TOL};
 use rayon::prelude::*;
 use std::f64::consts::PI;
 
@@ -222,10 +222,7 @@ pub fn eccentric_to_true_anomaly(
 /// let e = 0.3;
 /// let E = true_to_eccentric_anomaly(nu, e).unwrap();
 /// ```
-pub fn true_to_eccentric_anomaly(
-    true_anomaly: f64,
-    eccentricity: f64,
-) -> PoliastroResult<f64> {
+pub fn true_to_eccentric_anomaly(true_anomaly: f64, eccentricity: f64) -> PoliastroResult<f64> {
     if eccentricity >= 1.0 - ORBIT_TYPE_TOL {
         return Err(PoliastroError::UnsupportedOrbitType {
             operation: "true_to_eccentric_anomaly".into(),
@@ -351,9 +348,8 @@ pub fn mean_to_hyperbolic_anomaly(
     // Hyperbolic Kepler equation: M = e·sinh(H) - H
     // f(H) = e·sinh(H) - H - M
     // f'(H) = e·cosh(H) - 1
-    let ratio = |H: f64| {
-        (eccentricity * H.sinh() - H - mean_anomaly) / (eccentricity * H.cosh() - 1.0)
-    };
+    let ratio =
+        |H: f64| (eccentricity * H.sinh() - H - mean_anomaly) / (eccentricity * H.cosh() - 1.0);
     let f = |H: f64| eccentricity * H.sinh() - H - mean_anomaly;
 
     newton_raphson_ratio(ratio, f, H0, Some(tol), Some(max_iter))
@@ -430,10 +426,7 @@ pub fn hyperbolic_to_true_anomaly(
 ///
 /// # Returns
 /// Hyperbolic anomaly H (radians)
-pub fn true_to_hyperbolic_anomaly(
-    true_anomaly: f64,
-    eccentricity: f64,
-) -> PoliastroResult<f64> {
+pub fn true_to_hyperbolic_anomaly(true_anomaly: f64, eccentricity: f64) -> PoliastroResult<f64> {
     if eccentricity <= 1.0 + ORBIT_TYPE_TOL {
         return Err(PoliastroError::UnsupportedOrbitType {
             operation: "true_to_hyperbolic_anomaly".into(),
@@ -617,7 +610,11 @@ pub fn batch_mean_to_eccentric_anomaly(
         .par_iter()
         .enumerate()
         .map(|(i, &M)| {
-            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            let e = if single_ecc {
+                ecc_value
+            } else {
+                eccentricities[i]
+            };
             mean_to_eccentric_anomaly(M, e, tol, max_iter)
         })
         .collect::<PoliastroResult<Vec<f64>>>()?;
@@ -644,7 +641,8 @@ pub fn batch_mean_to_true_anomaly(
     max_iter: Option<usize>,
 ) -> PoliastroResult<Vec<f64>> {
     // First convert to eccentric anomalies
-    let eccentric_anomalies = batch_mean_to_eccentric_anomaly(mean_anomalies, eccentricities, tol, max_iter)?;
+    let eccentric_anomalies =
+        batch_mean_to_eccentric_anomaly(mean_anomalies, eccentricities, tol, max_iter)?;
 
     // Then convert to true anomalies in parallel
     let single_ecc = eccentricities.len() == 1;
@@ -654,7 +652,11 @@ pub fn batch_mean_to_true_anomaly(
         .par_iter()
         .enumerate()
         .map(|(i, &E)| {
-            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            let e = if single_ecc {
+                ecc_value
+            } else {
+                eccentricities[i]
+            };
             eccentric_to_true_anomaly(E, e)
         })
         .collect::<PoliastroResult<Vec<f64>>>()?;
@@ -693,7 +695,11 @@ pub fn batch_true_to_mean_anomaly(
         .par_iter()
         .enumerate()
         .map(|(i, &nu)| {
-            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            let e = if single_ecc {
+                ecc_value
+            } else {
+                eccentricities[i]
+            };
             true_to_mean_anomaly(nu, e)
         })
         .collect::<PoliastroResult<Vec<f64>>>()?;
@@ -736,7 +742,11 @@ pub fn batch_mean_to_hyperbolic_anomaly(
         .par_iter()
         .enumerate()
         .map(|(i, &M)| {
-            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            let e = if single_ecc {
+                ecc_value
+            } else {
+                eccentricities[i]
+            };
             mean_to_hyperbolic_anomaly(M, e, tol, max_iter)
         })
         .collect::<PoliastroResult<Vec<f64>>>()?;
@@ -760,7 +770,8 @@ pub fn batch_mean_to_true_anomaly_hyperbolic(
     tol: Option<f64>,
     max_iter: Option<usize>,
 ) -> PoliastroResult<Vec<f64>> {
-    let hyperbolic_anomalies = batch_mean_to_hyperbolic_anomaly(mean_anomalies, eccentricities, tol, max_iter)?;
+    let hyperbolic_anomalies =
+        batch_mean_to_hyperbolic_anomaly(mean_anomalies, eccentricities, tol, max_iter)?;
 
     let single_ecc = eccentricities.len() == 1;
     let ecc_value = if single_ecc { eccentricities[0] } else { 0.0 };
@@ -770,7 +781,11 @@ pub fn batch_mean_to_true_anomaly_hyperbolic(
         .par_iter()
         .enumerate()
         .map(|(i, &H)| {
-            let e = if single_ecc { ecc_value } else { eccentricities[i] };
+            let e = if single_ecc {
+                ecc_value
+            } else {
+                eccentricities[i]
+            };
             hyperbolic_to_true_anomaly(H, e)
         })
         .collect::<PoliastroResult<Vec<f64>>>()?;
@@ -787,9 +802,7 @@ pub fn batch_mean_to_true_anomaly_hyperbolic(
 ///
 /// # Returns
 /// Array of true anomalies ν (radians)
-pub fn batch_mean_to_true_anomaly_parabolic(
-    mean_anomalies: &[f64],
-) -> PoliastroResult<Vec<f64>> {
+pub fn batch_mean_to_true_anomaly_parabolic(mean_anomalies: &[f64]) -> PoliastroResult<Vec<f64>> {
     // Parallel processing using rayon
     let results: Vec<f64> = mean_anomalies
         .par_iter()
@@ -1009,7 +1022,11 @@ mod tests {
         let nu_neg = mean_to_true_anomaly_parabolic(-M).unwrap();
 
         // Should be symmetric around 0
-        assert_relative_eq!(nu_pos, -nu_neg.rem_euclid(2.0 * PI) + 2.0 * PI, epsilon = 1e-10);
+        assert_relative_eq!(
+            nu_pos,
+            -nu_neg.rem_euclid(2.0 * PI) + 2.0 * PI,
+            epsilon = 1e-10
+        );
     }
 
     // ========================================================================
@@ -1022,7 +1039,8 @@ mod tests {
         let mean_anomalies = vec![0.5, 1.0, 1.5, 2.0];
         let eccentricity = 0.5;
 
-        let results = batch_mean_to_eccentric_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
+        let results =
+            batch_mean_to_eccentric_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
 
         assert_eq!(results.len(), mean_anomalies.len());
 
@@ -1039,13 +1057,16 @@ mod tests {
         let mean_anomalies = vec![0.5, 1.0, 1.5, 2.0];
         let eccentricities = vec![0.2, 0.4, 0.6, 0.8];
 
-        let results = batch_mean_to_eccentric_anomaly(&mean_anomalies, &eccentricities, None, None).unwrap();
+        let results =
+            batch_mean_to_eccentric_anomaly(&mean_anomalies, &eccentricities, None, None).unwrap();
 
         assert_eq!(results.len(), mean_anomalies.len());
 
         // Verify each result
         for i in 0..mean_anomalies.len() {
-            let E_individual = mean_to_eccentric_anomaly(mean_anomalies[i], eccentricities[i], None, None).unwrap();
+            let E_individual =
+                mean_to_eccentric_anomaly(mean_anomalies[i], eccentricities[i], None, None)
+                    .unwrap();
             assert_relative_eq!(results[i], E_individual, epsilon = 1e-10);
         }
     }
@@ -1055,7 +1076,8 @@ mod tests {
         let mean_anomalies = vec![0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
         let eccentricity = 0.6;
 
-        let results = batch_mean_to_true_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
+        let results =
+            batch_mean_to_true_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
 
         assert_eq!(results.len(), mean_anomalies.len());
 
@@ -1087,7 +1109,8 @@ mod tests {
         let mean_anomalies = vec![1.0, 2.0, 3.0, 4.0];
         let eccentricity = 1.5;
 
-        let results = batch_mean_to_hyperbolic_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
+        let results =
+            batch_mean_to_hyperbolic_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
 
         assert_eq!(results.len(), mean_anomalies.len());
 
@@ -1103,7 +1126,9 @@ mod tests {
         let mean_anomalies = vec![0.5, 1.0, 1.5, 2.0];
         let eccentricities = vec![1.2, 1.5, 2.0, 2.5];
 
-        let results = batch_mean_to_true_anomaly_hyperbolic(&mean_anomalies, &eccentricities, None, None).unwrap();
+        let results =
+            batch_mean_to_true_anomaly_hyperbolic(&mean_anomalies, &eccentricities, None, None)
+                .unwrap();
 
         assert_eq!(results.len(), mean_anomalies.len());
 
@@ -1145,13 +1170,15 @@ mod tests {
         let mean_anomalies: Vec<f64> = (0..n).map(|i| (i as f64) * 0.1).collect();
         let eccentricity = 0.5;
 
-        let results = batch_mean_to_eccentric_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
+        let results =
+            batch_mean_to_eccentric_anomaly(&mean_anomalies, &[eccentricity], None, None).unwrap();
 
         assert_eq!(results.len(), n);
 
         // Spot check a few values
         for i in [0, 25, 50, 75, 99].iter() {
-            let E_individual = mean_to_eccentric_anomaly(mean_anomalies[*i], eccentricity, None, None).unwrap();
+            let E_individual =
+                mean_to_eccentric_anomaly(mean_anomalies[*i], eccentricity, None, None).unwrap();
             assert_relative_eq!(results[*i], E_individual, epsilon = 1e-10);
         }
     }

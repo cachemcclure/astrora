@@ -172,52 +172,46 @@ pub fn jacobian_j2(r: &Vector3, mu: f64, j2: f64, R: f64) -> na::Matrix6<f64> {
     let factor_z = 5.0 * z2_r2 - 3.0;
 
     // ∂(a_J2)/∂x
-    let dax_dx = k * (
-        (factor_xy / r4) * (1.0/r_mag - x*x/r_mag/r2)
-        + (x / r_mag / r4) * (10.0*z2*(-x)/r4 - x*factor_xy*4.0/r2/r_mag)
-    );
+    let dax_dx = k
+        * ((factor_xy / r4) * (1.0 / r_mag - x * x / r_mag / r2)
+            + (x / r_mag / r4) * (10.0 * z2 * (-x) / r4 - x * factor_xy * 4.0 / r2 / r_mag));
 
-    let dax_dy = k * (
-        (factor_xy / r4) * (-x*y/r_mag/r2)
-        + (x / r_mag / r4) * (10.0*z2*(-y)/r4 - y*factor_xy*4.0/r2/r_mag)
-    );
+    let dax_dy = k
+        * ((factor_xy / r4) * (-x * y / r_mag / r2)
+            + (x / r_mag / r4) * (10.0 * z2 * (-y) / r4 - y * factor_xy * 4.0 / r2 / r_mag));
 
-    let dax_dz = k * (
-        (factor_xy / r4) * (-x*z/r_mag/r2)
-        + (x / r_mag / r4) * (10.0*z2*(-z)/r4 + 10.0*z/r2 - z*factor_xy*4.0/r2/r_mag)
-    );
+    let dax_dz = k
+        * ((factor_xy / r4) * (-x * z / r_mag / r2)
+            + (x / r_mag / r4)
+                * (10.0 * z2 * (-z) / r4 + 10.0 * z / r2 - z * factor_xy * 4.0 / r2 / r_mag));
 
     // ∂(a_J2)/∂y
-    let day_dx = k * (
-        (factor_xy / r4) * (-y*x/r_mag/r2)
-        + (y / r_mag / r4) * (10.0*z2*(-x)/r4 - x*factor_xy*4.0/r2/r_mag)
-    );
+    let day_dx = k
+        * ((factor_xy / r4) * (-y * x / r_mag / r2)
+            + (y / r_mag / r4) * (10.0 * z2 * (-x) / r4 - x * factor_xy * 4.0 / r2 / r_mag));
 
-    let day_dy = k * (
-        (factor_xy / r4) * (1.0/r_mag - y*y/r_mag/r2)
-        + (y / r_mag / r4) * (10.0*z2*(-y)/r4 - y*factor_xy*4.0/r2/r_mag)
-    );
+    let day_dy = k
+        * ((factor_xy / r4) * (1.0 / r_mag - y * y / r_mag / r2)
+            + (y / r_mag / r4) * (10.0 * z2 * (-y) / r4 - y * factor_xy * 4.0 / r2 / r_mag));
 
-    let day_dz = k * (
-        (factor_xy / r4) * (-y*z/r_mag/r2)
-        + (y / r_mag / r4) * (10.0*z2*(-z)/r4 + 10.0*z/r2 - z*factor_xy*4.0/r2/r_mag)
-    );
+    let day_dz = k
+        * ((factor_xy / r4) * (-y * z / r_mag / r2)
+            + (y / r_mag / r4)
+                * (10.0 * z2 * (-z) / r4 + 10.0 * z / r2 - z * factor_xy * 4.0 / r2 / r_mag));
 
     // ∂(a_J2)/∂z
-    let daz_dx = k * (
-        (factor_z / r4) * (-z*x/r_mag/r2)
-        + (z / r_mag / r4) * (10.0*z2*(-x)/r4 - x*factor_z*4.0/r2/r_mag)
-    );
+    let daz_dx = k
+        * ((factor_z / r4) * (-z * x / r_mag / r2)
+            + (z / r_mag / r4) * (10.0 * z2 * (-x) / r4 - x * factor_z * 4.0 / r2 / r_mag));
 
-    let daz_dy = k * (
-        (factor_z / r4) * (-z*y/r_mag/r2)
-        + (z / r_mag / r4) * (10.0*z2*(-y)/r4 - y*factor_z*4.0/r2/r_mag)
-    );
+    let daz_dy = k
+        * ((factor_z / r4) * (-z * y / r_mag / r2)
+            + (z / r_mag / r4) * (10.0 * z2 * (-y) / r4 - y * factor_z * 4.0 / r2 / r_mag));
 
-    let daz_dz = k * (
-        (factor_z / r4) * (1.0/r_mag - z*z/r_mag/r2)
-        + (z / r_mag / r4) * (10.0*z2*(-z)/r4 + 10.0*z/r2 - z*factor_z*4.0/r2/r_mag)
-    );
+    let daz_dz = k
+        * ((factor_z / r4) * (1.0 / r_mag - z * z / r_mag / r2)
+            + (z / r_mag / r4)
+                * (10.0 * z2 * (-z) / r4 + 10.0 * z / r2 - z * factor_z * 4.0 / r2 / r_mag));
 
     // Add J2 contributions to the lower-left block (rows 3-5, cols 0-2)
     jacobian[(3, 0)] += dax_dx;
@@ -449,15 +443,8 @@ pub fn propagate_stm_dopri5(
     }
 
     // Integrate
-    let augmented_final = dopri5_integrate(
-        dynamics,
-        0.0,
-        &augmented0,
-        dt,
-        dt.abs() / 10.0,
-        tol,
-        None,
-    )?;
+    let augmented_final =
+        dopri5_integrate(dynamics, 0.0, &augmented0, dt, dt.abs() / 10.0, tol, None)?;
 
     // Extract results
     let r_final = Vector3::new(augmented_final[0], augmented_final[1], augmented_final[2]);

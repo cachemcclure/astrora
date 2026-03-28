@@ -708,12 +708,8 @@ mod tests {
         let delta = PI / 3.0; // 60 degree deflection
         let rotation_axis = [0.0, 0.0, 1.0]; // Rotate about z-axis
 
-        let velocities = GravityAssist::calculate_velocities(
-            v_sc_in,
-            v_planet,
-            delta,
-            rotation_axis,
-        );
+        let velocities =
+            GravityAssist::calculate_velocities(v_sc_in, v_planet, delta, rotation_axis);
 
         // Check that v_infinity magnitude is conserved
         let v_inf_in_mag = GravityAssist::vector_magnitude(velocities.v_infinity_in);
@@ -873,8 +869,8 @@ mod tests {
         let result = GravityAssist::from_periapsis(v_infinity, r_periapsis, mu).unwrap();
 
         // Verify B = |a| × √(e² - 1)
-        let b_calculated = result.semi_major_axis.abs()
-            * (result.eccentricity.powi(2) - 1.0).sqrt();
+        let b_calculated =
+            result.semi_major_axis.abs() * (result.eccentricity.powi(2) - 1.0).sqrt();
 
         assert_relative_eq!(result.b_parameter, b_calculated, epsilon = 1e-3);
     }

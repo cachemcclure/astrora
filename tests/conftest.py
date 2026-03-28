@@ -118,6 +118,27 @@ def moon_params() -> Dict[str, float]:
     }
 
 
+@pytest.fixture(scope="session")
+def sgr_a_star_params() -> Dict[str, float]:
+    """Sagittarius A* black hole parameters for geodesics testing."""
+    return {
+        "gm": constants.GM_SGR_A_STAR,  # m³/s²
+        "schwarzschild_radius": constants.R_SCHWARZSCHILD_SGR_A_STAR,  # m
+        "distance": constants.DISTANCE_SGR_A_STAR,  # m
+    }
+
+
+@pytest.fixture(scope="session")
+def sun_deflection_params() -> Dict[str, float]:
+    """Parameters for solar limb deflection validation."""
+    return {
+        "gm": constants.GM_SUN,  # m³/s²
+        "impact_parameter": constants.R_SUN,  # m
+        "expected_arcsec": 1.7505,  # Einstein's prediction
+        "tolerance_arcsec": 0.01,
+    }
+
+
 # ============================================================================
 # Orbit Regime Fixtures - State Vectors
 # ============================================================================

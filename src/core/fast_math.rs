@@ -33,7 +33,6 @@
 //! - Intel optimization manual: FMA reduces latency and improves accuracy
 //! - ARM NEON: Paired trig operations have lower instruction count
 
-
 /// Compute sin and cos simultaneously (optimized)
 ///
 /// This is significantly faster than calling `.sin()` and `.cos()` separately

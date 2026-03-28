@@ -227,8 +227,7 @@ impl BiellipticTransfer {
 
         // Calculate transfer orbit eccentricities
         // e = (r_a - r_p)/(r_a + r_p)
-        let transfer1_eccentricity =
-            (r_intermediate - r_initial) / (r_intermediate + r_initial);
+        let transfer1_eccentricity = (r_intermediate - r_initial) / (r_intermediate + r_initial);
         let transfer2_eccentricity = (r_intermediate - r_final) / (r_intermediate + r_final);
 
         // Calculate transfer orbit velocities using vis-viva equation
@@ -376,7 +375,12 @@ impl BiellipticTransfer {
         r_final: f64,
         r_intermediate: f64,
         mu: f64,
-    ) -> PoliastroResult<(BiellipticTransferResult, crate::maneuvers::hohmann::HohmannTransferResult, f64, f64)> {
+    ) -> PoliastroResult<(
+        BiellipticTransferResult,
+        crate::maneuvers::hohmann::HohmannTransferResult,
+        f64,
+        f64,
+    )> {
         let bielliptic = Self::calculate(r_initial, r_final, r_intermediate, mu)?;
         let hohmann = HohmannTransfer::calculate(r_initial, r_final, mu)?;
 
@@ -405,7 +409,8 @@ impl BiellipticTransfer {
         r_intermediate: f64,
         mu: f64,
     ) -> PoliastroResult<bool> {
-        let (_, _, dv_savings, _) = Self::compare_with_hohmann(r_initial, r_final, r_intermediate, mu)?;
+        let (_, _, dv_savings, _) =
+            Self::compare_with_hohmann(r_initial, r_final, r_intermediate, mu)?;
         Ok(dv_savings > 0.0)
     }
 
@@ -461,7 +466,8 @@ mod tests {
         let r_final = EARTH_RADIUS + 35_786e3;
         let r_intermediate = r_final * 5.0;
 
-        let result = BiellipticTransfer::calculate(r_initial, r_final, r_intermediate, EARTH_MU).unwrap();
+        let result =
+            BiellipticTransfer::calculate(r_initial, r_final, r_intermediate, EARTH_MU).unwrap();
         assert!(result.transfer_time > 0.0);
         // Bi-elliptic should take longer than Hohmann
         let hohmann = HohmannTransfer::calculate(r_initial, r_final, EARTH_MU).unwrap();
@@ -500,7 +506,11 @@ mod tests {
 
         println!("Bi-elliptic ΔV: {:.1} m/s", bielliptic.delta_v_total);
         println!("Hohmann ΔV: {:.1} m/s", hohmann.delta_v_total);
-        println!("Savings: {:.1} m/s ({:.2}%)", dv_savings, 100.0 * dv_savings / hohmann.delta_v_total);
+        println!(
+            "Savings: {:.1} m/s ({:.2}%)",
+            dv_savings,
+            100.0 * dv_savings / hohmann.delta_v_total
+        );
         println!("Time penalty: {:.2}x", time_penalty);
     }
 
@@ -516,7 +526,8 @@ mod tests {
         let r_final = EARTH_RADIUS + 35_786e3;
         let r_intermediate = r_final * 3.0;
 
-        let result = BiellipticTransfer::calculate(r_initial, r_final, r_intermediate, EARTH_MU).unwrap();
+        let result =
+            BiellipticTransfer::calculate(r_initial, r_final, r_intermediate, EARTH_MU).unwrap();
 
         // Check specific orbital energy at each point
         let epsilon_initial = -EARTH_MU / (2.0 * r_initial);
@@ -534,7 +545,8 @@ mod tests {
         let r_initial = EARTH_RADIUS + 400e3;
         let r_final = r_initial * 20.0; // Large ratio where bi-elliptic helps
 
-        let result = BiellipticTransfer::find_optimal_intermediate(r_initial, r_final, EARTH_MU, 50.0);
+        let result =
+            BiellipticTransfer::find_optimal_intermediate(r_initial, r_final, EARTH_MU, 50.0);
         assert!(result.is_ok());
 
         let (r_opt, transfer) = result.unwrap();

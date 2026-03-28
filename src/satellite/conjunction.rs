@@ -232,7 +232,15 @@ pub fn check_collision(
     search_window: f64,
     collision_threshold: f64,
 ) -> bool {
-    match compute_conjunction(r1_0, v1_0, r2_0, v2_0, mu, search_window, collision_threshold) {
+    match compute_conjunction(
+        r1_0,
+        v1_0,
+        r2_0,
+        v2_0,
+        mu,
+        search_window,
+        collision_threshold,
+    ) {
         Ok(result) => result.collision_risk,
         Err(_) => false, // If conjunction computation fails, assume no collision
     }
@@ -278,7 +286,12 @@ pub fn closest_approach_distance(
     search_window: f64,
 ) -> PoliastroResult<f64> {
     let result = compute_conjunction(
-        r1_0, v1_0, r2_0, v2_0, mu, search_window,
+        r1_0,
+        v1_0,
+        r2_0,
+        v2_0,
+        mu,
+        search_window,
         f64::INFINITY, // No collision threshold
     )?;
     Ok(result.miss_distance)
@@ -329,13 +342,11 @@ fn propagate_kepler(r0: &Vector3, v0: &Vector3, mu: f64, dt: f64) -> (Vector3, V
         let (c2, c3) = stumpff_c(psi);
 
         let r = r0_mag + vr0 * chi2 * c2 / (mu).sqrt() + (1.0 - r0_mag / a) * chi3 * c3;
-        let f_chi = r0_mag * vr0 * chi2 * c2 / (mu).sqrt()
-                    + (1.0 - r0_mag / a) * chi3 * c3
-                    + r0_mag * chi
-                    - (mu * a).sqrt() * dt;
-        let df_dchi = r0_mag * vr0 * chi * c2 / (mu).sqrt()
-                      + (1.0 - r0_mag / a) * chi2 * c3
-                      + r0_mag;
+        let f_chi =
+            r0_mag * vr0 * chi2 * c2 / (mu).sqrt() + (1.0 - r0_mag / a) * chi3 * c3 + r0_mag * chi
+                - (mu * a).sqrt() * dt;
+        let df_dchi =
+            r0_mag * vr0 * chi * c2 / (mu).sqrt() + (1.0 - r0_mag / a) * chi2 * c3 + r0_mag;
 
         let chi_new = chi - f_chi / df_dchi;
 
@@ -437,8 +448,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
     use crate::core::constants::GM_EARTH;
+    use approx::assert_relative_eq;
 
     #[test]
     #[ignore] // Kepler propagation needs refinement for better accuracy
@@ -485,11 +496,11 @@ mod tests {
         let v2 = Vector3::new(0.0, (GM_EARTH / 7000e3).sqrt(), 0.0);
 
         let result = compute_conjunction(
-            &r1, &v1, &r2, &v2,
-            GM_EARTH,
-            600.0, // 10 minutes (shorter window for test stability)
+            &r1, &v1, &r2, &v2, GM_EARTH,
+            600.0,    // 10 minutes (shorter window for test stability)
             10_000.0, // 10 km threshold
-        ).unwrap();
+        )
+        .unwrap();
 
         // Miss distance should be in reasonable range (a few km)
         // Due to Kepler propagation complexities, we just check it's reasonable
@@ -516,11 +527,10 @@ mod tests {
         let v2 = Vector3::new(0.0, (GM_EARTH / 7000e3).sqrt(), 0.0);
 
         let result = compute_conjunction(
-            &r1, &v1, &r2, &v2,
-            GM_EARTH,
-            300.0, // 5 minutes
+            &r1, &v1, &r2, &v2, GM_EARTH, 300.0,  // 5 minutes
             5000.0, // 5 km threshold
-        ).unwrap();
+        )
+        .unwrap();
 
         // Should detect reasonably close approach
         assert!(result.miss_distance > 0.0);
@@ -536,10 +546,9 @@ mod tests {
         let v2 = Vector3::new(0.0, (GM_EARTH / 7000e3).sqrt(), 0.0);
 
         let miss_distance = closest_approach_distance(
-            &r1, &v1, &r2, &v2,
-            GM_EARTH,
-            600.0, // 10 minutes
-        ).unwrap();
+            &r1, &v1, &r2, &v2, GM_EARTH, 600.0, // 10 minutes
+        )
+        .unwrap();
 
         // Should be within reasonable range
         assert!(miss_distance > 0.0);

@@ -78,9 +78,9 @@
 //!   with IAU 2006 resolutions". A&A, 459, 981-985.
 //! - IERS Technical Note 36: IERS Conventions (2010)
 
+use crate::coordinates::rotations::{rotation_x, rotation_z};
 use nalgebra::Matrix3;
 use thiserror::Error;
-use crate::coordinates::rotations::{rotation_x, rotation_z};
 
 /// Arcseconds to radians conversion factor
 const ARCSEC_TO_RAD: f64 = 4.84813681109536e-6;
@@ -168,37 +168,27 @@ pub fn iau2006_precession(jd1: f64, jd2: f64) -> PrecessionAngles {
     // Values in arcseconds, converted to radians
 
     // γ̄ (gamb): Frame bias angle in longitude
-    let gamb_arcsec = -0.052928
-        + 10.556378 * t
-        + 0.4932044 * t.powi(2)
+    let gamb_arcsec = -0.052928 + 10.556378 * t + 0.4932044 * t.powi(2)
         - 0.00031238 * t.powi(3)
         - 0.000002788 * t.powi(4)
         + 0.0000000260 * t.powi(5);
     let gamb = gamb_arcsec * ARCSEC_TO_RAD;
 
     // φ̄ (phib): Inclination angle
-    let phib_arcsec = 84381.412819
-        - 46.811016 * t
-        + 0.0511268 * t.powi(2)
-        + 0.00053289 * t.powi(3)
+    let phib_arcsec = 84381.412819 - 46.811016 * t + 0.0511268 * t.powi(2) + 0.00053289 * t.powi(3)
         - 0.000000440 * t.powi(4)
         - 0.0000000176 * t.powi(5);
     let phib = phib_arcsec * ARCSEC_TO_RAD;
 
     // ψ̄ (psib): Precession angle in longitude
-    let psib_arcsec = -0.041775
-        + 5038.481484 * t
-        + 1.5584175 * t.powi(2)
+    let psib_arcsec = -0.041775 + 5038.481484 * t + 1.5584175 * t.powi(2)
         - 0.00018522 * t.powi(3)
         - 0.000026452 * t.powi(4)
         - 0.0000000148 * t.powi(5);
     let psib = psib_arcsec * ARCSEC_TO_RAD;
 
     // εₐ (epsa): Mean obliquity of the ecliptic
-    let epsa_arcsec = 84381.406
-        - 46.836769 * t
-        - 0.0001831 * t.powi(2)
-        + 0.00200340 * t.powi(3)
+    let epsa_arcsec = 84381.406 - 46.836769 * t - 0.0001831 * t.powi(2) + 0.00200340 * t.powi(3)
         - 0.000000576 * t.powi(4)
         - 0.0000000434 * t.powi(5);
     let epsa = epsa_arcsec * ARCSEC_TO_RAD;
@@ -399,8 +389,8 @@ mod tests {
     #[test]
     fn test_precession_obliquity_decrease() {
         // Mean obliquity should decrease over time
-        let prec_2000 = iau2006_precession(2451545.0, 0.0);  // J2000
-        let prec_2100 = iau2006_precession(2488070.0, 0.0);  // J2100 (approx)
+        let prec_2000 = iau2006_precession(2451545.0, 0.0); // J2000
+        let prec_2100 = iau2006_precession(2488070.0, 0.0); // J2100 (approx)
 
         // Obliquity decreases by about 46.8 arcsec/century
         assert!(prec_2100.epsa < prec_2000.epsa);
@@ -413,8 +403,8 @@ mod tests {
     #[test]
     fn test_precession_angle_growth() {
         // Precession angle (psib) should grow over time
-        let prec_2000 = iau2006_precession(2451545.0, 0.0);  // J2000
-        let prec_2050 = iau2006_precession(2469807.5, 0.0);  // J2050 (approx)
+        let prec_2000 = iau2006_precession(2451545.0, 0.0); // J2000
+        let prec_2050 = iau2006_precession(2469807.5, 0.0); // J2050 (approx)
 
         // psib should increase significantly (precession of equinoxes)
         assert!(prec_2050.psib > prec_2000.psib);

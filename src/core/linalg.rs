@@ -75,12 +75,7 @@ pub type Isometry3 = na::Isometry3<f64>;
 #[inline]
 pub fn state_vector(position: Vector3, velocity: Vector3) -> Vector6 {
     Vector6::new(
-        position.x,
-        position.y,
-        position.z,
-        velocity.x,
-        velocity.y,
-        velocity.z,
+        position.x, position.y, position.z, velocity.x, velocity.y, velocity.z,
     )
 }
 
@@ -406,11 +401,7 @@ mod tests {
 
     // Strategy for generating non-degenerate 3D vectors
     fn vector3_strategy() -> impl Strategy<Value = Vector3> {
-        (
-            -1e6..1e6_f64,
-            -1e6..1e6_f64,
-            -1e6..1e6_f64,
-        )
+        (-1e6..1e6_f64, -1e6..1e6_f64, -1e6..1e6_f64)
             .prop_map(|(x, y, z)| Vector3::new(x, y, z))
             .prop_filter("non-zero vector", |v| v.norm() > 1e-10)
     }

@@ -5,7 +5,7 @@
 //! and conversion errors. All errors integrate seamlessly with PyO3 for
 //! automatic conversion to Python exceptions.
 
-use pyo3::exceptions::{PyRuntimeError, PyValueError, PyTypeError, PyArithmeticError};
+use pyo3::exceptions::{PyArithmeticError, PyRuntimeError, PyTypeError, PyValueError};
 use pyo3::PyErr;
 use thiserror::Error;
 
@@ -32,31 +32,19 @@ pub enum PoliastroError {
 
     /// Numerical value is invalid (NaN, Infinity, or denormal)
     #[error("Invalid numerical value encountered: {context} = {value}")]
-    InvalidNumericalValue {
-        context: String,
-        value: f64,
-    },
+    InvalidNumericalValue { context: String, value: f64 },
 
     /// Division by zero or near-zero value
     #[error("Division by zero or near-zero value in {context}: divisor = {divisor}")]
-    DivisionByZero {
-        context: String,
-        divisor: f64,
-    },
+    DivisionByZero { context: String, divisor: f64 },
 
     /// Numerical instability detected
     #[error("Numerical instability detected in {operation}: {details}")]
-    NumericalInstability {
-        operation: String,
-        details: String,
-    },
+    NumericalInstability { operation: String, details: String },
 
     /// Matrix is singular or near-singular
     #[error("Singular matrix encountered in {context}: determinant = {determinant}")]
-    SingularMatrix {
-        context: String,
-        determinant: f64,
-    },
+    SingularMatrix { context: String, determinant: f64 },
 
     // ========================================================================
     // Physical Constraint Violations
@@ -71,21 +59,15 @@ pub enum PoliastroError {
 
     /// Orbital eccentricity is out of valid range
     #[error("Invalid eccentricity: {value} (must be >= 0)")]
-    InvalidEccentricity {
-        value: f64,
-    },
+    InvalidEccentricity { value: f64 },
 
     /// Semi-major axis is invalid
     #[error("Invalid semi-major axis: {value} km (must be > 0 for elliptic orbits)")]
-    InvalidSemiMajorAxis {
-        value: f64,
-    },
+    InvalidSemiMajorAxis { value: f64 },
 
     /// Inclination is out of valid range [0, π]
     #[error("Invalid inclination: {value} rad (must be in [0, π])")]
-    InvalidInclination {
-        value: f64,
-    },
+    InvalidInclination { value: f64 },
 
     /// Angular value is out of valid range
     #[error("Invalid angle '{name}': {value} rad (expected range: [{min}, {max}])")]
@@ -98,38 +80,28 @@ pub enum PoliastroError {
 
     /// Orbit violates energy conservation
     #[error("Energy conservation violated: ΔE = {delta_energy} (tolerance: {tolerance})")]
-    EnergyNotConserved {
-        delta_energy: f64,
-        tolerance: f64,
-    },
+    EnergyNotConserved { delta_energy: f64, tolerance: f64 },
 
     /// Orbit violates angular momentum conservation
-    #[error("Angular momentum conservation violated: ΔL = {delta_momentum} (tolerance: {tolerance})")]
-    MomentumNotConserved {
-        delta_momentum: f64,
-        tolerance: f64,
-    },
+    #[error(
+        "Angular momentum conservation violated: ΔL = {delta_momentum} (tolerance: {tolerance})"
+    )]
+    MomentumNotConserved { delta_momentum: f64, tolerance: f64 },
 
     // ========================================================================
     // State and Coordinate Errors
     // ========================================================================
     /// State vector contains invalid values
     #[error("Invalid state vector: {reason}")]
-    InvalidStateVector {
-        reason: String,
-    },
+    InvalidStateVector { reason: String },
 
     /// Position vector is zero or near-zero
     #[error("Zero or near-zero position vector: |r| = {magnitude} km")]
-    ZeroPosition {
-        magnitude: f64,
-    },
+    ZeroPosition { magnitude: f64 },
 
     /// Velocity vector is zero or near-zero
     #[error("Zero or near-zero velocity vector: |v| = {magnitude} km/s")]
-    ZeroVelocity {
-        magnitude: f64,
-    },
+    ZeroVelocity { magnitude: f64 },
 
     /// Coordinate transformation failed
     #[error("Coordinate transformation failed from {from_frame} to {to_frame}: {reason}")]
@@ -154,13 +126,12 @@ pub enum PoliastroError {
     // ========================================================================
     /// Numerical integrator failed
     #[error("Integration failure in {integrator}: {reason}")]
-    IntegrationFailure {
-        integrator: String,
-        reason: String,
-    },
+    IntegrationFailure { integrator: String, reason: String },
 
     /// Time step is too large for accurate integration
-    #[error("Time step too large: {step_size} s (recommended: < {max_recommended} s for {orbit_type})")]
+    #[error(
+        "Time step too large: {step_size} s (recommended: < {max_recommended} s for {orbit_type})"
+    )]
     TimeStepTooLarge {
         step_size: f64,
         max_recommended: f64,
@@ -169,10 +140,7 @@ pub enum PoliastroError {
 
     /// Propagation diverged or became unstable
     #[error("Propagation diverged after {time} s: {reason}")]
-    PropagationDivergence {
-        time: f64,
-        reason: String,
-    },
+    PropagationDivergence { time: f64, reason: String },
 
     /// Propagation failed for a specific context
     #[error("Propagation failed in {context}: {source}")]
@@ -180,6 +148,27 @@ pub enum PoliastroError {
         context: String,
         source: Box<PoliastroError>,
     },
+
+    // ========================================================================
+    // Geodesic and Light Path Errors
+    // ========================================================================
+    /// Photon captured by a black hole (crossed event horizon)
+    #[error("Photon captured: crossed event horizon at r = {radius} m (Schwarzschild radius: {schwarzschild_radius} m)")]
+    PhotonCaptured {
+        radius: f64,
+        schwarzschild_radius: f64,
+    },
+
+    /// Impact parameter is below the photon sphere critical value
+    #[error("Impact parameter {impact_parameter} m is below photon sphere critical value {critical_value} m")]
+    BelowPhotonSphere {
+        impact_parameter: f64,
+        critical_value: f64,
+    },
+
+    /// Geodesic integration diverged or produced unphysical results
+    #[error("Geodesic integration failed: {reason}")]
+    GeodesicIntegrationFailure { reason: String },
 
     // ========================================================================
     // Input Validation Errors
@@ -195,22 +184,15 @@ pub enum PoliastroError {
 
     /// Incompatible units provided
     #[error("Incompatible units: expected {expected}, got {actual}")]
-    IncompatibleUnits {
-        expected: String,
-        actual: String,
-    },
+    IncompatibleUnits { expected: String, actual: String },
 
     /// Invalid time value or epoch
     #[error("Invalid time value: {reason}")]
-    InvalidTime {
-        reason: String,
-    },
+    InvalidTime { reason: String },
 
     /// Missing required parameter
     #[error("Missing required parameter: {parameter}")]
-    MissingParameter {
-        parameter: String,
-    },
+    MissingParameter { parameter: String },
 
     // ========================================================================
     // Orbit Type Errors
@@ -224,30 +206,22 @@ pub enum PoliastroError {
 
     /// Orbit type cannot be determined
     #[error("Cannot determine orbit type: {reason}")]
-    AmbiguousOrbitType {
-        reason: String,
-    },
+    AmbiguousOrbitType { reason: String },
 
     // ========================================================================
     // General Errors
     // ========================================================================
     /// Computation error with custom message
     #[error("Computation error: {message}")]
-    ComputationError {
-        message: String,
-    },
+    ComputationError { message: String },
 
     /// Not implemented yet
     #[error("Not implemented: {feature}")]
-    NotImplemented {
-        feature: String,
-    },
+    NotImplemented { feature: String },
 
     /// Internal error (bug in the library)
     #[error("Internal error: {message} (this is a bug, please report it)")]
-    InternalError {
-        message: String,
-    },
+    InternalError { message: String },
 }
 
 /// Result type alias for astrora operations
@@ -305,7 +279,13 @@ impl From<PoliastroError> for PyErr {
             // Integration errors → RuntimeError
             IntegrationFailure { .. }
             | PropagationDivergence { .. }
-            | PropagationFailed { .. } => PyRuntimeError::new_err(err.to_string()),
+            | PropagationFailed { .. }
+            | GeodesicIntegrationFailure { .. } => PyRuntimeError::new_err(err.to_string()),
+
+            // Geodesic constraint violations → ValueError
+            PhotonCaptured { .. } | BelowPhotonSphere { .. } => {
+                PyValueError::new_err(err.to_string())
+            }
 
             // Validation errors → ValueError
             OutOfRange { .. }
@@ -317,13 +297,14 @@ impl From<PoliastroError> for PyErr {
             IncompatibleUnits { .. } => PyTypeError::new_err(err.to_string()),
 
             // Orbit type errors → ValueError
-            UnsupportedOrbitType { .. }
-            | AmbiguousOrbitType { .. } => PyValueError::new_err(err.to_string()),
+            UnsupportedOrbitType { .. } | AmbiguousOrbitType { .. } => {
+                PyValueError::new_err(err.to_string())
+            }
 
             // General errors → RuntimeError
-            ComputationError { .. }
-            | NotImplemented { .. }
-            | InternalError { .. } => PyRuntimeError::new_err(err.to_string()),
+            ComputationError { .. } | NotImplemented { .. } | InternalError { .. } => {
+                PyRuntimeError::new_err(err.to_string())
+            }
         }
     }
 }
@@ -334,7 +315,11 @@ impl From<PoliastroError> for PyErr {
 
 impl PoliastroError {
     /// Create a convergence failure error
-    pub fn convergence_failure(method: impl Into<String>, iterations: usize, tolerance: f64) -> Self {
+    pub fn convergence_failure(
+        method: impl Into<String>,
+        iterations: usize,
+        tolerance: f64,
+    ) -> Self {
         Self::ConvergenceFailure {
             method: method.into(),
             iterations,
@@ -383,6 +368,21 @@ impl PoliastroError {
     pub fn internal(message: impl Into<String>) -> Self {
         Self::InternalError {
             message: message.into(),
+        }
+    }
+
+    /// Create a photon captured error
+    pub fn photon_captured(radius: f64, schwarzschild_radius: f64) -> Self {
+        Self::PhotonCaptured {
+            radius,
+            schwarzschild_radius,
+        }
+    }
+
+    /// Create a geodesic integration failure error
+    pub fn geodesic_integration_failure(reason: impl Into<String>) -> Self {
+        Self::GeodesicIntegrationFailure {
+            reason: reason.into(),
         }
     }
 }
@@ -469,6 +469,35 @@ mod tests {
         assert!(msg.contains("Energy"));
         // Check for delta energy value (may be formatted as 0.000001 or 1e-6)
         assert!(msg.contains("0.000001") || msg.contains("1e-6"));
+    }
+
+    #[test]
+    fn test_photon_captured() {
+        let err = PoliastroError::photon_captured(1000.0, 2953.0);
+        let msg = err.to_string();
+        assert!(msg.contains("Photon captured"));
+        assert!(msg.contains("1000"));
+        assert!(msg.contains("2953"));
+    }
+
+    #[test]
+    fn test_geodesic_integration_failure() {
+        let err = PoliastroError::geodesic_integration_failure("diverged at step 500");
+        let msg = err.to_string();
+        assert!(msg.contains("Geodesic integration failed"));
+        assert!(msg.contains("diverged"));
+    }
+
+    #[test]
+    fn test_below_photon_sphere() {
+        let err = PoliastroError::BelowPhotonSphere {
+            impact_parameter: 100.0,
+            critical_value: 200.0,
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("Impact parameter"));
+        assert!(msg.contains("100"));
+        assert!(msg.contains("200"));
     }
 
     #[test]

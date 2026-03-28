@@ -39,10 +39,10 @@
 //! - Curtis, "Orbital Mechanics for Engineering Students" Section 12.7
 //! - Acta Astronautica 225 (2024) 601-610 (decay time estimates)
 
+use crate::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
 use crate::core::error::{PoliastroError, PoliastroResult};
 use crate::core::linalg::Vector3;
 use crate::propagators::perturbations::{drag_acceleration, j2_perturbation};
-use crate::core::constants::{GM_EARTH, J2_EARTH, R_EARTH};
 
 /// Default terminal altitude for reentry (Karman line) in meters
 pub const DEFAULT_TERMINAL_ALTITUDE: f64 = 100_000.0; // 100 km
@@ -154,13 +154,11 @@ pub fn estimate_lifetime(
     let h0 = r0_mag - R_EARTH;
 
     if h0 < terminal_altitude {
-        return Err(PoliastroError::invalid_state(
-            format!(
-                "Initial altitude ({:.1} km) is already below terminal altitude ({:.1} km)",
-                h0 / 1000.0,
-                terminal_altitude / 1000.0
-            ),
-        ));
+        return Err(PoliastroError::invalid_state(format!(
+            "Initial altitude ({:.1} km) is already below terminal altitude ({:.1} km)",
+            h0 / 1000.0,
+            terminal_altitude / 1000.0
+        )));
     }
 
     // Initialize state
@@ -399,7 +397,8 @@ mod tests {
             100_000.0,      // 100 km terminal
             10.0 * 86400.0, // Max 10 days
             10.0,           // 10 second initial step
-        ).unwrap();
+        )
+        .unwrap();
 
         // Should decay within 10 days
         assert!(lifetime > 0.0);
@@ -505,7 +504,7 @@ mod tests {
 
         // Should be very small (slow decay)
         assert!(rate > -1e-6); // Very small magnitude
-        assert!(rate < 0.0);   // But still negative
+        assert!(rate < 0.0); // But still negative
     }
 
     #[test]
@@ -650,12 +649,9 @@ mod tests {
         let B = 1.0; // Extremely large
 
         let lifetime = estimate_lifetime(
-            &r0,
-            &v0,
-            B,
-            100_000.0,  // Terminal at 100 km
-            3600.0,     // Max 1 hour
-            1.0,        // 1 second time step
+            &r0, &v0, B, 100_000.0, // Terminal at 100 km
+            3600.0,    // Max 1 hour
+            1.0,       // 1 second time step
         );
 
         // Should succeed and give short lifetime
@@ -687,7 +683,10 @@ mod tests {
         let result = estimate_lifetime(&r0, &v0, 0.01, -1000.0, 86400.0, 600.0);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("terminal_altitude"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("terminal_altitude"));
     }
 
     #[test]

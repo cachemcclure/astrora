@@ -32,10 +32,10 @@
 //! - Hoots & Roehrich (1980, revised 2006): Spacetrack Report #3
 //! - Vallado et al. (2006): AIAA 2006-6753 "Revisiting Spacetrack Report #3"
 
-use sgp4::{Constants, Elements, MinutesSinceEpoch};
-use thiserror::Error;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::PyErr;
+use sgp4::{Constants, Elements, MinutesSinceEpoch};
+use thiserror::Error;
 
 /// Errors that can occur during SGP4 propagation
 #[derive(Error, Debug)]
@@ -230,13 +230,19 @@ mod tests {
 
         // At epoch, should be at reasonable LEO altitude
         let altitude_km = state.position_magnitude() - 6378.137; // Earth radius
-        assert!(altitude_km > 300.0 && altitude_km < 500.0,
-                "ISS altitude should be ~400 km, got {}", altitude_km);
+        assert!(
+            altitude_km > 300.0 && altitude_km < 500.0,
+            "ISS altitude should be ~400 km, got {}",
+            altitude_km
+        );
 
         // Velocity should be ~7.7 km/s for LEO
         let speed = state.velocity_magnitude();
-        assert!(speed > 7.0 && speed < 8.0,
-                "ISS speed should be ~7.7 km/s, got {}", speed);
+        assert!(
+            speed > 7.0 && speed < 8.0,
+            "ISS speed should be ~7.7 km/s, got {}",
+            speed
+        );
     }
 
     #[test]
@@ -250,14 +256,17 @@ mod tests {
         let state_one_orbit = propagate_from_elements(&elements, period_minutes).unwrap();
 
         // Position should be similar (not exact due to perturbations)
-        let pos_diff = (
-            (state_epoch.position[0] - state_one_orbit.position[0]).powi(2) +
-            (state_epoch.position[1] - state_one_orbit.position[1]).powi(2) +
-            (state_epoch.position[2] - state_one_orbit.position[2]).powi(2)
-        ).sqrt();
+        let pos_diff = ((state_epoch.position[0] - state_one_orbit.position[0]).powi(2)
+            + (state_epoch.position[1] - state_one_orbit.position[1]).powi(2)
+            + (state_epoch.position[2] - state_one_orbit.position[2]).powi(2))
+        .sqrt();
 
         // Should be within 100 km after one orbit (perturbations cause drift)
-        assert!(pos_diff < 100.0, "Position drift after one orbit: {} km", pos_diff);
+        assert!(
+            pos_diff < 100.0,
+            "Position drift after one orbit: {} km",
+            pos_diff
+        );
     }
 
     #[test]

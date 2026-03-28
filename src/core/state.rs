@@ -3,8 +3,8 @@
 //! This module provides Cartesian state vector representations and
 //! calculations for orbital properties from position and velocity.
 
-use crate::core::linalg::Vector3;
 use crate::core::error::{PoliastroError, PoliastroResult};
+use crate::core::linalg::Vector3;
 use pyo3::prelude::*;
 
 /// Cartesian state vector (position and velocity)
@@ -360,14 +360,14 @@ impl CartesianState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
     use crate::core::constants::GM_EARTH;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_specific_energy_circular_orbit() {
         // Circular orbit at 7000 km radius
         let r = 7000e3;
-        let v = (GM_EARTH / r).sqrt();  // Circular orbit velocity
+        let v = (GM_EARTH / r).sqrt(); // Circular orbit velocity
 
         let pos = Vector3::new(r, 0.0, 0.0);
         let vel = Vector3::new(0.0, v, 0.0);
@@ -451,11 +451,11 @@ mod tests {
     fn test_eccentricity_elliptical_orbit() {
         // Create an elliptical orbit with known eccentricity
         // Using perifocal frame: position at periapsis
-        let e = 0.5;  // Target eccentricity
-        let a = 10000e3;  // Semi-major axis: 10,000 km
+        let e = 0.5; // Target eccentricity
+        let a = 10000e3; // Semi-major axis: 10,000 km
 
-        let r_p = a * (1.0 - e);  // Periapsis distance
-        let v_p = ((GM_EARTH / a) * (1.0 + e) / (1.0 - e)).sqrt();  // Periapsis velocity
+        let r_p = a * (1.0 - e); // Periapsis distance
+        let v_p = ((GM_EARTH / a) * (1.0 + e) / (1.0 - e)).sqrt(); // Periapsis velocity
 
         let pos = Vector3::new(r_p, 0.0, 0.0);
         let vel = Vector3::new(0.0, v_p, 0.0);
@@ -495,10 +495,8 @@ mod tests {
         // Circular orbit
         let r = 7000e3;
         let v = (GM_EARTH / r).sqrt();
-        let state_circular = CartesianState::new(
-            Vector3::new(r, 0.0, 0.0),
-            Vector3::new(0.0, v, 0.0)
-        );
+        let state_circular =
+            CartesianState::new(Vector3::new(r, 0.0, 0.0), Vector3::new(0.0, v, 0.0));
         assert_eq!(state_circular.orbit_type(GM_EARTH), "circular");
 
         // Elliptical orbit
@@ -506,18 +504,14 @@ mod tests {
         let e = 0.5;
         let r_p = a * (1.0 - e);
         let v_p = ((GM_EARTH / a) * (1.0 + e) / (1.0 - e)).sqrt();
-        let state_elliptical = CartesianState::new(
-            Vector3::new(r_p, 0.0, 0.0),
-            Vector3::new(0.0, v_p, 0.0)
-        );
+        let state_elliptical =
+            CartesianState::new(Vector3::new(r_p, 0.0, 0.0), Vector3::new(0.0, v_p, 0.0));
         assert_eq!(state_elliptical.orbit_type(GM_EARTH), "elliptical");
 
         // Hyperbolic orbit (escape velocity)
-        let v_escape = (2.0 * GM_EARTH / r).sqrt() * 1.5;  // 1.5x escape velocity
-        let state_hyperbolic = CartesianState::new(
-            Vector3::new(r, 0.0, 0.0),
-            Vector3::new(0.0, v_escape, 0.0)
-        );
+        let v_escape = (2.0 * GM_EARTH / r).sqrt() * 1.5; // 1.5x escape velocity
+        let state_hyperbolic =
+            CartesianState::new(Vector3::new(r, 0.0, 0.0), Vector3::new(0.0, v_escape, 0.0));
         assert_eq!(state_hyperbolic.orbit_type(GM_EARTH), "hyperbolic");
     }
 
@@ -609,34 +603,26 @@ mod tests {
 
         // Circular (e ≈ 0)
         let v_circ = (GM_EARTH / r).sqrt();
-        let state_circ = CartesianState::new(
-            Vector3::new(r, 0.0, 0.0),
-            Vector3::new(0.0, v_circ, 0.0),
-        );
+        let state_circ =
+            CartesianState::new(Vector3::new(r, 0.0, 0.0), Vector3::new(0.0, v_circ, 0.0));
         assert_eq!(state_circ.orbit_type(GM_EARTH), "circular");
 
         // Elliptical (0 < e < 1)
         let v_ellip = v_circ * 1.2; // Slightly higher velocity
-        let state_ellip = CartesianState::new(
-            Vector3::new(r, 0.0, 0.0),
-            Vector3::new(0.0, v_ellip, 0.0),
-        );
+        let state_ellip =
+            CartesianState::new(Vector3::new(r, 0.0, 0.0), Vector3::new(0.0, v_ellip, 0.0));
         assert_eq!(state_ellip.orbit_type(GM_EARTH), "elliptical");
 
         // Parabolic (e ≈ 1)
         let v_para = (2.0 * GM_EARTH / r).sqrt();
-        let state_para = CartesianState::new(
-            Vector3::new(r, 0.0, 0.0),
-            Vector3::new(0.0, v_para, 0.0),
-        );
+        let state_para =
+            CartesianState::new(Vector3::new(r, 0.0, 0.0), Vector3::new(0.0, v_para, 0.0));
         assert_eq!(state_para.orbit_type(GM_EARTH), "parabolic");
 
         // Hyperbolic (e > 1)
         let v_hyp = v_para * 1.1; // Above escape velocity
-        let state_hyp = CartesianState::new(
-            Vector3::new(r, 0.0, 0.0),
-            Vector3::new(0.0, v_hyp, 0.0),
-        );
+        let state_hyp =
+            CartesianState::new(Vector3::new(r, 0.0, 0.0), Vector3::new(0.0, v_hyp, 0.0));
         assert_eq!(state_hyp.orbit_type(GM_EARTH), "hyperbolic");
     }
 }

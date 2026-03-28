@@ -167,7 +167,10 @@ impl PlaneChange {
     /// Returns an error if:
     /// - velocity is not positive
     /// - delta_angle is not in range [0, π]
-    pub fn pure_plane_change(velocity: f64, delta_angle: f64) -> PoliastroResult<PlaneChangeResult> {
+    pub fn pure_plane_change(
+        velocity: f64,
+        delta_angle: f64,
+    ) -> PoliastroResult<PlaneChangeResult> {
         // Validate inputs
         if velocity <= 0.0 {
             return Err(PoliastroError::invalid_parameter(
@@ -374,14 +377,12 @@ impl PlaneChange {
 
         // Calculate ΔV for all plane change at low altitude (worst case)
         let dv_low_all = Self::combined_plane_change(v_low, v_transfer_low, total_angle)?;
-        let dv_high_coplanar =
-            Self::combined_plane_change(v_transfer_high, v_high, 0.0)?;
+        let dv_high_coplanar = Self::combined_plane_change(v_transfer_high, v_high, 0.0)?;
         let delta_v_all_low = dv_low_all.delta_v + dv_high_coplanar.delta_v;
 
         // Calculate ΔV for all plane change at high altitude (better)
         let dv_low_coplanar = Self::combined_plane_change(v_low, v_transfer_low, 0.0)?;
-        let dv_high_all =
-            Self::combined_plane_change(v_transfer_high, v_high, total_angle)?;
+        let dv_high_all = Self::combined_plane_change(v_transfer_high, v_high, total_angle)?;
         let delta_v_all_high = dv_low_coplanar.delta_v + dv_high_all.delta_v;
 
         // Search for optimal split using golden section search
@@ -396,8 +397,7 @@ impl PlaneChange {
 
             // Calculate ΔV for this split
             let dv_low = Self::combined_plane_change(v_low, v_transfer_low, angle_low)?;
-            let dv_high =
-                Self::combined_plane_change(v_transfer_high, v_high, angle_high)?;
+            let dv_high = Self::combined_plane_change(v_transfer_high, v_high, angle_high)?;
             let total_dv = dv_low.delta_v + dv_high.delta_v;
 
             if total_dv < best_delta_v {
@@ -410,8 +410,7 @@ impl PlaneChange {
 
         // Calculate final results with optimal split
         let dv_first = Self::combined_plane_change(v_low, v_transfer_low, best_angle_low)?;
-        let dv_second =
-            Self::combined_plane_change(v_transfer_high, v_high, best_angle_high)?;
+        let dv_second = Self::combined_plane_change(v_transfer_high, v_high, best_angle_high)?;
 
         Ok(OptimalPlaneChangeResult {
             total_angle,
@@ -532,8 +531,7 @@ mod tests {
 
         let angle = 28.5_f64.to_radians();
 
-        let result =
-            PlaneChange::combined_plane_change(v_leo, v_transfer_leo, angle).unwrap();
+        let result = PlaneChange::combined_plane_change(v_leo, v_transfer_leo, angle).unwrap();
 
         // With 28.5° plane change, total ΔV should be significantly higher
         // than coplanar Hohmann (which would be ~2.4 km/s first burn)

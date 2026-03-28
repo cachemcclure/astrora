@@ -60,9 +60,9 @@
 //! - <https://public.ccsds.org/Pubs/502x0b2c1.pdf>
 //! - <https://www.space-track.org/documentation#/OMM>
 
-use sgp4::Elements;
 use crate::satellite::sgp4_wrapper::Sgp4Error;
 use serde_json;
+use sgp4::Elements;
 
 /// Parse an OMM JSON string
 ///
@@ -99,8 +99,7 @@ use serde_json;
 pub fn parse_omm(json_string: &str) -> Result<Elements, Sgp4Error> {
     // Parse JSON into Elements using serde
     // The sgp4::Elements struct implements Deserialize when serde feature is enabled
-    serde_json::from_str(json_string)
-        .map_err(|e| Sgp4Error::OmmParsingFailed(e.to_string()))
+    serde_json::from_str(json_string).map_err(|e| Sgp4Error::OmmParsingFailed(e.to_string()))
 }
 
 /// Parse multiple OMM objects from a JSON array
@@ -129,8 +128,9 @@ pub fn parse_omm_batch(json_array: &str) -> Result<Vec<Elements>, Sgp4Error> {
         .iter()
         .enumerate()
         .map(|(i, obj)| {
-            let obj_str = serde_json::to_string(obj)
-                .map_err(|e| Sgp4Error::OmmParsingFailed(format!("Object {i} serialize error: {e}")))?;
+            let obj_str = serde_json::to_string(obj).map_err(|e| {
+                Sgp4Error::OmmParsingFailed(format!("Object {i} serialize error: {e}"))
+            })?;
             parse_omm(&obj_str)
         })
         .collect()
@@ -166,7 +166,10 @@ mod tests {
 
         assert_eq!(elements.norad_id, 25544);
         assert_eq!(elements.object_name, Some("ISS (ZARYA)".to_string()));
-        assert_eq!(elements.international_designator, Some("1998-067A".to_string()));
+        assert_eq!(
+            elements.international_designator,
+            Some("1998-067A".to_string())
+        );
         // Note: sgp4::Elements stores inclination in degrees (not radians)
         assert!((elements.inclination - 51.6416).abs() < 0.001);
         assert!((elements.eccentricity - 0.0006703).abs() < 0.0000001);
@@ -189,7 +192,10 @@ mod tests {
     fn test_invalid_json() {
         let result = parse_omm("{invalid json");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), Sgp4Error::OmmParsingFailed(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            Sgp4Error::OmmParsingFailed(_)
+        ));
     }
 
     #[test]
